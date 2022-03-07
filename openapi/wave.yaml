@@ -1,0 +1,460 @@
+openapi: 3.0.3
+info:
+  title: Wave
+  version: 1.0.0
+  description: Wave
+servers:
+  - description: http server
+    url: 'http://server.wave.com'
+  - description: http secured server
+    url: 'https://server.wave.com'
+  - description: websocket server
+    url: 'ws://server.wave.com'
+tags:
+  - name: 'Authentication'
+    description: 'auth-related request'
+  - name: 'User'
+    description: 'user-related request'
+  - name: 'Contact'
+    description: 'contact-related request'
+  - name: 'Group'
+    description: 'group-related request'
+  - name: 'Messages'
+    description: 'messages-related request'
+paths:
+  /auth:
+    post:
+      operationId: login
+      tags:
+        - Authentication
+      summary: Get session token
+      description: Retrieve the session token with username/password combination
+      parameters:
+        - name: username
+          in: header
+          description: The user's username to authenticate
+          required: true
+          schema:
+            $ref: "#/components/schemas/userUsername"
+        - name: password
+          in: header
+          description: The user's password to authenticate
+          required: true
+          schema:
+            $ref: "#/components/schemas/userPassword"
+        - name: device
+          in: header
+          description: The user's device identifier
+          required: true
+          schema:
+            $ref: "#/components/schemas/deviceIdentifier"
+      responses:
+        200:
+          description: The user is authenticated and the token retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  Token:
+                    $ref: "#/components/parameters/sessionToken"
+        400:
+          $ref: "#/components/responses/400"
+        404:
+          $ref: "#/components/responses/404"
+        405:
+          $ref: "#/components/responses/405"
+
+
+
+
+        # =============================================================================
+components:
+  parameters:
+    sessionToken:
+      name: token
+      in: header
+      description: the token used to authenticate the user
+      required: true
+      schema:
+        $ref: "#/components/schemas/sessionToken"
+
+  responses:
+    400:
+      description: the parameters don't correspond to their schema
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/errorMessage"
+    401:
+      description: the session token does not exist
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/errorMessage"
+    403:
+      description: the resources doesn't belong to the user of this session token
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/errorMessage"
+    404:
+      description: the entity does not exist
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/errorMessage"
+    405:
+      description: the method used is not allowed
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/errorMessage"
+    406:
+      description: the elaboration of the request failed
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/errorMessage"
+    409:
+      description: the entity unique attributes already exist
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/errorMessage"
+
+  schemas:
+    errorMessage:
+      type: object
+      required:
+        - timestamp
+        - error
+        - message
+        - details
+      properties:
+        timestamp:
+          type: string
+        error:
+          type: string
+        message:
+          type: string
+        details:
+          type: string
+
+    # Authentication
+    sessionToken:
+      type: string
+      format: uuid-v4
+      minLength: 32
+      maxLength: 32
+      description: |
+        The identifier of the active session
+
+    deviceIdentifier:
+      type: string
+      format: uuid-v4
+      minLength: 32
+      maxLength: 32
+      description: |
+        The device identifier used during session refresh
+
+    # User
+    userUsername:
+      type: string
+      minLength: 5
+      maxLength: 32
+      pattern: ^([a-z0-9_]){5,32}$
+      description: |
+        The user identifier, unique inside all the app  
+        [Regex pattern](https://regex101.com/r/8w2v9W/1)
+
+    userPassword:
+      type: string
+      minLength: 5
+      maxLength: 32
+      pattern: ^(?=.*\d)(?=.*[A-Z])(?=.*[a-z])(?=.*[^\w\d\s:])([^\s]){8,16}$
+      description: |
+        The hashed password of the account  
+        [Regex pattern](https://regex101.com/r/0bH043/1)
+
+    userName:
+      type: string
+      minLength: 1
+      maxLength: 64
+      description: |
+        The user's name
+
+    userSurname:
+      type: string
+      minLength: 1
+      maxLength: 64
+      description: |
+        The user's surname
+
+    userPicture:
+      type: string
+      format: base64
+      maxLength: 1
+      description: |
+        The user's picture  
+        MIME: image/png, image/jpg  
+        Encoded in base64
+
+    userPhone:
+      type: integer
+      minLength: 5
+      maxLength: 19
+      pattern: ^([0-9]){5,19}$
+      description: |
+        The user's phone number  
+        [Regex pattern](https://regex101.com/r/GdQSbE/1)
+
+    userTheme:
+      type: string
+      minLength: 1
+      maxLength: 1
+      enum:
+        - L
+        - D
+      description: |
+        The user's saved theme  
+        L for Light, D for Dark
+
+    userLanguage:
+      type: string
+      minLength: 2
+      maxLength: 2
+      enum:
+        - IT
+        - EN
+        - SP
+        - DE
+        # continue...
+      description: |
+        The user's saved language  
+        Encoded in [2 letter language code](https://www.sitepoint.com/iso-2-letter-language-codes/)
+
+    # Contact
+    contactStatus:
+      type: string
+      minLength: 1
+      maxLength: 1
+      enum:
+        - P
+        - A
+        - B
+      description: |
+        The contact's relation status  
+        P for Pending, A for Active, B for Blocked
+
+    # Group
+    groupName:
+      type: string
+      minLength: 1
+      maxLength: 225
+      description: |
+        The group's name
+
+    groupInfo:
+      type: string
+      minLength: 1
+      maxLength: 225
+      description: |
+        The group's info
+
+    groupPicture:
+      type: string
+      format: base64
+      maxLength: 1
+      description: |
+        The group's picture  
+        MIME: image/png, image/jpg  
+        Encoded in base64
+
+    groupUUID:
+      type: string
+      format: uuid-v4
+      minLength: 32
+      maxLength: 32
+      description: |
+        The group identifier, unique inside all the app
+
+    groupSpecial:
+      type: string
+      minLength: 1
+      maxLength: 1
+      enum:
+        - A
+        - P
+      description: |
+        The group special condition, referred for single user  
+        A for Archive, P for Pinned
+
+    groupMuted:
+      type: boolean
+      description: |
+        The group muted status, referred for single user
+
+    # Chat members
+    memberPermission:
+      type: integer
+      minimum: 0
+      maximum: 127
+      description: |
+        The member's permission.  
+        Mapped in a binary-based table
+
+    # Chat messages
+    messagesKEY:
+      type: string
+      format: uuid-v4
+      description: |
+        The message identifier, unique inside all the chat
+
+    messageTimestamp:
+      type: string
+      format: full-time
+      description: |
+        The message's timestamp, in full-time format
+
+    messageContent:
+      type: string
+      minLength: 1
+      maxLength: 1
+      enum:
+        - M
+        - I
+      description: |
+        The message content type  
+        M for Message, I for Image
+
+    messageText:
+      type: string
+      minLength: 1
+      maxLength: 1024
+      description: |
+        The message's text
+
+    messageMedia:
+      type: string
+      format: base64
+      maxLength: 1
+      description: |
+        The message's media  
+        MIME: image/png, image/jpg  
+        Encoded in base64
+
+    messagePinned:
+      type: boolean
+      description: |
+        The message's pinned status
+
+    # public attributes objects
+    userObject:
+      type: object
+      required:
+        - username
+        - name
+        - surname
+        - picture
+        - theme
+        - language
+      properties:
+        username:
+          $ref: "#/components/schemas/userUsername"
+        name:
+          $ref: "#/components/schemas/userName"
+        surname:
+          $ref: "#/components/schemas/userSurname"
+        picture:
+          $ref: "#/components/schemas/userPicture"
+        phone:
+          $ref: "#/components/schemas/userPhone"
+        theme:
+          $ref: "#/components/schemas/userTheme"
+        language:
+          $ref: "#/components/schemas/userLanguage"
+
+    contactObject:
+      type: object
+      required:
+        - username
+        - name
+        - surname
+        - picture
+      properties:
+        username:
+          $ref: "#/components/schemas/userUsername"
+        name:
+          $ref: "#/components/schemas/userName"
+        surname:
+          $ref: "#/components/schemas/userSurname"
+        picture:
+          $ref: "#/components/schemas/userPicture"
+        status:
+          $ref: "#/components/schemas/contactStatus"
+
+    groupObject:
+      type: object
+      required:
+        - name
+        - info
+        - picture
+        - special
+        - muted
+      properties:
+        uuid:
+          $ref: "#/components/schemas/groupUUID"
+        name:
+          $ref: "#/components/schemas/groupName"
+        info:
+          $ref: "#/components/schemas/groupInfo"
+        picture:
+          $ref: "#/components/schemas/groupPicture"
+        special:
+          $ref: "#/components/schemas/groupSpecial"
+        muted:
+          $ref: "#/components/schemas/groupMuted"
+
+    memberObject:
+      type: object
+      required:
+        - username
+        - name
+        - surname
+        - picture
+      properties:
+        username:
+          $ref: "#/components/schemas/userUsername"
+        name:
+          $ref: "#/components/schemas/userName"
+        surname:
+          $ref: "#/components/schemas/userSurname"
+        picture:
+          $ref: "#/components/schemas/userPicture"
+        permission:
+          $ref: "#/components/schemas/memberPermission"
+        lastSeenMessage:
+          $ref: "#/components/schemas/messagesKEY"
+
+    messageObject:
+      type: object
+      properties:
+        key:
+          $ref: "#/components/schemas/messagesKEY"
+        timestamp:
+          $ref: "#/components/schemas/messageTimestamp"
+        content:
+          $ref: "#/components/schemas/messageContent"
+        text:
+          $ref: "#/components/schemas/messageText"
+        media:
+          $ref: "#/components/schemas/messageMedia"
+        authorUsername:
+          $ref: "#/components/schemas/userUsername"
+        authorName:
+          $ref: "#/components/schemas/userName"
+        authorSurname:
+          $ref: "#/components/schemas/userSurname"
+        pinned:
+          $ref: "#/components/schemas/messagePinned"

@@ -5,30 +5,42 @@ info:
   description: Wave
 servers:
   - description: http server
-    url: 'http://server.wave.com'
+    url: http://localhost
+  #    url: http://server.wave.com
   - description: http secured server
-    url: 'https://server.wave.com'
+    url: https://localhost
+  #    url: https://server.wave.com
   - description: websocket server
-    url: 'ws://server.wave.com'
+    url: ws:localhost:8000
+#    url: ws://server.wave.com
 tags:
-  - name: 'Authentication'
-    description: 'auth-related request'
-  - name: 'User'
-    description: 'user-related request'
-  - name: 'Contact'
-    description: 'contact-related request'
-  - name: 'Group'
-    description: 'group-related request'
-  - name: 'Messages'
-    description: 'messages-related request'
+  - name: Authentication
+    description: |
+      Use cases related to the authentication process
+  - name: User
+    description: |
+      Use cases related to the user management
+  - name: Contact
+    description: |
+      Use cases related to the contacts management
+  - name: Group
+    description: |
+      Use cases related to the groups management
+  - name: Messages
+    description: |
+      Use cases related to the messages management
 paths:
   /auth:
+    summary: Authentication-related request
+    description: |
+      The set of all the use cases related to the authentication process
     post:
       operationId: login
       tags:
         - Authentication
       summary: Get session token
-      description: Retrieve the session token with username/password combination
+      description: |
+        Retrieve the session token with username/password combination
       parameters:
         - name: username
           in: header
@@ -50,74 +62,287 @@ paths:
             $ref: "#/components/schemas/deviceIdentifier"
       responses:
         200:
-          description: The user is authenticated and the token retrieved
+          description: |
+            The user is authenticated and the token retrieved
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  Token:
-                    $ref: "#/components/parameters/sessionToken"
+                  token:
+                    $ref: "#/components/schemas/sessionToken"
         400:
           $ref: "#/components/responses/400"
+        401:
+          $ref: "#/components/responses/401"
         404:
           $ref: "#/components/responses/404"
         405:
           $ref: "#/components/responses/405"
 
+    get:
+      operationId: poke
+      tags:
+        - Authentication
+      summary: Update the session's TTL
+      description: |
+        Refresh the session timeout without actions
+      parameters:
+        - $ref: "#/components/parameters/sessionToken"
+      responses:
+        200:
+          description: |
+            The session's TTL is successfully updated
+        400:
+          $ref: "#/components/responses/400"
+        401:
+          $ref: "#/components/responses/401"
+        405:
+          $ref: "#/components/responses/405"
+
+    delete:
+      operationId: logout
+      tags:
+        - Authentication
+      summary: Delete the session token
+      description: |
+        Make a specific session token unreachable
+      parameters:
+        - $ref: "#/components/parameters/sessionToken"
+      responses:
+        200:
+          description: |
+            The session token is successfully deleted
+        400:
+          $ref: "#/components/responses/400"
+        401:
+          $ref: "#/components/responses/401"
+        405:
+          $ref: "#/components/responses/405"
+
+  /user:
+    summary: User-related request
+    description: |
+      The set of all the use cases related to the user management
+    post:
+      operationId: createUser
+      tags:
+        - User
+      summary: Create a new user
+      description: |
+        Create a new user using the given parameters
+      parameters:
+        - name: username
+          in: header
+          description: The new user's username
+          required: true
+          schema:
+            $ref: "#/components/schemas/userUsername"
+        - name: password
+          in: header
+          description: The new user's password
+          required: true
+          schema:
+            $ref: "#/components/schemas/userPassword"
+        - name: name
+          in: header
+          description: The new user's name
+          required: true
+          schema:
+            $ref: "#/components/schemas/userName"
+        - name: surname
+          in: header
+          description: The new user's surname
+          required: true
+          schema:
+            $ref: "#/components/schemas/userSurname"
+        - name: phone
+          in: header
+          description: The eventual new user's phone number
+          required: false
+          schema:
+            $ref: "#/components/schemas/userPhone"
+        - name: picture
+          in: header
+          description: The eventual new user's profile picture
+          required: false
+          schema:
+            $ref: "#/components/schemas/userPassword"
+      responses:
+        200:
+          description: |
+            The user is successfully created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    $ref: "#/components/schemas/sessionToken"
+        400:
+          $ref: "#/components/responses/400"
+        405:
+          $ref: "#/components/responses/405"
+        409:
+          $ref: "#/components/responses/409"
+
+    get:
+      operationId: getUserInformation
+      tags:
+        - User
+      summary: Get the user's public information
+      description: |
+        Retrieve the user's public information given the session token
+      parameters:
+        - $ref: "#/components/parameters/sessionToken"
+      responses:
+        200:
+          description: |
+            The public information are successfully retrieved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/userObject"
+        400:
+          $ref: "#/components/responses/400"
+        401:
+          $ref: "#/components/responses/401"
+        405:
+          $ref: "#/components/responses/405"
+
+    put:
+      operationId: changeUserInformation
+      tags:
+        - User
+      summary: Change the user's information
+      description: |
+        Change the specific user's information with the specific new value.
+        This will triggered a ws packet to be sent to every contact of the user
+      parameters:
+        - $ref: "#/components/parameters/sessionToken"
+        - name: username
+          in: header
+          description: The eventual new user's username
+          required: false
+          schema:
+            $ref: "#/components/schemas/userUsername"
+        - name: name
+          in: header
+          description: The eventual new user's name
+          required: false
+          schema:
+            $ref: "#/components/schemas/userName"
+        - name: surname
+          in: header
+          description: The eventual new user's surname
+          required: false
+          schema:
+            $ref: "#/components/schemas/userSurname"
+        - name: picture
+          in: header
+          description: The eventual new user's picture
+          required: false
+          schema:
+            $ref: "#/components/schemas/userPicture"
+        - name: theme
+          in: header
+          description: The eventual new user's theme
+          required: false
+          schema:
+            $ref: "#/components/schemas/userTheme"
+        - name: language
+          in: header
+          description: The eventual new user's language
+          required: false
+          schema:
+            $ref: "#/components/schemas/userLanguage"
+      responses:
+        200:
+          description: |
+            The user's public information are successfully updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/userObject"
+        400:
+          $ref: "#/components/responses/400"
+        401:
+          $ref: "#/components/responses/401"
+        405:
+          $ref: "#/components/responses/405"
+    delete:
+      operationId: deleteUser
+      tags:
+        - User
+      summary: Delete a specific user
+      description: |
+        Delete the user associated with a given token.
+        This will triggering the recursive deletion of all the user's properties
+      parameters:
+        - $ref: "#/components/parameters/sessionToken"
+      responses:
+        200:
+          description: |
+            The user is successfully deleted.
+            The token will be useless
+        400:
+          $ref: "#/components/responses/400"
+        401:
+          $ref: "#/components/responses/401"
+        405:
+          $ref: "#/components/responses/405"
 
 
-
-        # =============================================================================
+# =============================================================================
 components:
   parameters:
     sessionToken:
       name: token
       in: header
-      description: the token used to authenticate the user
+      description: The token used to authenticate the user
       required: true
       schema:
         $ref: "#/components/schemas/sessionToken"
 
   responses:
     400:
-      description: the parameters don't correspond to their schema
+      description: The parameters don't correspond to their schema
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/errorMessage"
     401:
-      description: the session token does not exist
+      description: The session token does not exist
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/errorMessage"
     403:
-      description: the resources doesn't belong to the user of this session token
+      description: The resources doesn't belong to the user of this session token
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/errorMessage"
     404:
-      description: the entity does not exist
+      description: The entity does not exist
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/errorMessage"
     405:
-      description: the method used is not allowed
+      description: The method used is not allowed
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/errorMessage"
     406:
-      description: the elaboration of the request failed
+      description: The elaboration of the request failed
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/errorMessage"
     409:
-      description: the entity unique attributes already exist
+      description: The entity unique attributes already exist
       content:
         application/json:
           schema:
@@ -165,7 +390,7 @@ components:
       maxLength: 32
       pattern: ^([a-z0-9_]){5,32}$
       description: |
-        The user identifier, unique inside all the app  
+        The user identifier, unique inside all the app
         [Regex pattern](https://regex101.com/r/8w2v9W/1)
 
     userPassword:
@@ -174,7 +399,7 @@ components:
       maxLength: 32
       pattern: ^(?=.*\d)(?=.*[A-Z])(?=.*[a-z])(?=.*[^\w\d\s:])([^\s]){8,16}$
       description: |
-        The hashed password of the account  
+        The hashed password of the account
         [Regex pattern](https://regex101.com/r/0bH043/1)
 
     userName:
@@ -196,8 +421,8 @@ components:
       format: base64
       maxLength: 1
       description: |
-        The user's picture  
-        MIME: image/png, image/jpg  
+        The user's picture
+        MIME: image/png, image/jpg
         Encoded in base64
 
     userPhone:
@@ -206,7 +431,7 @@ components:
       maxLength: 19
       pattern: ^([0-9]){5,19}$
       description: |
-        The user's phone number  
+        The user's phone number
         [Regex pattern](https://regex101.com/r/GdQSbE/1)
 
     userTheme:
@@ -217,7 +442,7 @@ components:
         - L
         - D
       description: |
-        The user's saved theme  
+        The user's saved theme
         L for Light, D for Dark
 
     userLanguage:
@@ -231,7 +456,7 @@ components:
         - DE
         # continue...
       description: |
-        The user's saved language  
+        The user's saved language
         Encoded in [2 letter language code](https://www.sitepoint.com/iso-2-letter-language-codes/)
 
     # Contact
@@ -244,7 +469,7 @@ components:
         - A
         - B
       description: |
-        The contact's relation status  
+        The contact's relation status
         P for Pending, A for Active, B for Blocked
 
     # Group
@@ -267,8 +492,8 @@ components:
       format: base64
       maxLength: 1
       description: |
-        The group's picture  
-        MIME: image/png, image/jpg  
+        The group's picture
+        MIME: image/png, image/jpg
         Encoded in base64
 
     groupUUID:
@@ -287,7 +512,7 @@ components:
         - A
         - P
       description: |
-        The group special condition, referred for single user  
+        The group special condition, referred for single user
         A for Archive, P for Pinned
 
     groupMuted:
@@ -301,7 +526,7 @@ components:
       minimum: 0
       maximum: 127
       description: |
-        The member's permission.  
+        The member's permission.
         Mapped in a binary-based table
 
     # Chat messages
@@ -325,7 +550,7 @@ components:
         - M
         - I
       description: |
-        The message content type  
+        The message content type
         M for Message, I for Image
 
     messageText:
@@ -340,8 +565,8 @@ components:
       format: base64
       maxLength: 1
       description: |
-        The message's media  
-        MIME: image/png, image/jpg  
+        The message's media
+        MIME: image/png, image/jpg
         Encoded in base64
 
     messagePinned:

@@ -2,7 +2,8 @@ openapi: 3.0.3
 info:
   title: Wave
   version: 1.0.0
-  description: Wave
+  description: |
+    Wave
 servers:
   - description: http server
     url: http://localhost
@@ -26,7 +27,7 @@ tags:
   - name: Group
     description: |
       Use cases related to the groups management
-  - name: Messages
+  - name: Message
     description: |
       Use cases related to the messages management
 paths:
@@ -285,7 +286,7 @@ paths:
       responses:
         200:
           description: |
-            The user is successfully deleted.
+            The user is successfully deleted.  
             The token will be useless
         400:
           $ref: "#/components/responses/400"
@@ -626,7 +627,8 @@ paths:
       responses:
         200:
           description: |
-            The new member is successfully added. The new member's list is retrieved.
+            The new member is successfully added.   
+            The new member's list is retrieved.
           content:
             application/json:
               schema:
@@ -657,7 +659,8 @@ paths:
       responses:
         200:
           description: |
-            The specific member is successfully removed. The new member's list is retrieved.
+            The specific member is successfully removed.  
+            The new member's list is retrieved.
           content:
             application/json:
               schema:
@@ -673,40 +676,220 @@ paths:
         405:
           $ref: "#/components/responses/405"
 
+  /message:
+    summary: Messages-related request
+    description: |
+      The set of all the use cases related to the messages management.
 
-# =============================================================================
+    get:
+      operationId: getGroupMessages
+      tags:
+        - Message
+      summary: Get the group's messages in a certain timestamp range
+      description: |
+        Retrieve the messages of a specified group given a time period's start and end.
+      parameters:
+        - $ref: "#/components/parameters/sessionToken"
+        - $ref: "#/components/parameters/groupUUID"
+        - name: from
+          in: header
+          required: true
+          description: The start of the time range.
+          schema:
+            $ref: "#/components/schemas/messageTimestamp"
+        - name: to
+          in: header
+          description: The end of the time range.
+          required: true
+          schema:
+            $ref: "#/components/schemas/messageTimestamp"
+      responses:
+        200:
+          description: |
+            The list of messages is successfully retrieved.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/messageObject"
+        400:
+          $ref: "#/components/responses/400"
+        401:
+          $ref: "#/components/responses/401"
+        404:
+          $ref: "#/components/responses/404"
+        405:
+          $ref: "#/components/responses/405"
+
+    post:
+      operationId: writeMessage
+      tags:
+        - Message
+      summary: Write a message
+      description: |
+        Write a message with the given data.  
+        This will trigger a ws packet to be sent to all the group's members.
+      parameters:
+        - $ref: "#/components/parameters/sessionToken"
+        - $ref: "#/components/parameters/groupUUID"
+        - name: content
+          in: header
+          required: true
+          description: The content of the message.
+          schema:
+            $ref: "#/components/schemas/messageContent"
+        - name: text
+          in: header
+          required: false
+          description: The eventual text of the message.
+          schema:
+            $ref: "#/components/schemas/messageText"
+        - name: media
+          in: header
+          required: false
+          description: The eventual media of the message.
+          schema:
+            $ref: "#/components/schemas/messageMedia"
+      responses:
+        200:
+          description: |
+            The message is successfully wrote.  
+            Its information are retrieved.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/messageObject"
+        400:
+          $ref: "#/components/responses/400"
+        401:
+          $ref: "#/components/responses/401"
+        404:
+          $ref: "#/components/responses/404"
+        405:
+          $ref: "#/components/responses/405"
+
+    put:
+      operationId: changeMessage
+      tags:
+        - Message
+      summary: Change a group's message content
+      description: |
+        Change a specific message content.  
+        This will trigger a ws packet to be sent to all the group's members.
+      parameters:
+        - $ref: "#/components/parameters/sessionToken"
+        - $ref: "#/components/parameters/groupUUID"
+        - $ref: "#/components/parameters/messageKEY"
+        - name: content
+          in: header
+          required: false
+          description: The eventual new message's content.
+          schema:
+            $ref: "#/components/schemas/messageContent"
+        - name: text
+          in: header
+          required: false
+          description: The eventual new message's text.
+          schema:
+            $ref: "#/components/schemas/messageText"
+        - name: media
+          in: header
+          required: false
+          description: The eventual new message's media.
+          schema:
+            $ref: "#/components/schemas/messageMedia"
+        - name: pinned
+          in: header
+          required: false
+          description: The eventual new message's pinned state.
+          schema:
+            $ref: "#/components/schemas/messagePinned"
+      responses:
+        200:
+          description: |
+            The message's content is successfully updated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/messageObject"
+        400:
+          $ref: "#/components/responses/400"
+        401:
+          $ref: "#/components/responses/401"
+        404:
+          $ref: "#/components/responses/404"
+        405:
+          $ref: "#/components/responses/405"
+
+    delete:
+      operationId: deleteMessage
+      tags:
+        - Message
+      summary: Delete a group's message
+      description: |
+        Delete a specific message from a specific group.  
+        This will trigger a ws packet to be sent to all the group's members.
+      parameters:
+        - $ref: "#/components/parameters/sessionToken"
+        - $ref: "#/components/parameters/groupUUID"
+        - $ref: "#/components/parameters/messageKEY"
+      responses:
+        200:
+          description: |
+            The message is successfully deleted.
+        400:
+          $ref: "#/components/responses/400"
+        401:
+          $ref: "#/components/responses/401"
+        404:
+          $ref: "#/components/responses/404"
+        405:
+          $ref: "#/components/responses/405"
+
+
+# =================================================================================================
 components:
   parameters:
     # identifiers
     sessionToken:
       name: token
       in: header
-      description: The token used to authenticate the user.
       required: true
+      description: The token used to authenticate the user.
       schema:
         $ref: "#/components/schemas/sessionToken"
 
     groupUUID:
       name: group
       in: header
+      required: true
       description: The identifier to the specific group.
       schema:
         $ref: "#/components/schemas/groupUUID"
+
+    messageKEY:
+      name: message
+      in: header
+      required: true
+      description: The identifier of the specific message
+      schema:
+        $ref: "#/components/schemas/messageKEY"
 
     # contact requests
     requestContact:
       name: user
       in: header
-      description: The targeted user's username.
       required: true
+      description: The targeted user's username.
       schema:
         $ref: "#/components/schemas/userUsername"
 
     requestDirective:
       name: directive
       in: header
-      description: The command to apply to the request.
       required: true
+      description: The command to apply to the request.
       schema:
         $ref: "#/components/schemas/contactDirectives"
 
@@ -766,8 +949,9 @@ components:
       properties:
         timestamp:
           type: string
+          format: full-time
         error:
-          type: string
+          type: integer
         message:
           type: string
         details:
@@ -937,7 +1121,7 @@ components:
         Mapped in a binary-based table
 
     # Chat messages
-    messagesKEY:
+    messageKEY:
       type: string
       format: uuid-v4
       description: |
@@ -1096,13 +1280,13 @@ components:
         permission:
           $ref: "#/components/schemas/memberPermission"
         lastSeenMessage:
-          $ref: "#/components/schemas/messagesKEY"
+          $ref: "#/components/schemas/messageKEY"
 
     messageObject:
       type: object
       properties:
         key:
-          $ref: "#/components/schemas/messagesKEY"
+          $ref: "#/components/schemas/messageKEY"
         timestamp:
           $ref: "#/components/schemas/messageTimestamp"
         content:

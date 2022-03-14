@@ -34,6 +34,7 @@ paths:
     summary: Authentication-related request
     description: |
       The set of all the use cases related to the authentication process
+
     post:
       operationId: login
       tags:
@@ -124,6 +125,7 @@ paths:
     summary: User-related request
     description: |
       The set of all the use cases related to the user management
+
     post:
       operationId: createUser
       tags:
@@ -217,7 +219,7 @@ paths:
       summary: Change the user's information
       description: |
         Change the specific user's information with the specific new value.
-        This will triggered a ws packet to be sent to every contact of the user
+        This will trigger a ws packet to be sent to every contact of the user
       parameters:
         - $ref: "#/components/parameters/sessionToken"
         - name: username
@@ -277,7 +279,7 @@ paths:
       summary: Delete a specific user
       description: |
         Delete the user associated with a given token.
-        This will triggering the recursive deletion of all the user's properties
+        This will trigger the recursive deletion of all the user's properties
       parameters:
         - $ref: "#/components/parameters/sessionToken"
       responses:
@@ -292,6 +294,112 @@ paths:
         405:
           $ref: "#/components/responses/405"
 
+  /contact:
+    summary: Contact-related request
+    description: |
+      The set of all the use cases related to the contacts management
+
+    post:
+      operationId: contactRequest
+      tags:
+        - Contact
+      summary: Create a new contact request
+      description: |
+        Create a new pending relation (contact) request between the user identified from the token and a second specified user.  
+        This will trigger a ws packet to be sent to the specified user
+      parameters:
+        - $ref: "#/components/parameters/sessionToken"
+        - $ref: "#/components/parameters/requestContact"
+      responses:
+        200:
+          description: |
+            The request is successfully pending.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/contactObject"
+        400:
+          $ref: "#/components/responses/400"
+        401:
+          $ref: "#/components/responses/401"
+        405:
+          $ref: "#/components/responses/405"
+        406:
+          $ref: "#/components/responses/406"
+
+    delete:
+      operationId: deleteContactRequest
+      tags:
+        - Contact
+      summary: Delete a pending contact request
+      description: |
+        Delete a pending relation (contact) request between the user identified from the token and a second specified user.  
+        This will trigger a ws packet to be sent to the specified user
+      parameters:
+        - $ref: "#/components/parameters/sessionToken"
+        - $ref: "#/components/parameters/requestContact"
+      responses:
+        200:
+          description: |
+            The request is successfully cancelled.
+        400:
+          $ref: "#/components/responses/400"
+        401:
+          $ref: "#/components/responses/401"
+        405:
+          $ref: "#/components/responses/405"
+
+    put:
+      operationId: changeContactStatus
+      tags:
+        - Contact
+      summary: Change a contact status
+      description: |
+        Either respond to a first pending request or update an existing contact from a specific user, depending from the given response.  
+        This will trigger a ws packet to be sent to the specific user
+      parameters:
+        - $ref: "#/components/parameters/sessionToken"
+        - $ref: "#/components/parameters/requestContact"
+        - $ref: "#/components/parameters/requestDirective"
+      responses:
+        200:
+          description: |
+            The contact status is successfully update.
+        400:
+          $ref: "#/components/responses/400"
+        401:
+          $ref: "#/components/responses/401"
+        405:
+          $ref: "#/components/responses/405"
+
+    get:
+      operationId: getContactInformation
+      tags:
+        - Contact
+      summary: Get a contact's public information
+      description: |
+        Retrieve the public information of a specified contact
+      parameters:
+        - $ref: "#/components/parameters/sessionToken"
+        - $ref: "#/components/parameters/requestContact"
+      responses:
+        200:
+          description: |
+            The contact's public information are successfully retrieved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/contactObject"
+        400:
+          $ref: "#/components/responses/400"
+        401:
+          $ref: "#/components/responses/401"
+        404:
+          $ref: "#/components/responses/404"
+        405:
+          $ref: "#/components/responses/405"
+
+
 
 # =============================================================================
 components:
@@ -303,6 +411,24 @@ components:
       required: true
       schema:
         $ref: "#/components/schemas/sessionToken"
+
+    # contact requests
+    requestContact:
+      name: user
+      in: header
+      description: The targeted user's username
+      required: true
+      schema:
+        $ref: "#/components/schemas/userUsername"
+
+    requestDirective:
+      name: directive
+      in: header
+      description: The command to apply to the request
+      required: true
+      schema:
+        $ref: "#/components/schemas/contactDirectives"
+
 
   responses:
     400:
@@ -472,7 +598,21 @@ components:
         The contact's relation status
         P for Pending, A for Active, B for Blocked
 
-    # Group
+    contactDirectives:
+      type: string
+      minLength: 1
+      maxLength: 1
+      enum:
+        - A
+        - D
+        - B
+        - R
+        - U
+      description: |
+        The set of possibles commands to apply to a contact request  
+        A for Accept, D for Decline, B for Block, R for Remove, U to Unblock
+
+        # Group
     groupName:
       type: string
       minLength: 1

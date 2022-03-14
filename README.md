@@ -1,1 +1,1 @@
-# Wave.Server
+# Wave REST Server

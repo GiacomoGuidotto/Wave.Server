@@ -33,7 +33,7 @@ paths:
   /auth:
     summary: Authentication-related request
     description: |
-      The set of all the use cases related to the authentication process
+      The set of all the use cases related to the authentication process.
 
     post:
       operationId: login
@@ -41,30 +41,30 @@ paths:
         - Authentication
       summary: Get session token
       description: |
-        Retrieve the session token with username/password combination
+        Retrieve the session token with username/password combination.
       parameters:
         - name: username
           in: header
-          description: The user's username to authenticate
+          description: The user's username to authenticate.
           required: true
           schema:
             $ref: "#/components/schemas/userUsername"
         - name: password
           in: header
-          description: The user's password to authenticate
+          description: The user's password to authenticate.
           required: true
           schema:
             $ref: "#/components/schemas/userPassword"
         - name: device
           in: header
-          description: The user's device identifier
+          description: The user's device identifier.
           required: true
           schema:
             $ref: "#/components/schemas/deviceIdentifier"
       responses:
         200:
           description: |
-            The user is authenticated and the token retrieved
+            The user is authenticated and the token retrieved.
           content:
             application/json:
               schema:
@@ -87,13 +87,13 @@ paths:
         - Authentication
       summary: Update the session's TTL
       description: |
-        Refresh the session timeout without actions
+        Refresh the session timeout without actions.
       parameters:
         - $ref: "#/components/parameters/sessionToken"
       responses:
         200:
           description: |
-            The session's TTL is successfully updated
+            The session's TTL is successfully updated.
         400:
           $ref: "#/components/responses/400"
         401:
@@ -107,13 +107,13 @@ paths:
         - Authentication
       summary: Delete the session token
       description: |
-        Make a specific session token unreachable
+        Make a specific session token unreachable.
       parameters:
         - $ref: "#/components/parameters/sessionToken"
       responses:
         200:
           description: |
-            The session token is successfully deleted
+            The session token is successfully deleted.
         400:
           $ref: "#/components/responses/400"
         401:
@@ -124,7 +124,7 @@ paths:
   /user:
     summary: User-related request
     description: |
-      The set of all the use cases related to the user management
+      The set of all the use cases related to the user management.
 
     post:
       operationId: createUser
@@ -132,48 +132,48 @@ paths:
         - User
       summary: Create a new user
       description: |
-        Create a new user using the given parameters
+        Create a new user using the given parameters.
       parameters:
         - name: username
           in: header
-          description: The new user's username
+          description: The new user's username.
           required: true
           schema:
             $ref: "#/components/schemas/userUsername"
         - name: password
           in: header
-          description: The new user's password
+          description: The new user's password.
           required: true
           schema:
             $ref: "#/components/schemas/userPassword"
         - name: name
           in: header
-          description: The new user's name
+          description: The new user's name.
           required: true
           schema:
             $ref: "#/components/schemas/userName"
         - name: surname
           in: header
-          description: The new user's surname
+          description: The new user's surname.
           required: true
           schema:
             $ref: "#/components/schemas/userSurname"
         - name: phone
           in: header
-          description: The eventual new user's phone number
+          description: The eventual new user's phone number.
           required: false
           schema:
             $ref: "#/components/schemas/userPhone"
         - name: picture
           in: header
-          description: The eventual new user's profile picture
+          description: The eventual new user's profile picture.
           required: false
           schema:
             $ref: "#/components/schemas/userPassword"
       responses:
         200:
           description: |
-            The user is successfully created
+            The user is successfully created.
           content:
             application/json:
               schema:
@@ -192,15 +192,15 @@ paths:
       operationId: getUserInformation
       tags:
         - User
-      summary: Get the user's public information
+      summary: Get the user's information
       description: |
-        Retrieve the user's public information given the session token
+        Retrieve the user's information given the session token.
       parameters:
         - $ref: "#/components/parameters/sessionToken"
       responses:
         200:
           description: |
-            The public information are successfully retrieved
+            The information are successfully retrieved.
           content:
             application/json:
               schema:
@@ -218,50 +218,50 @@ paths:
         - User
       summary: Change the user's information
       description: |
-        Change the specific user's information with the specific new value.
-        This will trigger a ws packet to be sent to every contact of the user
+        Change the specific user's information with the specific new value.  
+        This will trigger a ws packet to be sent to every contact of the user.
       parameters:
         - $ref: "#/components/parameters/sessionToken"
         - name: username
           in: header
-          description: The eventual new user's username
+          description: The eventual new user's username.
           required: false
           schema:
             $ref: "#/components/schemas/userUsername"
         - name: name
           in: header
-          description: The eventual new user's name
+          description: The eventual new user's name.
           required: false
           schema:
             $ref: "#/components/schemas/userName"
         - name: surname
           in: header
-          description: The eventual new user's surname
+          description: The eventual new user's surname.
           required: false
           schema:
             $ref: "#/components/schemas/userSurname"
         - name: picture
           in: header
-          description: The eventual new user's picture
+          description: The eventual new user's picture.
           required: false
           schema:
             $ref: "#/components/schemas/userPicture"
         - name: theme
           in: header
-          description: The eventual new user's theme
+          description: The eventual new user's theme.
           required: false
           schema:
             $ref: "#/components/schemas/userTheme"
         - name: language
           in: header
-          description: The eventual new user's language
+          description: The eventual new user's language.
           required: false
           schema:
             $ref: "#/components/schemas/userLanguage"
       responses:
         200:
           description: |
-            The user's public information are successfully updated
+            The user's information are successfully updated.
           content:
             application/json:
               schema:
@@ -278,8 +278,8 @@ paths:
         - User
       summary: Delete a specific user
       description: |
-        Delete the user associated with a given token.
-        This will trigger the recursive deletion of all the user's properties
+        Delete the user associated with a given token.  
+        This will trigger the recursive deletion of all the user's properties.
       parameters:
         - $ref: "#/components/parameters/sessionToken"
       responses:
@@ -297,7 +297,7 @@ paths:
   /contact:
     summary: Contact-related request
     description: |
-      The set of all the use cases related to the contacts management
+      The set of all the use cases related to the contacts management.
 
     post:
       operationId: contactRequest
@@ -306,7 +306,7 @@ paths:
       summary: Create a new contact request
       description: |
         Create a new pending relation (contact) request between the user identified from the token and a second specified user.  
-        This will trigger a ws packet to be sent to the specified user
+        This will trigger a ws packet to be sent to the specified user.
       parameters:
         - $ref: "#/components/parameters/sessionToken"
         - $ref: "#/components/parameters/requestContact"
@@ -334,7 +334,7 @@ paths:
       summary: Delete a pending contact request
       description: |
         Delete a pending relation (contact) request between the user identified from the token and a second specified user.  
-        This will trigger a ws packet to be sent to the specified user
+        This will trigger a ws packet to be sent to the specified user.
       parameters:
         - $ref: "#/components/parameters/sessionToken"
         - $ref: "#/components/parameters/requestContact"
@@ -356,7 +356,7 @@ paths:
       summary: Change a contact status
       description: |
         Either respond to a first pending request or update an existing contact from a specific user, depending from the given response.  
-        This will trigger a ws packet to be sent to the specific user
+        This will trigger a ws packet to be sent to the specific user.
       parameters:
         - $ref: "#/components/parameters/sessionToken"
         - $ref: "#/components/parameters/requestContact"
@@ -376,20 +376,294 @@ paths:
       operationId: getContactInformation
       tags:
         - Contact
-      summary: Get a contact's public information
+      summary: Get one or all contact' information
       description: |
-        Retrieve the public information of a specified contact
+        Retrieve the list of the user's contacts.  
+        If a contact's name is given, the information of that specified contact are retrieved.
       parameters:
         - $ref: "#/components/parameters/sessionToken"
         - $ref: "#/components/parameters/requestContact"
       responses:
         200:
           description: |
-            The contact's public information are successfully retrieved
+            The list of contacts of the single contact's information are successfully retrieved.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/contactObject"
+                oneOf:
+                  - $ref: "#/components/schemas/contactObject"
+                  - type: array
+                    items:
+                      $ref: "#/components/schemas/contactObject"
+        400:
+          $ref: "#/components/responses/400"
+        401:
+          $ref: "#/components/responses/401"
+        404:
+          $ref: "#/components/responses/404"
+        405:
+          $ref: "#/components/responses/405"
+
+  /group:
+    summary: Group-related request
+    description: |
+      The set of all the use cases related to the group management.
+
+    post:
+      operationId: createGroup
+      tags:
+        - Group
+      summary: Create a new group
+      description: |
+        Create a new group with the given parameters.  
+        This will trigger a ws packet to be sent to the specific new members.
+      parameters:
+        - $ref: "#/components/parameters/sessionToken"
+        - name: name
+          in: header
+          description: The new group's name.
+          required: true
+          schema:
+            $ref: "#/components/schemas/groupName"
+        - name: info
+          in: header
+          description: The eventual group's info.
+          required: false
+          schema:
+            $ref: "#/components/schemas/groupInfo"
+        - name: picture
+          in: header
+          description: The eventual group's picture.
+          required: false
+          schema:
+            $ref: "#/components/schemas/groupPicture"
+        - name: users
+          in: header
+          description: The eventual list of group's new members.
+          required: false
+          schema:
+            type: array
+            items:
+              $ref: "#/components/schemas/userUsername"
+      responses:
+        200:
+          description: |
+            The group is successfully created, its new information are retrieves.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/groupObject"
+        400:
+          $ref: "#/components/responses/400"
+        401:
+          $ref: "#/components/responses/401"
+        404:
+          $ref: "#/components/responses/404"
+        405:
+          $ref: "#/components/responses/405"
+
+    get:
+      operationId: getGroupInformation
+      tags:
+        - Group
+      summary: Get one or all groups' information
+      description: |
+        Retrieve the list of the user's groups.  
+        If a group's name is given, the information of that specified group are retrieved.
+      parameters:
+        - $ref: "#/components/parameters/sessionToken"
+        - $ref: "#/components/parameters/groupUUID"
+      responses:
+        200:
+          description: |
+            The list of groups of the single group's information are successfully retrieved.
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/groupObject"
+                  - type: array
+                    items:
+                      $ref: "#/components/schemas/groupObject"
+        400:
+          $ref: "#/components/responses/400"
+        401:
+          $ref: "#/components/responses/401"
+        404:
+          $ref: "#/components/responses/404"
+        405:
+          $ref: "#/components/responses/405"
+
+    patch:
+      operationId: changeGroupStatus
+      tags:
+        - Group
+      summary: Change the group's status for the user
+      description: |
+        Change the group's status: either its place (archived, pinned) or its notifications mode (mute).
+      parameters:
+        - $ref: "#/components/parameters/sessionToken"
+        - $ref: "#/components/parameters/groupUUID"
+        - name: directive
+          in: header
+          description: The command to apply to the request.
+          required: true
+          schema:
+            $ref: "#/components/schemas/groupDirectives"
+      responses:
+        200:
+          description: |
+            The group's status is successfully changed.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/groupObject"
+        400:
+          $ref: "#/components/responses/400"
+        401:
+          $ref: "#/components/responses/401"
+        404:
+          $ref: "#/components/responses/404"
+        405:
+          $ref: "#/components/responses/405"
+
+    put:
+      operationId: changeGroupInformation
+      tags:
+        - Group
+      summary: Change the group's information
+      description: |
+        Change the specific group's information with the specific new value.  
+        This will trigger a ws packet to be sent to every member of the group.
+      parameters:
+        - $ref: "#/components/parameters/sessionToken"
+        - $ref: "#/components/parameters/groupUUID"
+        - name: name
+          in: header
+          description: The eventual new group's name.
+          required: false
+          schema:
+            $ref: "#/components/schemas/groupName"
+        - name: info
+          in: header
+          description: The eventual new group's information.
+          required: false
+          schema:
+            $ref: "#/components/schemas/groupInfo"
+        - name: picture
+          in: header
+          description: The eventual new group's picture.
+          required: false
+          schema:
+            $ref: "#/components/schemas/groupPicture"
+      responses:
+        200:
+          description: |
+            The group's information are successfully updated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/groupObject"
+        400:
+          $ref: "#/components/responses/400"
+        401:
+          $ref: "#/components/responses/401"
+        403:
+          $ref: "#/components/responses/403"
+        404:
+          $ref: "#/components/responses/404"
+        405:
+          $ref: "#/components/responses/405"
+
+    delete:
+      operationId: exitGroup
+      tags:
+        - Group
+      summary: Exit from the group
+      description: |
+        Delete a group participation. If its the last one, delete the group itself.  
+        This will trigger a ws packet to be sent to every member of the group.
+      parameters:
+        - $ref: "#/components/parameters/sessionToken"
+        - $ref: "#/components/parameters/groupUUID"
+      responses:
+        200:
+          description: |
+            The group's participation is successfully removed.  
+            The new group's list is retrieved.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/groupObject"
+        400:
+          $ref: "#/components/responses/400"
+        401:
+          $ref: "#/components/responses/401"
+        404:
+          $ref: "#/components/responses/404"
+        405:
+          $ref: "#/components/responses/405"
+
+  /member:
+    summary: Group's member-related request
+    description: |
+      The set of all the use cases related to the group's member management.
+
+    post:
+      operationId: addMember
+      tags:
+        - Group
+      summary: Add a group's member
+      description: |
+        Add a specific user to a specific group.  
+        This will trigger a ws packet to be sent to the specified user and to the existing members.
+      parameters:
+        - $ref: "#/components/parameters/sessionToken"
+        - $ref: "#/components/parameters/groupUUID"
+        - $ref: "#/components/parameters/requestContact"
+      responses:
+        200:
+          description: |
+            The new member is successfully added. The new member's list is retrieved.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/contactObject"
+        400:
+          $ref: "#/components/responses/400"
+        401:
+          $ref: "#/components/responses/401"
+        404:
+          $ref: "#/components/responses/404"
+        405:
+          $ref: "#/components/responses/405"
+
+    delete:
+      operationId: removeMember
+      tags:
+        - Group
+      summary: Remove a group's member
+      description: |
+        Remove a specific user from a specific group.  
+        This will trigger a ws packet to be sent to the specified user and to the existing members.
+      parameters:
+        - $ref: "#/components/parameters/sessionToken"
+        - $ref: "#/components/parameters/groupUUID"
+        - $ref: "#/components/parameters/requestContact"
+      responses:
+        200:
+          description: |
+            The specific member is successfully removed. The new member's list is retrieved.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/contactObject"
         400:
           $ref: "#/components/responses/400"
         401:
@@ -400,23 +674,30 @@ paths:
           $ref: "#/components/responses/405"
 
 
-
 # =============================================================================
 components:
   parameters:
+    # identifiers
     sessionToken:
       name: token
       in: header
-      description: The token used to authenticate the user
+      description: The token used to authenticate the user.
       required: true
       schema:
         $ref: "#/components/schemas/sessionToken"
+
+    groupUUID:
+      name: group
+      in: header
+      description: The identifier to the specific group.
+      schema:
+        $ref: "#/components/schemas/groupUUID"
 
     # contact requests
     requestContact:
       name: user
       in: header
-      description: The targeted user's username
+      description: The targeted user's username.
       required: true
       schema:
         $ref: "#/components/schemas/userUsername"
@@ -424,7 +705,7 @@ components:
     requestDirective:
       name: directive
       in: header
-      description: The command to apply to the request
+      description: The command to apply to the request.
       required: true
       schema:
         $ref: "#/components/schemas/contactDirectives"
@@ -432,43 +713,43 @@ components:
 
   responses:
     400:
-      description: The parameters don't correspond to their schema
+      description: The parameters don't correspond to their schema.
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/errorMessage"
     401:
-      description: The session token does not exist
+      description: The session token does not exist.
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/errorMessage"
     403:
-      description: The resources doesn't belong to the user of this session token
+      description: The resources doesn't belong to the user of this session token.
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/errorMessage"
     404:
-      description: The entity does not exist
+      description: The entity does not exist.
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/errorMessage"
     405:
-      description: The method used is not allowed
+      description: The method used is not allowed.
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/errorMessage"
     406:
-      description: The elaboration of the request failed
+      description: The elaboration of the request failed.
       content:
         application/json:
           schema:
             $ref: "#/components/schemas/errorMessage"
     409:
-      description: The entity unique attributes already exist
+      description: The entity unique attributes already exist.
       content:
         application/json:
           schema:
@@ -598,21 +879,7 @@ components:
         The contact's relation status
         P for Pending, A for Active, B for Blocked
 
-    contactDirectives:
-      type: string
-      minLength: 1
-      maxLength: 1
-      enum:
-        - A
-        - D
-        - B
-        - R
-        - U
-      description: |
-        The set of possibles commands to apply to a contact request  
-        A for Accept, D for Decline, B for Block, R for Remove, U to Unblock
-
-        # Group
+    # Group
     groupName:
       type: string
       minLength: 1
@@ -713,6 +980,35 @@ components:
       type: boolean
       description: |
         The message's pinned status
+
+    # directives
+    contactDirectives:
+      type: string
+      minLength: 1
+      maxLength: 1
+      enum:
+        - A
+        - D
+        - B
+        - R
+        - U
+      description: |
+        The set of possible commands to apply to a contact request  
+        A for Accept, D for Decline, B for Block, R for Remove, U to Unblock    
+
+    groupDirectives:
+      type: string
+      minLength: 1
+      maxLength: 2
+      enum:
+        - A
+        - P
+        - M
+        - Ua
+        - Up
+      description: |
+        The set of possible commands to apply to a group status  
+        A for Archive, P for Pin, M for Mute, Ua for Unarchive, Up for Unpin
 
     # public attributes objects
     userObject:

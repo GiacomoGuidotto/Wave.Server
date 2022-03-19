@@ -1,0 +1,23 @@
+{
+  "name": "giacomo/wave",
+  "description": "Wave REST server, for the support of the Wave application environment.",
+  "type": "project",
+  "require": {
+    "cboden/ratchet": "^0.4.4",
+    "react/zmq": "^v0.4.0"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^9.5"
+  },
+  "autoload": {
+    "psr-4": {
+      "Wave\\": "src/"
+    }
+  },
+  "authors": [
+    {
+      "name": "GiacomoGuidotto",
+      "email": "giacomo.guidotto@gmail.com"
+    }
+  ]
+}

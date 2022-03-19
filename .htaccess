@@ -1,2 +1,32 @@
+# I: redirect to /public subfolder
+
+# IF the request (root + /public + path) is a file
+#    ex: wave.com/example.php
+RewriteCond %{DOCUMENT_ROOT}public%{REQUEST_URI} -f [OR]
+# Or if the request but without html (root + /public + path + .html) is a file
+#    ex: wave.com/example (where example.html exist)
+RewriteCond %{DOCUMENT_ROOT}public%{REQUEST_URI}.html -f [OR]
+# Or if the request but without php (root + /public + path + .php) is a file
+#    ex: wave.com/example (where example.php exist)
+RewriteCond %{DOCUMENT_ROOT}public%{REQUEST_URI}.php -f [OR]
+# Of if the request is the root ("index" word not included)
+#    ex: wave.com(/index.html)
+RewriteCond %{DOCUMENT_ROOT}public%{REQUEST_URI}index.html -f
+# THEN append to every request that already don't have it "/public" to the start
+RewriteRule !/public.*$ /public%{REQUEST_URI} [QSA,NC]
+
+
+# II: append .php if necessary
+
+# IF the request + .php is a file
 RewriteCond %{REQUEST_FILENAME}.php -f
-RewriteRule !.*\.php$ %{REQUEST_FILENAME}.php [QSA,NC]
+# THEN append .php to the request
+RewriteRule !.*\.php$ %{REQUEST_URI}.php [QSA,NC]
+
+
+# III: append .html if necessary
+
+# IF the request + .php is a file
+RewriteCond %{REQUEST_FILENAME}.html -f
+# THEN append .php to the request
+RewriteRule !.*\.php$ %{REQUEST_URI}.html [QSA,NC]

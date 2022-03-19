@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="shortcut icon" type="image/png" href="../assets/icons/favicon.png">
+    <title>Wave</title>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto&display=swap');
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        *, *:after, *:before {
+            box-sizing: border-box;
+        }
+
+        img {
+            height: 100%;
+            width: 100%;
+            object-fit: cover;
+            position: fixed;
+            z-index: -1;
+        }
+
+        body {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            cursor: default;
+            background: black url("../assets/banner/banner_color.jpg") no-repeat center;
+            background-size: cover;
+        }
+
+        #titleBox {
+            margin-left: 2rem;
+            padding: 1rem;
+            display: grid;
+            grid-gap: 0;
+            transition: grid-gap 0.3s ease;
+        }
+
+        #preTitle {
+            font-size: 1rem;
+            color: #9b9b9b;
+        }
+
+        #title {
+            font-size: 3rem;
+            color: white;
+            letter-spacing: 1px;
+            transition: padding-left .3s ease;
+        }
+
+        #subtitle {
+            font-size: 1.5rem;
+            color: white;
+        }
+
+        #titleBox:hover {
+            grid-gap: 10px;
+        }
+
+        #titleBox:hover #title {
+            padding-left: .8rem;
+        }
+    </style>
+</head>
+<body>
+<div id="titleBox">
+    <div id="preTitle">Welcome to</div>
+    <div id="title">Wave</div>
+    <div id="subtitle">REST server</div>
+</div>
+</body>
+</html>

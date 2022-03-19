@@ -1,0 +1,71 @@
+_type: export
+__export_format: 4
+__export_date: 2022-03-19T17:24:06.088Z
+__export_source: insomnia.desktop.app:v2022.2.0
+resources:
+  - _id: req_2f88cd6e47e040078c3b01188d259d13
+    parentId: wrk_6be42ea69739436983ba41832566b398
+    modified: 1647709013010
+    created: 1647709006383
+    url: "{{ _.base_url }}"
+    name: Hello wave
+    description: ""
+    method: GET
+    body: {}
+    parameters: []
+    headers: []
+    authentication: {}
+    metaSortKey: -1647709006383
+    isPrivate: false
+    settingStoreCookies: true
+    settingSendCookies: true
+    settingDisableRenderRequestBody: false
+    settingEncodeUrl: true
+    settingRebuildPath: true
+    settingFollowRedirects: global
+    _type: request
+  - _id: wrk_6be42ea69739436983ba41832566b398
+    parentId: null
+    modified: 1647708928392
+    created: 1647708928392
+    name: Wave
+    description: ""
+    scope: collection
+    _type: workspace
+  - _id: env_c62092b47fbdcd3119ca9859a1d03539e5fe754c
+    parentId: wrk_6be42ea69739436983ba41832566b398
+    modified: 1647708987572
+    created: 1647708928409
+    name: Base Environment
+    data:
+      protocol: http://
+      server_domain: wave.com
+      api_address: /api
+      base_url: "{{ _.protocol }}{{ _.server_domain }}{{ _.api_address }}"
+      token: ""
+    dataPropertyOrder:
+      "&":
+        - protocol
+        - server_domain
+        - api_address
+        - base_url
+        - token
+    color: null
+    isPrivate: false
+    metaSortKey: 1647708928409
+    _type: environment
+  - _id: jar_c62092b47fbdcd3119ca9859a1d03539e5fe754c
+    parentId: wrk_6be42ea69739436983ba41832566b398
+    modified: 1647708928411
+    created: 1647708928411
+    name: Default Jar
+    cookies: []
+    _type: cookie_jar
+  - _id: spc_d32eea7d884147c588900ab1f9279bcf
+    parentId: wrk_6be42ea69739436983ba41832566b398
+    modified: 1647708928399
+    created: 1647708928399
+    fileName: Wave
+    contents: ""
+    contentType: yaml
+    _type: api_spec

@@ -1,168 +1,168 @@
 openapi: 3.0.3
 info:
-  title:       Wave
-  version:     1.0.0
+  title: Wave
+  version: 1.0.0
   description: |
-               The Wave REST API support the Wave application environment.  
-               All the features are designed through a variety of endpoints methods-based
-
-               ### Functionalities:
-
-               **Authentication**
-               It is provided a safe authentication process based on access tokens linked with each user's session.
-               It has a 10 minutes operational time, but it's constantly updated with each MZ-related request.  
-               Using the `/auth` endpoint it is possible to:
-
-               - POST method:  
-                 login into the MZ by creating a session token that need to be used everytime a user's related action is
-                 to be made
-
-               - PUT method:  
-                 update the session token timeout, without need to interact with the app
-
-               - DELETE method:  
-                 logout from the MZ and deleting the related session token
-
-               **User**
-               The application can only be explored with a user, the identity to which all the data processed belong.  
-               Using the `/user` endpoint it is possible to:
-
-               - POST method:  
-                 create a new user, with a mandatory username that is its prime identification inside the entire
-                 application environment, and other possible information
-
-               - GET method:  
-                 retrieve a user information like its name, surname, phone number, profile picture (encoded in base64),
-                 favourite theme and favourite language
-
-               - PUT method:  
-                 change that information
-
-               - DELETE method:  
-                 recursively delete all the user's property, association and the user it self
-
-               **Contact**
-               Inside Wave the only way to directly talk with someone is to make contact with it. But the contact can
-               also be blocked or remove.  
-               Using the `/contact` endpoint it is possible to:
-
-               - POST method:  
-                 request a new "contact", marking then this new relation as pending
-
-               - DELETE method:  
-                 delete a "contact" request that was pending
-
-               - PUT method:  
-                 either respond to that "contact" request, by accepting it, declining it or blocking it, or update an
-                 already existing "contact", by removing it, blocking it or unblocking it
-
-               - GET method:  
-                 retrieve all the contact in "contact" with the user but, if a specific contact's username is given,
-                 only the information from the said one are retrieved. Information like username, name, surname, picture
-                 and status
-
-               **Group**
-               In this environment it is also possible to chat in groups, not necessarily in contact with each other.  
-               Using the `/group` endpoint it is possible to:
-
-               - POST method:  
-                 create a new group, with a mandatory name, even though the identifier is a UUID that is retrieved from
-                 this method, so that names can repeat themself
-
-               - GET method:  
-                 retrieve all the group in which the user is member but, again, if a specific group's identifier (UUID)
-                 is given, only the information from the said one are retrieved. Information like
-
-               - PATCH method:  
-                 change how the user see the group, by either archiving it, pinning it, mute it or unmute it
-
-               - PUT method:  
-                 change the group's information, if the user is authorized
-
-               - DELETE method:  
-                 delete the user's association to the group
-
-               In addition, there is the group's members management.  
-               Using the `/member` endpoint it is possible to:
-
-               - POST method:  
-                 add a group's member, if the user is authorized
-
-               - PUT method:  
-                 change the member, particularly its permissions
-
-               - GET method:  
-                 retrieve the list of a group's members
-
-               - DELETE method:  
-                 remove a group's member, if the user is authorized
-
-               **Messages**
-               Finally, either inside a contact chat or a group chat, there is the messages flow.  
-               Using the `/message` endpoint it is possible to:
-
-               - GET method:  
-                 retrieve the group messages but only in a specific timestamp range, for payload optimisation
-
-               - POST method:  
-                 write the message with a text, or an image, or both
-
-               - PUT method:  
-                 change the message
-
-               - DELETE method:  
-                 delete the message
+    The Wave REST API support the Wave application environment.  
+    All the features are designed through a variety of endpoints methods-based
+    
+    ### Functionalities:
+    
+    **Authentication**
+    It is provided a safe authentication process based on access tokens linked with each user's session.
+    It has a 10 minutes operational time, but it's constantly updated with each MZ-related request.  
+    Using the `/auth` endpoint it is possible to:
+    
+    - POST method:  
+      login into the MZ by creating a session token that need to be used everytime a user's related action is
+      to be made
+    
+    - PUT method:  
+      update the session token timeout, without need to interact with the app
+    
+    - DELETE method:  
+      logout from the MZ and deleting the related session token
+    
+    **User**
+    The application can only be explored with a user, the identity to which all the data processed belong.  
+    Using the `/user` endpoint it is possible to:
+    
+    - POST method:  
+      create a new user, with a mandatory username that is its prime identification inside the entire
+      application environment, and other possible information
+    
+    - GET method:  
+      retrieve a user information like its name, surname, phone number, profile picture (encoded in base64),
+      favourite theme and favourite language
+    
+    - PUT method:  
+      change that information
+    
+    - DELETE method:  
+      recursively delete all the user's property, association and the user it self
+    
+    **Contact**
+    Inside Wave the only way to directly talk with someone is to make contact with it. But the contact can
+    also be blocked or remove.  
+    Using the `/contact` endpoint it is possible to:
+    
+    - POST method:  
+      request a new "contact", marking then this new relation as pending
+    
+    - DELETE method:  
+      delete a "contact" request that was pending
+    
+    - PUT method:  
+      either respond to that "contact" request, by accepting it, declining it or blocking it, or update an
+      already existing "contact", by removing it, blocking it or unblocking it
+    
+    - GET method:  
+      retrieve all the contact in "contact" with the user but, if a specific contact's username is given,
+      only the information from the said one are retrieved. Information like username, name, surname, picture
+      and status
+    
+    **Group**
+    In this environment it is also possible to chat in groups, not necessarily in contact with each other.  
+    Using the `/group` endpoint it is possible to:
+    
+    - POST method:  
+      create a new group, with a mandatory name, even though the identifier is a UUID that is retrieved from
+      this method, so that names can repeat themself
+    
+    - GET method:  
+      retrieve all the group in which the user is member but, again, if a specific group's identifier (UUID)
+      is given, only the information from the said one are retrieved. Information like
+    
+    - PATCH method:  
+      change how the user see the group, by either archiving it, pinning it, mute it or unmute it
+    
+    - PUT method:  
+      change the group's information, if the user is authorized
+    
+    - DELETE method:  
+      delete the user's association to the group
+    
+    In addition, there is the group's members management.  
+    Using the `/member` endpoint it is possible to:
+    
+    - POST method:  
+      add a group's member, if the user is authorized
+    
+    - PUT method:  
+      change the member, particularly its permissions
+    
+    - GET method:  
+      retrieve the list of a group's members
+    
+    - DELETE method:  
+      remove a group's member, if the user is authorized
+    
+    **Messages**
+    Finally, either inside a contact chat or a group chat, there is the messages flow.  
+    Using the `/message` endpoint it is possible to:
+    
+    - GET method:  
+      retrieve the group messages but only in a specific timestamp range, for payload optimisation
+    
+    - POST method:  
+      write the message with a text, or an image, or both
+    
+    - PUT method:  
+      change the message
+    
+    - DELETE method:  
+      delete the message
 
 
 servers:
   - description: HTTP server
-    url:         http://localhost
+    url: http://localhost
   #    url: http://server.wave.com
   - description: HTTP secured server
-    url:         https://localhost
+    url: https://localhost
   #    url: https://server.wave.com
   - description: WS server
-    url:         ws:localhost:8000
+    url: ws:localhost:8000
   #    url: ws://server.wave.com
 tags:
-  - name:        Authentication
+  - name: Authentication
     description: Use cases related to the authentication process
-  - name:        User
+  - name: User
     description: Use cases related to the user management
-  - name:        Contact
+  - name: Contact
     description: Use cases related to the contacts management
-  - name:        Group
+  - name: Group
     description: Use cases related to the groups management
-  - name:        Message
+  - name: Message
     description: Use cases related to the messages management
 paths:
   /auth:
-    summary:     Authentication-related request
+    summary: Authentication-related request
     description: The set of all the use cases related to the authentication process.
 
     post:
       operationId: login
       tags:
         - Authentication
-      summary:     Get session token
+      summary: Get session token
       description: Retrieve the session token with username/password combination.
       parameters:
-        - name:        username
-          in:          header
+        - name: username
+          in: header
           description: The user's username to authenticate.
-          required:    true
+          required: true
           schema:
             $ref: "#/components/schemas/userUsername"
-        - name:        password
-          in:          header
+        - name: password
+          in: header
           description: The user's password to authenticate.
-          required:    true
+          required: true
           schema:
             $ref: "#/components/schemas/userPassword"
-        - name:        device
-          in:          header
+        - name: device
+          in: header
           description: The user's device identifier.
-          required:    true
+          required: true
           schema:
             $ref: "#/components/schemas/deviceIdentifier"
       responses:
@@ -188,7 +188,7 @@ paths:
       operationId: poke
       tags:
         - Authentication
-      summary:     Update the session's TTL
+      summary: Update the session's TTL
       description: Refresh the session timeout without actions.
       parameters:
         - $ref: "#/components/parameters/sessionToken"
@@ -206,7 +206,7 @@ paths:
       operationId: logout
       tags:
         - Authentication
-      summary:     Delete the session token
+      summary: Delete the session token
       description: Make a specific session token unreachable.
       parameters:
         - $ref: "#/components/parameters/sessionToken"
@@ -221,50 +221,50 @@ paths:
           $ref: "#/components/responses/405"
 
   /user:
-    summary:     User-related request
+    summary: User-related request
     description: The set of all the use cases related to the user management.
 
     post:
       operationId: createUser
       tags:
         - User
-      summary:     Create a new user
+      summary: Create a new user
       description: Create a new user using the given parameters.
       parameters:
-        - name:        username
-          in:          header
+        - name: username
+          in: header
           description: The new user's username.
-          required:    true
+          required: true
           schema:
             $ref: "#/components/schemas/userUsername"
-        - name:        password
-          in:          header
+        - name: password
+          in: header
           description: The new user's password.
-          required:    true
+          required: true
           schema:
             $ref: "#/components/schemas/userPassword"
-        - name:        name
-          in:          header
+        - name: name
+          in: header
           description: The new user's name.
-          required:    true
+          required: true
           schema:
             $ref: "#/components/schemas/userName"
-        - name:        surname
-          in:          header
+        - name: surname
+          in: header
           description: The new user's surname.
-          required:    true
+          required: true
           schema:
             $ref: "#/components/schemas/userSurname"
-        - name:        phone
-          in:          header
+        - name: phone
+          in: header
           description: The eventual new user's phone number.
-          required:    false
+          required: false
           schema:
             $ref: "#/components/schemas/userPhone"
-        - name:        picture
-          in:          header
+        - name: picture
+          in: header
           description: The eventual new user's profile picture.
-          required:    false
+          required: false
           schema:
             $ref: "#/components/schemas/userPassword"
       responses:
@@ -288,7 +288,7 @@ paths:
       operationId: getUserInformation
       tags:
         - User
-      summary:     Get the user's information
+      summary: Get the user's information
       description: Retrieve the user's information given the session token.
       parameters:
         - $ref: "#/components/parameters/sessionToken"
@@ -310,46 +310,46 @@ paths:
       operationId: changeUserInformation
       tags:
         - User
-      summary:     Change the user's information
+      summary: Change the user's information
       description: |
-                   Change the specific user's information with the specific new value.  
-                   This will trigger a ws packet to be sent to every contact of the user.
+        Change the specific user's information with the specific new value.  
+        This will trigger a ws packet to be sent to every contact of the user.
       parameters:
         - $ref: "#/components/parameters/sessionToken"
-        - name:        username
-          in:          header
+        - name: username
+          in: header
           description: The eventual new user's username.
-          required:    false
+          required: false
           schema:
             $ref: "#/components/schemas/userUsername"
-        - name:        name
-          in:          header
+        - name: name
+          in: header
           description: The eventual new user's name.
-          required:    false
+          required: false
           schema:
             $ref: "#/components/schemas/userName"
-        - name:        surname
-          in:          header
+        - name: surname
+          in: header
           description: The eventual new user's surname.
-          required:    false
+          required: false
           schema:
             $ref: "#/components/schemas/userSurname"
-        - name:        picture
-          in:          header
+        - name: picture
+          in: header
           description: The eventual new user's picture.
-          required:    false
+          required: false
           schema:
             $ref: "#/components/schemas/userPicture"
-        - name:        theme
-          in:          header
+        - name: theme
+          in: header
           description: The eventual new user's theme.
-          required:    false
+          required: false
           schema:
             $ref: "#/components/schemas/userTheme"
-        - name:        language
-          in:          header
+        - name: language
+          in: header
           description: The eventual new user's language.
-          required:    false
+          required: false
           schema:
             $ref: "#/components/schemas/userLanguage"
       responses:
@@ -369,17 +369,17 @@ paths:
       operationId: deleteUser
       tags:
         - User
-      summary:     Delete a specific user
+      summary: Delete a specific user
       description: |
-                   Delete the user associated with a given token.  
-                   This will trigger the recursive deletion of all the user's properties.
+        Delete the user associated with a given token.  
+        This will trigger the recursive deletion of all the user's properties.
       parameters:
         - $ref: "#/components/parameters/sessionToken"
       responses:
         200:
           description: |
-                       The user is successfully deleted.  
-                       The token will be useless
+            The user is successfully deleted.  
+            The token will be useless
         400:
           $ref: "#/components/responses/400"
         401:
@@ -388,18 +388,18 @@ paths:
           $ref: "#/components/responses/405"
 
   /contact:
-    summary:     Contact-related request
+    summary: Contact-related request
     description: The set of all the use cases related to the contacts management.
 
     post:
       operationId: contactRequest
       tags:
         - Contact
-      summary:     Create a new contact request
+      summary: Create a new contact request
       description: |
-                   Create a new pending relation (contact) request between the user identified from the token and a 
-                   second specified user.  
-                   This will trigger a ws packet to be sent to the specified user.
+        Create a new pending relation (contact) request between the user identified from the token and a 
+        second specified user.  
+        This will trigger a ws packet to be sent to the specified user.
       parameters:
         - $ref: "#/components/parameters/sessionToken"
         - $ref: "#/components/parameters/requestContact"
@@ -423,11 +423,11 @@ paths:
       operationId: deleteContactRequest
       tags:
         - Contact
-      summary:     Delete a pending contact request
+      summary: Delete a pending contact request
       description: |
-                   Delete a pending relation (contact) request between the user identified from the token and a second 
-                   specified user.  
-                   This will trigger a ws packet to be sent to the specified user.
+        Delete a pending relation (contact) request between the user identified from the token and a second 
+        specified user.  
+        This will trigger a ws packet to be sent to the specified user.
       parameters:
         - $ref: "#/components/parameters/sessionToken"
         - $ref: "#/components/parameters/requestContact"
@@ -445,11 +445,11 @@ paths:
       operationId: changeContactStatus
       tags:
         - Contact
-      summary:     Change a contact status
+      summary: Change a contact status
       description: |
-                   Either respond to a first pending request or update an existing contact from a specific user, 
-                   depending from the given response.  
-                   This will trigger a ws packet to be sent to the specific user.
+        Either respond to a first pending request or update an existing contact from a specific user, 
+        depending from the given response.  
+        This will trigger a ws packet to be sent to the specific user.
       parameters:
         - $ref: "#/components/parameters/sessionToken"
         - $ref: "#/components/parameters/requestContact"
@@ -468,15 +468,15 @@ paths:
       operationId: getContactInformation
       tags:
         - Contact
-      summary:     Get one or all contact' information
+      summary: Get one or all contact' information
       description: |
-                   Retrieve the list of the user's contacts.  
-                   If a contact's name is given, the information of that specified contact are retrieved.
+        Retrieve the list of the user's contacts.  
+        If a contact's name is given, the information of that specified contact are retrieved.
       parameters:
         - $ref: "#/components/parameters/sessionToken"
-        - name:        user
-          in:          header
-          required:    false
+        - name: user
+          in: header
+          required: false
           description: The targeted user's username.
           schema:
             $ref: "#/components/schemas/userUsername"
@@ -501,41 +501,41 @@ paths:
           $ref: "#/components/responses/405"
 
   /group:
-    summary:     Group-related request
+    summary: Group-related request
     description: The set of all the use cases related to the group management.
 
     post:
       operationId: createGroup
       tags:
         - Group
-      summary:     Create a new group
+      summary: Create a new group
       description: |
-                   Create a new group with the given parameters.  
-                   This will trigger a ws packet to be sent to the specific new members.
+        Create a new group with the given parameters.  
+        This will trigger a ws packet to be sent to the specific new members.
       parameters:
         - $ref: "#/components/parameters/sessionToken"
-        - name:        name
-          in:          header
+        - name: name
+          in: header
           description: The new group's name.
-          required:    true
+          required: true
           schema:
             $ref: "#/components/schemas/groupName"
-        - name:        info
-          in:          header
+        - name: info
+          in: header
           description: The eventual group's info.
-          required:    false
+          required: false
           schema:
             $ref: "#/components/schemas/groupInfo"
-        - name:        picture
-          in:          header
+        - name: picture
+          in: header
           description: The eventual group's picture.
-          required:    false
+          required: false
           schema:
             $ref: "#/components/schemas/groupPicture"
-        - name:        users
-          in:          header
+        - name: users
+          in: header
           description: The eventual list of group's new members.
-          required:    false
+          required: false
           schema:
             type: array
             items:
@@ -560,15 +560,15 @@ paths:
       operationId: getGroupInformation
       tags:
         - Group
-      summary:     Get one or all groups' information
+      summary: Get one or all groups' information
       description: |
-                   Retrieve the list of the user's groups.  
-                   If a group's name is given, the information of that specified group are retrieved.
+        Retrieve the list of the user's groups.  
+        If a group's name is given, the information of that specified group are retrieved.
       parameters:
         - $ref: "#/components/parameters/sessionToken"
-        - name:        group
-          in:          header
-          required:    false
+        - name: group
+          in: header
+          required: false
           description: The identifier to the specific group.
           schema:
             $ref: "#/components/schemas/groupUUID"
@@ -596,15 +596,15 @@ paths:
       operationId: changeGroupStatus
       tags:
         - Group
-      summary:     Change a group's status for the user
+      summary: Change a group's status for the user
       description: Change a group's status, either its place (archived, pinned) or its notifications mode (mute).
       parameters:
         - $ref: "#/components/parameters/sessionToken"
         - $ref: "#/components/parameters/groupUUID"
-        - name:        directive
-          in:          header
+        - name: directive
+          in: header
           description: The command to apply to the request.
-          required:    true
+          required: true
           schema:
             $ref: "#/components/schemas/groupDirectives"
       responses:
@@ -627,29 +627,29 @@ paths:
       operationId: changeGroupInformation
       tags:
         - Group
-      summary:     Change a group's information
+      summary: Change a group's information
       description: |
-                   Change a specific group's information with the specific new value.  
-                   This will trigger a ws packet to be sent to every member of the group.
+        Change a specific group's information with the specific new value.  
+        This will trigger a ws packet to be sent to every member of the group.
       parameters:
         - $ref: "#/components/parameters/sessionToken"
         - $ref: "#/components/parameters/groupUUID"
-        - name:        name
-          in:          header
+        - name: name
+          in: header
           description: The eventual new group's name.
-          required:    false
+          required: false
           schema:
             $ref: "#/components/schemas/groupName"
-        - name:        info
-          in:          header
+        - name: info
+          in: header
           description: The eventual new group's information.
-          required:    false
+          required: false
           schema:
             $ref: "#/components/schemas/groupInfo"
-        - name:        picture
-          in:          header
+        - name: picture
+          in: header
           description: The eventual new group's picture.
-          required:    false
+          required: false
           schema:
             $ref: "#/components/schemas/groupPicture"
       responses:
@@ -674,18 +674,18 @@ paths:
       operationId: exitGroup
       tags:
         - Group
-      summary:     Exit from the group
+      summary: Exit from the group
       description: |
-                   Delete a group participation. If its the last one, delete the group itself.  
-                   This will trigger a ws packet to be sent to every member of the group.
+        Delete a group participation. If its the last one, delete the group itself.  
+        This will trigger a ws packet to be sent to every member of the group.
       parameters:
         - $ref: "#/components/parameters/sessionToken"
         - $ref: "#/components/parameters/groupUUID"
       responses:
         200:
           description: |
-                       The group's participation is successfully removed.  
-                       The new group's list is retrieved.
+            The group's participation is successfully removed.  
+            The new group's list is retrieved.
           content:
             application/json:
               schema:
@@ -702,17 +702,17 @@ paths:
           $ref: "#/components/responses/405"
 
   /member:
-    summary:     Group's member-related request
+    summary: Group's member-related request
     description: The set of all the use cases related to the group's member management.
 
     post:
       operationId: addMember
       tags:
         - Group
-      summary:     Add a group's member
+      summary: Add a group's member
       description: |
-                   Add a specific user to a specific group.  
-                   This will trigger a ws packet to be sent to the specified user and to the existing members.
+        Add a specific user to a specific group.  
+        This will trigger a ws packet to be sent to the specified user and to the existing members.
       parameters:
         - $ref: "#/components/parameters/sessionToken"
         - $ref: "#/components/parameters/groupUUID"
@@ -720,8 +720,8 @@ paths:
       responses:
         200:
           description: |
-                       The new member is successfully added.  
-                       The new member's list is retrieved.
+            The new member is successfully added.  
+            The new member's list is retrieved.
           content:
             application/json:
               schema:
@@ -743,7 +743,7 @@ paths:
       operationId: getMembersList
       tags:
         - Group
-      summary:     Get the group's members
+      summary: Get the group's members
       description: Retrieve the list of the group's members.
       parameters:
         - $ref: "#/components/parameters/sessionToken"
@@ -772,14 +772,14 @@ paths:
       operationId: changeMemberPermission
       tags:
         - Group
-      summary:     Change a group's member permissions
+      summary: Change a group's member permissions
       description: Change a specific group's member with the given permission
       parameters:
         - $ref: "#/components/parameters/sessionToken"
         - $ref: "#/components/parameters/groupUUID"
-        - name:        permission
-          in:          header
-          required:    true
+        - name: permission
+          in: header
+          required: true
           description: The new member's permission
           schema:
             $ref: "#/components/schemas/memberPermission"
@@ -791,10 +791,10 @@ paths:
       operationId: removeMember
       tags:
         - Group
-      summary:     Remove a group's member
+      summary: Remove a group's member
       description: |
-                   Remove a specific user from a specific group.  
-                   This will trigger a ws packet to be sent to the specified user and to the existing members.
+        Remove a specific user from a specific group.  
+        This will trigger a ws packet to be sent to the specified user and to the existing members.
       parameters:
         - $ref: "#/components/parameters/sessionToken"
         - $ref: "#/components/parameters/groupUUID"
@@ -802,8 +802,8 @@ paths:
       responses:
         200:
           description: |
-                       The specific member is successfully removed.  
-                       The new member's list is retrieved.
+            The specific member is successfully removed.  
+            The new member's list is retrieved.
           content:
             application/json:
               schema:
@@ -822,39 +822,39 @@ paths:
           $ref: "#/components/responses/405"
 
   /message:
-    summary:     Messages-related request
+    summary: Messages-related request
     description: The set of all the use cases related to the messages management.
 
     get:
       operationId: getMessages
       tags:
         - Message
-      summary:     Get the chat's messages in a certain timestamp range
+      summary: Get the chat's messages in a certain timestamp range
       description: Retrieve the messages of either a specified group or a specified contact given a time period's start and end.
       parameters:
         - $ref: "#/components/parameters/sessionToken"
-        - name:        group
-          in:          header
-          required:    false
+        - name: group
+          in: header
+          required: false
           description: The identifier to the specific group.
           schema:
             $ref: "#/components/schemas/groupUUID"
-        - name:        user
-          in:          header
-          required:    false
+        - name: user
+          in: header
+          required: false
           description: The targeted contact's username.
           schema:
             $ref: "#/components/schemas/userUsername"
-        - name:        from
-          in:          header
-          required:    true
+        - name: from
+          in: header
+          required: true
           description: The start of the time range.
           schema:
             $ref: "#/components/schemas/messageTimestamp"
-        - name:        to
-          in:          header
+        - name: to
+          in: header
           description: The end of the time range.
-          required:    true
+          required: true
           schema:
             $ref: "#/components/schemas/messageTimestamp"
       responses:
@@ -879,36 +879,36 @@ paths:
       operationId: writeMessage
       tags:
         - Message
-      summary:     Write a message
+      summary: Write a message
       description: |
-                   Write a message with the given data.  
-                   This will trigger a ws packet to be sent to all the group's members.
+        Write a message with the given data.  
+        This will trigger a ws packet to be sent to all the group's members.
       parameters:
         - $ref: "#/components/parameters/sessionToken"
         - $ref: "#/components/parameters/groupUUID"
-        - name:        content
-          in:          header
-          required:    true
+        - name: content
+          in: header
+          required: true
           description: The content of the message.
           schema:
             $ref: "#/components/schemas/messageContent"
-        - name:        text
-          in:          header
-          required:    false
+        - name: text
+          in: header
+          required: false
           description: The eventual text of the message.
           schema:
             $ref: "#/components/schemas/messageText"
-        - name:        media
-          in:          header
-          required:    false
+        - name: media
+          in: header
+          required: false
           description: The eventual media of the message.
           schema:
             $ref: "#/components/schemas/messageMedia"
       responses:
         200:
           description: |
-                       The message is successfully wrote.  
-                       Its information are retrieved.
+            The message is successfully wrote.  
+            Its information are retrieved.
           content:
             application/json:
               schema:
@@ -926,35 +926,35 @@ paths:
       operationId: changeMessage
       tags:
         - Message
-      summary:     Change a group's message content
+      summary: Change a group's message content
       description: |
-                   Change a specific message content.  
-                   This will trigger a ws packet to be sent to all the group's members.
+        Change a specific message content.  
+        This will trigger a ws packet to be sent to all the group's members.
       parameters:
         - $ref: "#/components/parameters/sessionToken"
         - $ref: "#/components/parameters/groupUUID"
         - $ref: "#/components/parameters/messageKEY"
-        - name:        content
-          in:          header
-          required:    false
+        - name: content
+          in: header
+          required: false
           description: The eventual new message's content.
           schema:
             $ref: "#/components/schemas/messageContent"
-        - name:        text
-          in:          header
-          required:    false
+        - name: text
+          in: header
+          required: false
           description: The eventual new message's text.
           schema:
             $ref: "#/components/schemas/messageText"
-        - name:        media
-          in:          header
-          required:    false
+        - name: media
+          in: header
+          required: false
           description: The eventual new message's media.
           schema:
             $ref: "#/components/schemas/messageMedia"
-        - name:        pinned
-          in:          header
-          required:    false
+        - name: pinned
+          in: header
+          required: false
           description: The eventual new message's pinned state.
           schema:
             $ref: "#/components/schemas/messagePinned"
@@ -978,10 +978,10 @@ paths:
       operationId: deleteMessage
       tags:
         - Message
-      summary:     Delete a group's message
+      summary: Delete a group's message
       description: |
-                   Delete a specific message from a specific group.  
-                   This will trigger a ws packet to be sent to all the group's members.
+        Delete a specific message from a specific group.  
+        This will trigger a ws packet to be sent to all the group's members.
       parameters:
         - $ref: "#/components/parameters/sessionToken"
         - $ref: "#/components/parameters/groupUUID"
@@ -1004,42 +1004,42 @@ components:
   parameters:
     # identifiers
     sessionToken:
-      name:        token
-      in:          header
-      required:    true
+      name: token
+      in: header
+      required: true
       description: The token used to authenticate the user.
       schema:
         $ref: "#/components/schemas/sessionToken"
 
     groupUUID:
-      name:        group
-      in:          header
-      required:    true
+      name: group
+      in: header
+      required: true
       description: The identifier to the specific group.
       schema:
         $ref: "#/components/schemas/groupUUID"
 
     messageKEY:
-      name:        message
-      in:          header
-      required:    true
+      name: message
+      in: header
+      required: true
       description: The identifier of the specific message
       schema:
         $ref: "#/components/schemas/messageKEY"
 
     # contact requests
     requestContact:
-      name:        user
-      in:          header
-      required:    true
+      name: user
+      in: header
+      required: true
       description: The targeted user's username.
       schema:
         $ref: "#/components/schemas/userUsername"
 
     requestDirective:
-      name:        directive
-      in:          header
-      required:    true
+      name: directive
+      in: header
+      required: true
       description: The command to apply to the request.
       schema:
         $ref: "#/components/schemas/contactDirectives"
@@ -1099,7 +1099,7 @@ components:
         - details
       properties:
         timestamp:
-          type:   string
+          type: string
           format: full-time
         error:
           type: integer
@@ -1110,99 +1110,99 @@ components:
 
     # Authentication
     sessionToken:
-      type:        string
-      format:      uuid-v4
-      minLength:   32
-      maxLength:   32
+      type: string
+      format: uuid-v4
+      minLength: 32
+      maxLength: 32
       description: The identifier of the active session.
 
     deviceIdentifier:
-      type:        string
-      format:      uuid-v4
-      minLength:   32
-      maxLength:   32
+      type: string
+      format: uuid-v4
+      minLength: 32
+      maxLength: 32
       description: The device identifier used during session refresh.
 
     # User
     userUsername:
-      type:        string
-      minLength:   5
-      maxLength:   32
-      pattern:     ^([a-z0-9_]){5,32}$
+      type: string
+      minLength: 5
+      maxLength: 32
+      pattern: ^([a-z0-9_]){5,32}$
       description: |
-                   The user identifier, unique inside all the app.
-
-                   ---
-
-                   [Regex pattern](https://regex101.com/r/8w2v9W/1)
+        The user identifier, unique inside all the app.
+        
+        ---
+        
+        [Regex pattern](https://regex101.com/r/8w2v9W/1)
 
     userPassword:
-      type:        string
-      minLength:   5
-      maxLength:   32
-      pattern:     ^(?=.*\d)(?=.*[A-Z])(?=.*[a-z])(?=.*[^\w\d\s:])([^\s]){8,16}$
+      type: string
+      minLength: 5
+      maxLength: 32
+      pattern: ^(?=.*\d)(?=.*[A-Z])(?=.*[a-z])(?=.*[^\w\d\s:])([^\s]){8,16}$
       description: |
-                   The hashed password of the account.
-
-                   ---
-
-                   [Regex pattern](https://regex101.com/r/0bH043/1)
+        The hashed password of the account.
+        
+        ---
+        
+        [Regex pattern](https://regex101.com/r/0bH043/1)
 
     userName:
-      type:        string
-      minLength:   1
-      maxLength:   64
+      type: string
+      minLength: 1
+      maxLength: 64
       description: The user's name.
 
     userSurname:
-      type:        string
-      minLength:   1
-      maxLength:   64
+      type: string
+      minLength: 1
+      maxLength: 64
       description: The user's surname.
 
     userPicture:
-      type:        string
-      format:      base64
-      maxLength:   1
+      type: string
+      format: base64
+      maxLength: 1
       description: |
-                   The user's picture.
-
-                   ---
-
-                   MIME: image/png, image/jpg
-
-                   Encoded in base64
+        The user's picture.
+        
+        ---
+        
+        MIME: image/png, image/jpg
+        
+        Encoded in base64
 
     userPhone:
-      type:        integer
-      minLength:   5
-      maxLength:   19
-      pattern:     ^([0-9]){5,19}$
+      type: string
+      minLength: 5
+      maxLength: 19
+      pattern: ^([0-9]){5,19}$
       description: |
-                   The user's phone number.
-
-                   ---
-
-                   [Regex pattern](https://regex101.com/r/GdQSbE/1)
+        The user's phone number.
+        
+        ---
+        
+        [Regex pattern](https://regex101.com/r/GdQSbE/1)
 
     userTheme:
-      type:        string
-      minLength:   1
-      maxLength:   1
+      type: string
+      minLength: 1
+      maxLength: 1
       enum:
         - L
         - D
       description: |
-                   The user's saved theme.
-
-                   ---
-
-                   L for Light, D for Dark
+        The user's saved theme.
+        
+        ---
+        
+        L for Light, D for Dark
 
     userLanguage:
-      type:        string
-      minLength:   2
-      maxLength:   2
+      type: string
+      minLength: 2
+      maxLength: 2
       enum:
         - IT
         - EN
@@ -1210,143 +1210,143 @@ components:
         - DE
         # continue...
       description: |
-                   The user's saved language.
-
-                   ---
-
-                   Encoded in [2 letter language code](https://www.sitepoint.com/iso-2-letter-language-codes/)
+        The user's saved language.
+        
+        ---
+        
+        Encoded in [2 letter language code](https://www.sitepoint.com/iso-2-letter-language-codes/)
 
     # Contact
     contactStatus:
-      type:        string
-      minLength:   1
-      maxLength:   1
+      type: string
+      minLength: 1
+      maxLength: 1
       enum:
         - P
         - A
         - B
       description: |
-                   The contact's relation status.
-
-                   ---
-
-                   P for Pending, A for Active, B for Blocked
+        The contact's relation status.
+        
+        ---
+        
+        P for Pending, A for Active, B for Blocked
 
     # Group
     groupName:
-      type:        string
-      minLength:   1
-      maxLength:   64
+      type: string
+      minLength: 1
+      maxLength: 64
       description: The group's name.
 
     groupInfo:
-      type:        string
-      minLength:   1
-      maxLength:   225
+      type: string
+      minLength: 1
+      maxLength: 225
       description: The group's info.
 
     groupPicture:
-      type:        string
-      format:      base64
-      maxLength:   1
+      type: string
+      format: base64
+      maxLength: 1
       description: |
-                   The group's picture.
-
-                   ---
-
-                   MIME: image/png, image/jpg
-                   Encoded in base64
+        The group's picture.
+        
+        ---
+        
+        MIME: image/png, image/jpg
+        Encoded in base64
 
     groupUUID:
-      type:        string
-      format:      uuid-v4
-      minLength:   32
-      maxLength:   32
+      type: string
+      format: uuid-v4
+      minLength: 32
+      maxLength: 32
       description: The group identifier, unique inside all the app.
 
     groupState:
-      type:        string
-      minLength:   1
-      maxLength:   1
+      type: string
+      minLength: 1
+      maxLength: 1
       enum:
         - N
         - A
         - P
       description: |
-                   The group state, referred for single user.
-
-                   ___
-
-                   N for Normal, A for Archive, P for Pinned
+        The group state, referred for single user.
+        
+        ___
+        
+        N for Normal, A for Archive, P for Pinned
 
     groupMuted:
-      type:        boolean
+      type: boolean
       description: The group muted status, referred for single user.
 
     # Chat members
     memberPermission:
-      type:        integer
-      minimum:     0
-      maximum:     127
+      type: integer
+      minimum: 0
+      maximum: 127
       description: |
-                   The member's permission.
-
-                   ---
-
-                   Mapped in a binary-based table
+        The member's permission.
+        
+        ---
+        
+        Mapped in a binary-based table
 
     # Chat messages
     messageKEY:
-      type:        string
-      format:      uuid-v4
+      type: string
+      format: uuid-v4
       description: The message identifier, unique inside all the chat.
 
     messageTimestamp:
-      type:        string
-      format:      full-time
+      type: string
+      format: full-time
       description: The message's timestamp, in full-time format.
 
     messageContent:
-      type:        string
-      minLength:   1
-      maxLength:   1
+      type: string
+      minLength: 1
+      maxLength: 1
       enum:
         - M
         - I
       description: |
-                   The message content type.
-
-                   ---
-
-                   M for Message, I for Image
+        The message content type.
+        
+        ---
+        
+        M for Message, I for Image
 
     messageText:
-      type:        string
-      minLength:   1
-      maxLength:   1024
+      type: string
+      minLength: 1
+      maxLength: 1024
       description: The message's text.
 
     messageMedia:
-      type:        string
-      format:      base64
-      maxLength:   1
+      type: string
+      format: base64
+      maxLength: 1
       description: |
-                   The message's media.
-
-                   ---
-
-                   MIME: image/png, image/jpg
-                   Encoded in base64
+        The message's media.
+        
+        ---
+        
+        MIME: image/png, image/jpg
+        Encoded in base64
 
     messagePinned:
-      type:        boolean
+      type: boolean
       description: The message's pinned status.
 
     # directives
     contactDirectives:
-      type:        string
-      minLength:   1
-      maxLength:   1
+      type: string
+      minLength: 1
+      maxLength: 1
       enum:
         - A
         - D
@@ -1354,16 +1354,16 @@ components:
         - R
         - U
       description: |
-                   The set of possible commands to apply to a contact request.
-
-                   ---
-
-                   A for Accept, D for Decline, B for Block, R for Remove, U to Unblock
+        The set of possible commands to apply to a contact request.
+        
+        ---
+        
+        A for Accept, D for Decline, B for Block, R for Remove, U to Unblock
 
     groupDirectives:
-      type:        string
-      minLength:   1
-      maxLength:   2
+      type: string
+      minLength: 1
+      maxLength: 2
       enum:
         - A
         - P
@@ -1372,11 +1372,11 @@ components:
         - Up
         - Um
       description: |
-                   The set of possible commands to apply to a group status.
-
-                   ---
-
-                   A for Archive, P for Pin, M for Mute, Ua for Unarchive, Up for Unpin, Um for Unmute
+        The set of possible commands to apply to a group status.
+        
+        ---
+        
+        A for Archive, P for Pin, M for Mute, Ua for Unarchive, Up for Unpin, Um for Unmute
 
     # public attributes objects
     userObject:

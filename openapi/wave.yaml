@@ -474,10 +474,15 @@ paths:
                    If a contact's name is given, the information of that specified contact are retrieved.
       parameters:
         - $ref: "#/components/parameters/sessionToken"
-        - $ref: "#/components/parameters/requestContact"
+        - name:        user
+          in:          header
+          required:    false
+          description: The targeted user's username.
+          schema:
+            $ref: "#/components/schemas/userUsername"
       responses:
         200:
-          description: The list of contacts of the single contact's information are successfully retrieved.
+          description: The list of contacts or the single contact's information are successfully retrieved.
           content:
             application/json:
               schema:
@@ -561,10 +566,15 @@ paths:
                    If a group's name is given, the information of that specified group are retrieved.
       parameters:
         - $ref: "#/components/parameters/sessionToken"
-        - $ref: "#/components/parameters/groupUUID"
+        - name:        group
+          in:          header
+          required:    false
+          description: The identifier to the specific group.
+          schema:
+            $ref: "#/components/schemas/groupUUID"
       responses:
         200:
-          description: The list of groups of the single group's information are successfully retrieved.
+          description: The list of groups or the single group's information are successfully retrieved.
           content:
             application/json:
               schema:
@@ -816,14 +826,25 @@ paths:
     description: The set of all the use cases related to the messages management.
 
     get:
-      operationId: getGroupMessages
+      operationId: getMessages
       tags:
         - Message
-      summary:     Get the group's messages in a certain timestamp range
-      description: Retrieve the messages of a specified group given a time period's start and end.
+      summary:     Get the chat's messages in a certain timestamp range
+      description: Retrieve the messages of either a specified group or a specified contact given a time period's start and end.
       parameters:
         - $ref: "#/components/parameters/sessionToken"
-        - $ref: "#/components/parameters/groupUUID"
+        - name:        group
+          in:          header
+          required:    false
+          description: The identifier to the specific group.
+          schema:
+            $ref: "#/components/schemas/groupUUID"
+        - name:        user
+          in:          header
+          required:    false
+          description: The targeted contact's username.
+          schema:
+            $ref: "#/components/schemas/userUsername"
         - name:        from
           in:          header
           required:    true
@@ -1215,7 +1236,7 @@ components:
     groupName:
       type:        string
       minLength:   1
-      maxLength:   225
+      maxLength:   64
       description: The group's name.
 
     groupInfo:
@@ -1243,19 +1264,20 @@ components:
       maxLength:   32
       description: The group identifier, unique inside all the app.
 
-    groupSpecial:
+    groupState:
       type:        string
       minLength:   1
       maxLength:   1
       enum:
+        - N
         - A
         - P
       description: |
-                   The group special condition, referred for single user.
+                   The group state, referred for single user.
 
                    ___
 
-                   A for Archive, P for Pinned
+                   N for Normal, A for Archive, P for Pinned
 
     groupMuted:
       type:        boolean
@@ -1348,12 +1370,13 @@ components:
         - M
         - Ua
         - Up
+        - Um
       description: |
                    The set of possible commands to apply to a group status.
 
                    ---
 
-                   A for Archive, P for Pin, M for Mute, Ua for Unarchive, Up for Unpin
+                   A for Archive, P for Pin, M for Mute, Ua for Unarchive, Up for Unpin, Um for Unmute
 
     # public attributes objects
     userObject:
@@ -1408,7 +1431,7 @@ components:
         - name
         - info
         - picture
-        - special
+        - state
         - muted
       properties:
         uuid:
@@ -1419,8 +1442,8 @@ components:
           $ref: "#/components/schemas/groupInfo"
         picture:
           $ref: "#/components/schemas/groupPicture"
-        special:
-          $ref: "#/components/schemas/groupSpecial"
+        state:
+          $ref: "#/components/schemas/groupState"
         muted:
           $ref: "#/components/schemas/groupMuted"
 

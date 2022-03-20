@@ -7,6 +7,6 @@ namespace Wave\Specifications\Wave;
  * Set of global constant defining general details
  */
 interface Wave {
-    const SESSION_DURATION = '15 minutes';
-    const SUPPORTED_LANGUAGE = ['IT', 'EN'];
+  const SESSION_DURATION = '15 minutes';
+  const SUPPORTED_LANGUAGE = ['IT', 'EN'];
 }

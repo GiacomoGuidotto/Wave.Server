@@ -38,36 +38,36 @@ use Wave\Specifications\ErrorCases\Success\Success;
  * 31 Exceeding min range
  */
 interface ErrorCases {
-    const CODES_ASSOCIATIONS = [
-        Success::CODE => 200,
-        NullAttributes::CODE => 400,
-        ExceedingMaxLength::CODE => 400,
-        ExceedingMinLength::CODE => 400,
-        IncorrectParsing::CODE => 400,
-        IncorrectPattern::CODE => 400,
-        ExceedingMaxRange::CODE => 400,
-        ExceedingMinRange::CODE => 400,
-    ];
+  const CODES_ASSOCIATIONS = [
+      Success::CODE => 200,
+      NullAttributes::CODE => 400,
+      ExceedingMaxLength::CODE => 400,
+      ExceedingMinLength::CODE => 400,
+      IncorrectParsing::CODE => 400,
+      IncorrectPattern::CODE => 400,
+      ExceedingMaxRange::CODE => 400,
+      ExceedingMinRange::CODE => 400,
+  ];
 
-    const ERROR_MESSAGES = [
-        Success::CODE => Success::MESSAGE,
-        NullAttributes::CODE => NullAttributes::MESSAGE,
-        ExceedingMaxLength::CODE => ExceedingMaxLength::MESSAGE,
-        ExceedingMinLength::CODE => ExceedingMinLength::MESSAGE,
-        IncorrectParsing::CODE => IncorrectParsing::MESSAGE,
-        IncorrectPattern::CODE => IncorrectPattern::MESSAGE,
-        ExceedingMaxRange::CODE => ExceedingMaxRange::MESSAGE,
-        ExceedingMinRange::CODE => ExceedingMinRange::MESSAGE,
-    ];
+  const ERROR_MESSAGES = [
+      Success::CODE => Success::MESSAGE,
+      NullAttributes::CODE => NullAttributes::MESSAGE,
+      ExceedingMaxLength::CODE => ExceedingMaxLength::MESSAGE,
+      ExceedingMinLength::CODE => ExceedingMinLength::MESSAGE,
+      IncorrectParsing::CODE => IncorrectParsing::MESSAGE,
+      IncorrectPattern::CODE => IncorrectPattern::MESSAGE,
+      ExceedingMaxRange::CODE => ExceedingMaxRange::MESSAGE,
+      ExceedingMinRange::CODE => ExceedingMinRange::MESSAGE,
+  ];
 
-    const ERROR_DETAILS = [
-        Success::CODE => Success::DETAILS,
-        NullAttributes::CODE => NullAttributes::DETAILS,
-        ExceedingMaxLength::CODE => ExceedingMaxLength::DETAILS,
-        ExceedingMinLength::CODE => ExceedingMinLength::DETAILS,
-        IncorrectParsing::CODE => IncorrectParsing::DETAILS,
-        IncorrectPattern::CODE => IncorrectPattern::DETAILS,
-        ExceedingMaxRange::CODE => ExceedingMaxRange::DETAILS,
-        ExceedingMinRange::CODE => ExceedingMinRange::DETAILS,
-    ];
+  const ERROR_DETAILS = [
+      Success::CODE => Success::DETAILS,
+      NullAttributes::CODE => NullAttributes::DETAILS,
+      ExceedingMaxLength::CODE => ExceedingMaxLength::DETAILS,
+      ExceedingMinLength::CODE => ExceedingMinLength::DETAILS,
+      IncorrectParsing::CODE => IncorrectParsing::DETAILS,
+      IncorrectPattern::CODE => IncorrectPattern::DETAILS,
+      ExceedingMaxRange::CODE => ExceedingMaxRange::DETAILS,
+      ExceedingMinRange::CODE => ExceedingMinRange::DETAILS,
+  ];
 }

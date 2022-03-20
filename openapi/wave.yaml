@@ -1112,15 +1112,15 @@ components:
     sessionToken:
       type: string
       format: uuid-v4
-      minLength: 32
-      maxLength: 32
+      minLength: 36
+      maxLength: 36
       description: The identifier of the active session.
 
     deviceIdentifier:
       type: string
       format: uuid-v4
-      minLength: 32
-      maxLength: 32
+      minLength: 36
+      maxLength: 36
       description: The device identifier used during session refresh.
 
     # User
@@ -1260,8 +1260,8 @@ components:
     groupUUID:
       type: string
       format: uuid-v4
-      minLength: 32
-      maxLength: 32
+      minLength: 36
+      maxLength: 36
       description: The group identifier, unique inside all the app.
 
     groupState:
@@ -1299,6 +1299,8 @@ components:
     messageKEY:
       type: string
       format: uuid-v4
+      minLength: 36
+      maxLength: 36
       description: The message identifier, unique inside all the chat.
 
     messageTimestamp:

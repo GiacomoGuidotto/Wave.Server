@@ -14,7 +14,7 @@ interface User {
    * @return int             either the error code or the success code
    */
   public static function validateUsername(string $username): int;
-
+  
   /**
    * Check the constrains of the password attribute
    *
@@ -22,7 +22,7 @@ interface User {
    * @return int             either the error code or the success code
    */
   public static function validatePassword(string $password): int;
-
+  
   /**
    * Check the constrains of the name attribute
    *
@@ -30,7 +30,7 @@ interface User {
    * @return int         either the error code or the success code
    */
   public static function validateName(string $name): int;
-
+  
   /**
    * Check the constrains of the surname attribute
    *
@@ -38,7 +38,7 @@ interface User {
    * @return int            either the error code or the success code
    */
   public static function validateSurname(string $surname): int;
-
+  
   /**
    * Check the constrains of the picture attribute
    *
@@ -46,7 +46,7 @@ interface User {
    * @return int            either the error code or the success code
    */
   public static function validatePicture(string $picture): int;
-
+  
   /**
    * Check the constrains of the phone attribute
    *
@@ -54,7 +54,7 @@ interface User {
    * @return int          either the error code or the success code
    */
   public static function validatePhone(string $phone): int;
-
+  
   /**
    * Check the constrains of the theme attribute
    *
@@ -62,7 +62,7 @@ interface User {
    * @return int          either the error code or the success code
    */
   public static function validateTheme(string $theme): int;
-
+  
   /**
    * Check the constrains of the language attribute
    *

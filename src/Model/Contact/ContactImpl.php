@@ -12,7 +12,7 @@ use Wave\Specifications\ErrorCases\Success\Success;
  * The implementation of the User interface
  */
 class ContactImpl implements Contact {
-
+  
   /**
    * @inheritDoc
    */
@@ -23,12 +23,12 @@ class ContactImpl implements Contact {
     if (strlen($status) < 1) {
       return ExceedingMinLength::CODE;
     }
-
+    
     $enum = ['P', 'A', 'B'];
     if (!in_array($status, $enum, true)) {
       return IncorrectParsing::CODE;
     }
-
+    
     return Success::CODE;
   }
 }

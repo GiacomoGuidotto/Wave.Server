@@ -9,9 +9,10 @@ RewriteCond %{DOCUMENT_ROOT}public%{REQUEST_URI}.html -f [OR]
 # Or if the request but without php (root + /public + path + .php) is a file
 #    ex: wave.com/example (where example.php exist)
 RewriteCond %{DOCUMENT_ROOT}public%{REQUEST_URI}.php -f [OR]
-# Of if the request is the root ("index" word not included)
-#    ex: wave.com(/index.html)
-RewriteCond %{DOCUMENT_ROOT}public%{REQUEST_URI}index.html -f
+# Of if the request is the index file (word not included)
+#    ex: wave.com(/index.html or /index.php)
+RewriteCond %{DOCUMENT_ROOT}public%{REQUEST_URI}index.html -f [OR]
+RewriteCond %{DOCUMENT_ROOT}public%{REQUEST_URI}index.php -f
 # THEN append to every request that already don't have it "/public" to the start
 RewriteRule !/public.*$ /public%{REQUEST_URI} [QSA,NC]
 

@@ -14,7 +14,7 @@ interface Session {
    * @return int          either the error code or the success code
    */
   public static function validateToken(string $token): int;
-
+  
   /**
    * Checks the constrains of the source token
    *
@@ -22,7 +22,7 @@ interface Session {
    * @return int           either the error code or the success code
    */
   public static function validateSource(string $source): int;
-
+  
   /**
    * Checks the constrains of the creation timestamp attribute
    *
@@ -30,7 +30,7 @@ interface Session {
    * @return int              either the error code or the success code
    */
   public static function validateCreationTimestamp(string $timestamp): int;
-
+  
   /**
    * Checks the constrains of the last update timestamp attribute
    *

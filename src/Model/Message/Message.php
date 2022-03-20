@@ -14,7 +14,7 @@ interface Message {
    * @return int        either the error code or the success code
    */
   public static function validateKey(string $key): int;
-
+  
   /**
    * Check the constrains of the timestamp attribute
    *
@@ -22,7 +22,7 @@ interface Message {
    * @return int              either the error code or the success code
    */
   public static function validateTimestamp(string $timestamp): int;
-
+  
   /**
    * Check the constrains of the content attribute
    *
@@ -30,7 +30,7 @@ interface Message {
    * @return int            either the error code or the success code
    */
   public static function validateContent(string $content): int;
-
+  
   /**
    * Check the constrains of the text attribute
    *
@@ -38,7 +38,7 @@ interface Message {
    * @return int         either the error code or the success code
    */
   public static function validateText(string $text): int;
-
+  
   /**
    * Check the constrains of the media attribute
    *

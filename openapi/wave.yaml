@@ -334,6 +334,12 @@ paths:
           required: false
           schema:
             $ref: "#/components/schemas/userSurname"
+        - name: phone
+          in: header
+          description: The eventual new user's phone.
+          required: false
+          schema:
+            $ref: "#/components/schemas/userPhone"
         - name: picture
           in: header
           description: The eventual new user's picture.
@@ -365,6 +371,8 @@ paths:
           $ref: "#/components/responses/401"
         405:
           $ref: "#/components/responses/405"
+        409:
+          $ref: "#/components/responses/409"
     delete:
       operationId: deleteUser
       tags:

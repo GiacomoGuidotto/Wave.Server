@@ -13,7 +13,7 @@ use Wave\Specifications\ErrorCases\Success\Success;
  * The implementation of the Group interface
  */
 class GroupImpl implements Group {
-
+  
   /**
    * @inheritDoc
    */
@@ -24,10 +24,10 @@ class GroupImpl implements Group {
     if (strlen($name) < 1) {
       return ExceedingMinLength::CODE;
     }
-
+    
     return Success::CODE;
   }
-
+  
   /**
    * @inheritDoc
    */
@@ -38,19 +38,19 @@ class GroupImpl implements Group {
     if (strlen($info) < 1) {
       return ExceedingMinLength::CODE;
     }
-
+    
     return Success::CODE;
   }
-
+  
   /**
    * @inheritDoc
    */
   public static function validatePicture(string $picture): int {
     // TODO base64 encoded image/png or image/jpg validation
-
+    
     return Success::CODE;
   }
-
+  
   /**
    * @inheritDoc
    */
@@ -67,10 +67,10 @@ class GroupImpl implements Group {
         ) != 1) {
       return IncorrectPattern::CODE;
     }
-
+    
     return Success::CODE;
   }
-
+  
   /**
    * @inheritDoc
    */
@@ -81,12 +81,12 @@ class GroupImpl implements Group {
     if (strlen($state) < 1) {
       return ExceedingMinLength::CODE;
     }
-
+    
     $enum = ['N', 'A', 'P'];
     if (!in_array($state, $enum, true)) {
       return IncorrectParsing::CODE;
     }
-
+    
     return Success::CODE;
   }
 }

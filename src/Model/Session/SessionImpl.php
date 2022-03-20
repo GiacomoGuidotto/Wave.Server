@@ -9,7 +9,7 @@ use Wave\Specifications\ErrorCases\String\IncorrectPattern;
 use Wave\Specifications\ErrorCases\Success\Success;
 
 class SessionImpl implements Session {
-
+  
   /**
    * @inheritDoc
    */
@@ -26,10 +26,10 @@ class SessionImpl implements Session {
         ) != 1) {
       return IncorrectPattern::CODE;
     }
-
+    
     return Success::CODE;
   }
-
+  
   /**
    * @inheritDoc
    */
@@ -46,10 +46,10 @@ class SessionImpl implements Session {
         ) != 1) {
       return IncorrectPattern::CODE;
     }
-
+    
     return Success::CODE;
   }
-
+  
   /**
    * @inheritDoc
    */
@@ -67,10 +67,10 @@ class SessionImpl implements Session {
         ) != 1) {
       return IncorrectPattern::CODE;
     }
-
+    
     return Success::CODE;
   }
-
+  
   /**
    * @inheritDoc
    */
@@ -88,8 +88,7 @@ class SessionImpl implements Session {
         ) != 1) {
       return IncorrectPattern::CODE;
     }
-
+    
     return Success::CODE;
   }
-
 }

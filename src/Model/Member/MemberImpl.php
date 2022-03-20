@@ -11,7 +11,7 @@ use Wave\Specifications\ErrorCases\Success\Success;
  * The implementation of the Member interface
  */
 class MemberImpl implements Member {
-
+  
   /**
    * @inheritDoc
    */
@@ -22,7 +22,7 @@ class MemberImpl implements Member {
     if ($permission < 0) {
       return ExceedingMinRange::CODE;
     }
-
+    
     return Success::CODE;
   }
 }

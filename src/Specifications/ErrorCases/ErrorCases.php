@@ -48,7 +48,7 @@ interface ErrorCases {
       ExceedingMaxRange::CODE => 400,
       ExceedingMinRange::CODE => 400,
   ];
-
+  
   const ERROR_MESSAGES = [
       Success::CODE => Success::MESSAGE,
       NullAttributes::CODE => NullAttributes::MESSAGE,
@@ -59,7 +59,7 @@ interface ErrorCases {
       ExceedingMaxRange::CODE => ExceedingMaxRange::MESSAGE,
       ExceedingMinRange::CODE => ExceedingMinRange::MESSAGE,
   ];
-
+  
   const ERROR_DETAILS = [
       Success::CODE => Success::DETAILS,
       NullAttributes::CODE => NullAttributes::DETAILS,

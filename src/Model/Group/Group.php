@@ -14,7 +14,7 @@ interface Group {
    * @return int         either the error code or the success code
    */
   public static function validateName(string $name): int;
-
+  
   /**
    * Check the constrains of the info attribute
    *
@@ -22,7 +22,7 @@ interface Group {
    * @return int         either the error code or the success code
    */
   public static function validateInfo(string $info): int;
-
+  
   /**
    * Check the constrains of the picture attribute
    *
@@ -30,7 +30,7 @@ interface Group {
    * @return int            either the error code or the success code
    */
   public static function validatePicture(string $picture): int;
-
+  
   /**
    * Check the constrains of the chat attribute
    *
@@ -38,7 +38,7 @@ interface Group {
    * @return int         either the error code or the success code
    */
   public static function validateChat(string $chat): int;
-
+  
   /**
    * Check the constrains of the state attribute
    *

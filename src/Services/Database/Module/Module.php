@@ -14,7 +14,7 @@ use Wave\Specifications\Database\Database;
  */
 class Module extends Singleton {
   private PDO $database;
-
+  
   /**
    * Module constructor, called only on the first run.
    *
@@ -26,27 +26,27 @@ class Module extends Singleton {
         Database::DATABASE_USER,
         Database::DATABASE_USER_PASSWORD
     );
-
+    
     $this->database->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
   }
-
-
+  
+  
   private function executeQuery(string $query, array $params = null): bool|PDOStatement {
     $statement = $this->database->prepare($query);
-
+    
     if ($params != null) {
       foreach ($params as $reference => &$value) {
         $statement->bindParam($reference, $value);
       }
     }
-
+    
     $statement->execute();
-
+    
     return $statement;
   }
-
+  
   // ==== Access methods ===========================================================================
-
+  
   /**
    * Begin the transaction on the private db reference
    *
@@ -55,7 +55,7 @@ class Module extends Singleton {
   public function beginTransaction(): bool {
     return $this->database->beginTransaction();
   }
-
+  
   /**
    * Commit the transaction on the private db reference
    *
@@ -64,7 +64,7 @@ class Module extends Singleton {
   public function commitTransaction(): bool {
     return $this->database->commit();
   }
-
+  
   /**
    * Execute the query passed as parameters
    * with the optional parameters as array
@@ -76,10 +76,10 @@ class Module extends Singleton {
    */
   public function fetchOne(string $query, array $params = null): array|false {
     $statement = $this->executeQuery($query, $params);
-
+    
     return $statement->fetch();
   }
-
+  
   /**
    * Execute the query passed as parameters
    * with the optional parameters as array
@@ -91,10 +91,10 @@ class Module extends Singleton {
    */
   public function fetchAll(string $query, array $params = null): array|false {
     $statement = $this->executeQuery($query, $params);
-
+    
     return $statement->fetchAll();
   }
-
+  
   /**
    * Execute the query passed as parameters
    * with the optional parameters as array
@@ -106,9 +106,9 @@ class Module extends Singleton {
   public function execute(string $query, array $params = null): void {
     $this->executeQuery($query, $params);
   }
-
+  
   // ==== Static shortcuts =========================================================================
-
+  
   /**
    * Begin the transaction on the private db reference
    *
@@ -118,7 +118,7 @@ class Module extends Singleton {
     $module = static::getInstance();
     return $module->beginTransaction();
   }
-
+  
   /**
    * Commit the transaction on the private db reference
    *
@@ -128,7 +128,7 @@ class Module extends Singleton {
     $module = static::getInstance();
     return $module->commitTransaction();
   }
-
+  
   /**
    * Execute the query passed as parameters
    * with the optional parameters as array
@@ -142,7 +142,7 @@ class Module extends Singleton {
     $module = static::getInstance();
     return $module->fetchOne($query, $params);
   }
-
+  
   /**
    * Execute the query passed as parameters
    * with the optional parameters as array
@@ -156,7 +156,7 @@ class Module extends Singleton {
     $module = static::getInstance();
     return $module->fetchAll($query, $params);
   }
-
+  
   /**
    * Execute the query passed as parameters
    * with the optional parameters as array

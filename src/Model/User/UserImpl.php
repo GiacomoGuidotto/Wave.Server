@@ -14,7 +14,7 @@ use Wave\Specifications\Wave\Wave;
  * The implementation of the User interface
  */
 class UserImpl implements User {
-
+  
   /**
    * @inheritDoc
    */
@@ -28,10 +28,10 @@ class UserImpl implements User {
     if (preg_match("#^([a-z0-9_]){5,32}$#", $username) != 1) {
       return IncorrectPattern::CODE;
     }
-
+    
     return Success::CODE;
   }
-
+  
   /**
    * @inheritDoc
    */
@@ -48,10 +48,10 @@ class UserImpl implements User {
         ) != 1) {
       return IncorrectPattern::CODE;
     }
-
+    
     return Success::CODE;
   }
-
+  
   /**
    * @inheritDoc
    */
@@ -62,10 +62,10 @@ class UserImpl implements User {
     if (strlen($name) < 1) {
       return ExceedingMinLength::CODE;
     }
-
+    
     return Success::CODE;
   }
-
+  
   /**
    * @inheritDoc
    */
@@ -76,19 +76,19 @@ class UserImpl implements User {
     if (strlen($surname) < 1) {
       return ExceedingMinLength::CODE;
     }
-
+    
     return Success::CODE;
   }
-
+  
   /**
    * @inheritDoc
    */
   public static function validatePicture(string $picture): int {
     // TODO base64 encoded image/png or image/jpg validation
-
+    
     return Success::CODE;
   }
-
+  
   /**
    * @inheritDoc
    */
@@ -105,10 +105,10 @@ class UserImpl implements User {
         ) != 1) {
       return IncorrectPattern::CODE;
     }
-
+    
     return Success::CODE;
   }
-
+  
   /**
    * @inheritDoc
    */
@@ -119,15 +119,15 @@ class UserImpl implements User {
     if (strlen($theme) < 1) {
       return ExceedingMinLength::CODE;
     }
-
+    
     $enum = ['L', 'D'];
     if (!in_array($theme, $enum, true)) {
       return IncorrectParsing::CODE;
     }
-
+    
     return Success::CODE;
   }
-
+  
   /**
    * @inheritDoc
    */
@@ -141,7 +141,7 @@ class UserImpl implements User {
     if (!in_array($language, Wave::SUPPORTED_LANGUAGE, true)) {
       return IncorrectParsing::CODE;
     }
-
+    
     return Success::CODE;
   }
 }

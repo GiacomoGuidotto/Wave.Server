@@ -13,7 +13,7 @@ use Wave\Specifications\ErrorCases\Success\Success;
  * The implementation of the Message interface
  */
 class MessageImpl implements Message {
-
+  
   /**
    * @inheritDoc
    */
@@ -30,10 +30,10 @@ class MessageImpl implements Message {
         ) != 1) {
       return IncorrectPattern::CODE;
     }
-
+    
     return Success::CODE;
   }
-
+  
   /**
    * @inheritDoc
    */
@@ -51,10 +51,10 @@ class MessageImpl implements Message {
         ) != 1) {
       return IncorrectPattern::CODE;
     }
-
+    
     return Success::CODE;
   }
-
+  
   /**
    * @inheritDoc
    */
@@ -65,15 +65,15 @@ class MessageImpl implements Message {
     if (strlen($content) < 1) {
       return ExceedingMinLength::CODE;
     }
-
+    
     $enum = ['M', 'I'];
     if (!in_array($content, $enum, true)) {
       return IncorrectParsing::CODE;
     }
-
+    
     return Success::CODE;
   }
-
+  
   /**
    * @inheritDoc
    */
@@ -84,16 +84,16 @@ class MessageImpl implements Message {
     if (strlen($text) < 1) {
       return ExceedingMinLength::CODE;
     }
-
+    
     return Success::CODE;
   }
-
+  
   /**
    * @inheritDoc
    */
   public static function validateMedia(string $media): int {
     // TODO base64 encoded image/png or image/jpg validation
-
+    
     return Success::CODE;
   }
 }

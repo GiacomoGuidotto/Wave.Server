@@ -14,25 +14,46 @@ class Cors {
           '(http(s)://)?localhost:3000',
           '(http(s)://)?wave.com',
       ];
-
+      
       $allowedMethods = [
-          'auth' => ['POST', 'PUT', 'DELETE'],
-          'user' => ['POST', 'GET', 'PUT', 'DELETE'],
+          'auth'    => ['POST', 'PUT', 'DELETE'],
+          'user'    => ['POST', 'GET', 'PUT', 'DELETE'],
           'contact' => ['POST', 'GET', 'PUT', 'DELETE'],
-          'group' => ['POST', 'GET', 'PATCH', 'PUT', 'DELETE'],
-          'member' => ['POST', 'GET', 'PUT', 'DELETE'],
-          'message' => ['POST', 'GET', 'PUT', 'DELETE']
+          'group'   => ['POST', 'GET', 'PATCH', 'PUT', 'DELETE'],
+          'member'  => ['POST', 'GET', 'PUT', 'DELETE'],
+          'message' => ['POST', 'GET', 'PUT', 'DELETE'],
       ];
-
+      
       $allowedHeaders = [
-          'auth' => ['username', 'password', 'device', 'token'],
-          'user' => ['username', 'password', 'name', 'surname', 'phone', 'picture', 'theme', 'language', 'token'],
+          'auth'    => ['username', 'password', 'device', 'token'],
+          'user'    => [
+              'username',
+              'password',
+              'name',
+              'surname',
+              'phone',
+              'picture',
+              'theme',
+              'language',
+              'token',
+          ],
           'contact' => ['token', 'user', 'directive'],
-          'group' => ['token', 'name', 'info', 'picture', 'users', 'group', 'directive'],
-          'member' => ['token', 'group', 'user', 'permission'],
-          'message' => ['token', 'group', 'user', 'from', 'to', 'content', 'text', 'media', 'pinned']
+          'group'   => ['token', 'name', 'info', 'picture', 'users', 'group', 'directive'],
+          'member'  => ['token', 'group', 'user', 'permission'],
+          'message' => [
+              'token',
+              'group',
+              'contact',
+              'from',
+              'to',
+              'content',
+              'text',
+              'media',
+              'pinned',
+              'message',
+          ],
       ];
-
+      
       foreach ($allowedOrigins as $allowedOrigin) {
         if (preg_match('#' . $allowedOrigin . '#', $_SERVER['HTTP_ORIGIN'])) {
           header('Access-Control-Allow-Origin: ' . $_SERVER['HTTP_ORIGIN']);

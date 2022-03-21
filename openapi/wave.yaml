@@ -5,111 +5,111 @@ info:
   description: |
     The Wave REST API support the Wave application environment.  
     All the features are designed through a variety of endpoints methods-based
-    
+
     ### Functionalities:
-    
+
     **Authentication**
     It is provided a safe authentication process based on access tokens linked with each user's session.
     It has a 10 minutes operational time, but it's constantly updated with each MZ-related request.  
     Using the `/auth` endpoint it is possible to:
-    
+
     - POST method:  
       login into the MZ by creating a session token that need to be used everytime a user's related action is
       to be made
-    
+
     - PUT method:  
       update the session token timeout, without need to interact with the app
-    
+
     - DELETE method:  
       logout from the MZ and deleting the related session token
-    
+
     **User**
     The application can only be explored with a user, the identity to which all the data processed belong.  
     Using the `/user` endpoint it is possible to:
-    
+
     - POST method:  
       create a new user, with a mandatory username that is its prime identification inside the entire
       application environment, and other possible information
-    
+
     - GET method:  
       retrieve a user information like its name, surname, phone number, profile picture (encoded in base64),
       favourite theme and favourite language
-    
+
     - PUT method:  
       change that information
-    
+
     - DELETE method:  
       recursively delete all the user's property, association and the user it self
-    
+
     **Contact**
     Inside Wave the only way to directly talk with someone is to make contact with it. But the contact can
     also be blocked or remove.  
     Using the `/contact` endpoint it is possible to:
-    
+
     - POST method:  
       request a new "contact", marking then this new relation as pending
-    
+
     - DELETE method:  
       delete a "contact" request that was pending
-    
+
     - PUT method:  
       either respond to that "contact" request, by accepting it, declining it or blocking it, or update an
       already existing "contact", by removing it, blocking it or unblocking it
-    
+
     - GET method:  
       retrieve all the contact in "contact" with the user but, if a specific contact's username is given,
       only the information from the said one are retrieved. Information like username, name, surname, picture
       and status
-    
+
     **Group**
     In this environment it is also possible to chat in groups, not necessarily in contact with each other.  
     Using the `/group` endpoint it is possible to:
-    
+
     - POST method:  
       create a new group, with a mandatory name, even though the identifier is a UUID that is retrieved from
       this method, so that names can repeat themself
-    
+
     - GET method:  
       retrieve all the group in which the user is member but, again, if a specific group's identifier (UUID)
       is given, only the information from the said one are retrieved. Information like
-    
+
     - PATCH method:  
       change how the user see the group, by either archiving it, pinning it, mute it or unmute it
-    
+
     - PUT method:  
       change the group's information, if the user is authorized
-    
+
     - DELETE method:  
       delete the user's association to the group
-    
+
     In addition, there is the group's members management.  
     Using the `/member` endpoint it is possible to:
-    
+
     - POST method:  
       add a group's member, if the user is authorized
-    
+
     - PUT method:  
       change the member, particularly its permissions
-    
+
     - GET method:  
       retrieve the list of a group's members
-    
+
     - DELETE method:  
       remove a group's member, if the user is authorized
-    
+
     **Messages**
     Finally, either inside a contact chat or a group chat, there is the messages flow.  
     Using the `/message` endpoint it is possible to:
-    
+
     - GET method:  
       retrieve the group messages but only in a specific timestamp range, for payload optimisation
-    
+
     - POST method:  
       write the message with a text, or an image, or both
-    
+
     - PUT method:  
       change the message
-    
+
     - DELETE method:  
       delete the message
 
@@ -465,6 +465,10 @@ paths:
       responses:
         200:
           description: The contact status is successfully update.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/contactObject"
         400:
           $ref: "#/components/responses/400"
         401:
@@ -476,7 +480,7 @@ paths:
       operationId: getContactInformation
       tags:
         - Contact
-      summary: Get one or all contact' information
+      summary: Get one or all contact's information
       description: |
         Retrieve the list of the user's contacts.  
         If a contact's name is given, the information of that specified contact are retrieved.
@@ -577,7 +581,7 @@ paths:
         - name: group
           in: header
           required: false
-          description: The identifier to the specific group.
+          description: The optional identifier of the specific group.
           schema:
             $ref: "#/components/schemas/groupUUID"
       responses:
@@ -751,20 +755,30 @@ paths:
       operationId: getMembersList
       tags:
         - Group
-      summary: Get the group's members
-      description: Retrieve the list of the group's members.
+      summary: Get one or all group's members
+      description: |
+        Retrieve the list of the group's members.  
+        If a member's name is given, the information of that specified member are retrieved.
       parameters:
         - $ref: "#/components/parameters/sessionToken"
         - $ref: "#/components/parameters/groupUUID"
+        - name: user
+          in: header
+          required: false
+          description: The optional identifier of the specified member
+          schema:
+            $ref: "#/components/schemas/userUsername"
       responses:
         200:
-          description: The member's list is retrieved.
+          description: The list of members or the single member's information are successfully retrieved.
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/memberObject"
+                oneOf:
+                  - $ref: "#/components/schemas/memberObject"
+                  - type: array
+                    items:
+                      $ref: "#/components/schemas/memberObject"
         400:
           $ref: "#/components/responses/400"
         401:
@@ -781,10 +795,13 @@ paths:
       tags:
         - Group
       summary: Change a group's member permissions
-      description: Change a specific group's member with the given permission
+      description: |
+        Change a specific group's member with the given permission.  
+        This will trigger a ws packet to be sent to the specified user and to the existing members.
       parameters:
         - $ref: "#/components/parameters/sessionToken"
         - $ref: "#/components/parameters/groupUUID"
+        - $ref: "#/components/parameters/requestContact"
         - name: permission
           in: header
           required: true
@@ -794,6 +811,20 @@ paths:
       responses:
         200:
           description: The member's permission are successfully changed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/memberObject"
+        400:
+          $ref: "#/components/responses/400"
+        401:
+          $ref: "#/components/responses/401"
+        403:
+          $ref: "#/components/responses/403"
+        404:
+          $ref: "#/components/responses/404"
+        405:
+          $ref: "#/components/responses/405"
 
     delete:
       operationId: removeMember
@@ -837,8 +868,12 @@ paths:
       operationId: getMessages
       tags:
         - Message
-      summary: Get the chat's messages in a certain timestamp range
-      description: Retrieve the messages of either a specified group or a specified contact given a time period's start and end.
+      summary: Get the chat's messages in various ways
+      description: |
+        Retrieve the messages of either a specified group or a specified contact.  
+        If a time period's start and end is given, the messages are retrieved based on that time range.  
+        If a pinned flag is given, only the pinned messages are retrieved.  
+        If a message's key is given, only the public information of that message are retrieved.
       parameters:
         - $ref: "#/components/parameters/sessionToken"
         - name: group
@@ -847,7 +882,7 @@ paths:
           description: The identifier to the specific group.
           schema:
             $ref: "#/components/schemas/groupUUID"
-        - name: user
+        - name: contact
           in: header
           required: false
           description: The targeted contact's username.
@@ -855,25 +890,38 @@ paths:
             $ref: "#/components/schemas/userUsername"
         - name: from
           in: header
-          required: true
-          description: The start of the time range.
+          required: false
+          description: The optional start of the time range.
           schema:
             $ref: "#/components/schemas/messageTimestamp"
         - name: to
           in: header
-          description: The end of the time range.
-          required: true
+          description: The optional end of the time range.
+          required: false
           schema:
             $ref: "#/components/schemas/messageTimestamp"
+        - name: pinned
+          in: header
+          description: The optional pinned flag
+          schema:
+            $ref: "#/components/schemas/messagePinned"
+        - name: message
+          in: header
+          required: false
+          description: The optional identifier of the specific message
+          schema:
+            $ref: "#/components/schemas/messageKEY"
       responses:
         200:
           description: The list of messages is successfully retrieved.
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/messageObject"
+                oneOf:
+                  - $ref: "#/components/schemas/messageObject"
+                  - type: array
+                    items:
+                      $ref: "#/components/schemas/messageObject"
         400:
           $ref: "#/components/responses/400"
         401:
@@ -890,10 +938,21 @@ paths:
       summary: Write a message
       description: |
         Write a message with the given data.  
-        This will trigger a ws packet to be sent to all the group's members.
+        This will trigger a ws packet to be sent to all the chat's members.
       parameters:
         - $ref: "#/components/parameters/sessionToken"
-        - $ref: "#/components/parameters/groupUUID"
+        - name: group
+          in: header
+          required: false
+          description: The identifier to the specific group.
+          schema:
+            $ref: "#/components/schemas/groupUUID"
+        - name: contact
+          in: header
+          required: false
+          description: The targeted contact's username.
+          schema:
+            $ref: "#/components/schemas/userUsername"
         - name: content
           in: header
           required: true
@@ -934,13 +993,24 @@ paths:
       operationId: changeMessage
       tags:
         - Message
-      summary: Change a group's message content
+      summary: Change a message's content
       description: |
         Change a specific message content.  
-        This will trigger a ws packet to be sent to all the group's members.
+        This will trigger a ws packet to be sent to all the chat's members.
       parameters:
         - $ref: "#/components/parameters/sessionToken"
-        - $ref: "#/components/parameters/groupUUID"
+        - name: group
+          in: header
+          required: false
+          description: The identifier to the specific group.
+          schema:
+            $ref: "#/components/schemas/groupUUID"
+        - name: contact
+          in: header
+          required: false
+          description: The targeted contact's username.
+          schema:
+            $ref: "#/components/schemas/userUsername"
         - $ref: "#/components/parameters/messageKEY"
         - name: content
           in: header
@@ -986,13 +1056,24 @@ paths:
       operationId: deleteMessage
       tags:
         - Message
-      summary: Delete a group's message
+      summary: Delete a chat's message
       description: |
-        Delete a specific message from a specific group.  
-        This will trigger a ws packet to be sent to all the group's members.
+        Delete a specific message from a specific chat.  
+        This will trigger a ws packet to be sent to all the chat's members.
       parameters:
         - $ref: "#/components/parameters/sessionToken"
-        - $ref: "#/components/parameters/groupUUID"
+        - name: group
+          in: header
+          required: false
+          description: The identifier to the specific group.
+          schema:
+            $ref: "#/components/schemas/groupUUID"
+        - name: contact
+          in: header
+          required: false
+          description: The targeted contact's username.
+          schema:
+            $ref: "#/components/schemas/userUsername"
         - $ref: "#/components/parameters/messageKEY"
       responses:
         200:
@@ -1139,9 +1220,9 @@ components:
       pattern: ^([a-z0-9_]){5,32}$
       description: |
         The user identifier, unique inside all the app.
-        
+
         ---
-        
+
         [Regex pattern](https://regex101.com/r/8w2v9W/1)
 
     userPassword:
@@ -1151,9 +1232,9 @@ components:
       pattern: ^(?=.*\d)(?=.*[A-Z])(?=.*[a-z])(?=.*[^\w\d\s:])([^\s]){8,16}$
       description: |
         The hashed password of the account.
-        
+
         ---
-        
+
         [Regex pattern](https://regex101.com/r/0bH043/1)
 
     userName:
@@ -1174,11 +1255,11 @@ components:
       maxLength: 1
       description: |
         The user's picture.
-        
+
         ---
-        
+
         MIME: image/png, image/jpg
-        
+
         Encoded in base64
 
     userPhone:
@@ -1188,9 +1269,9 @@ components:
       pattern: ^([0-9]){5,19}$
       description: |
         The user's phone number.
-        
+
         ---
-        
+
         [Regex pattern](https://regex101.com/r/GdQSbE/1)
 
     userTheme:
@@ -1202,9 +1283,9 @@ components:
         - D
       description: |
         The user's saved theme.
-        
+
         ---
-        
+
         L for Light, D for Dark
 
     userLanguage:
@@ -1219,9 +1300,9 @@ components:
         # continue...
       description: |
         The user's saved language.
-        
+
         ---
-        
+
         Encoded in [2 letter language code](https://www.sitepoint.com/iso-2-letter-language-codes/)
 
     # Contact
@@ -1235,9 +1316,9 @@ components:
         - B
       description: |
         The contact's relation status.
-        
+
         ---
-        
+
         P for Pending, A for Active, B for Blocked
 
     # Group
@@ -1259,9 +1340,9 @@ components:
       maxLength: 1
       description: |
         The group's picture.
-        
+
         ---
-        
+
         MIME: image/png, image/jpg
         Encoded in base64
 
@@ -1282,9 +1363,9 @@ components:
         - P
       description: |
         The group state, referred for single user.
-        
+
         ___
-        
+
         N for Normal, A for Archive, P for Pinned
 
     groupMuted:
@@ -1298,9 +1379,9 @@ components:
       maximum: 127
       description: |
         The member's permission.
-        
+
         ---
-        
+
         Mapped in a binary-based table
 
     # Chat messages
@@ -1325,9 +1406,9 @@ components:
         - I
       description: |
         The message content type.
-        
+
         ---
-        
+
         M for Message, I for Image
 
     messageText:
@@ -1342,9 +1423,9 @@ components:
       maxLength: 1
       description: |
         The message's media.
-        
+
         ---
-        
+
         MIME: image/png, image/jpg
         Encoded in base64
 
@@ -1365,9 +1446,9 @@ components:
         - U
       description: |
         The set of possible commands to apply to a contact request.
-        
+
         ---
-        
+
         A for Accept, D for Decline, B for Block, R for Remove, U to Unblock
 
     groupDirectives:
@@ -1383,9 +1464,9 @@ components:
         - Um
       description: |
         The set of possible commands to apply to a group status.
-        
+
         ---
-        
+
         A for Archive, P for Pin, M for Mute, Ua for Unarchive, Up for Unpin, Um for Unmute
 
     # public attributes objects

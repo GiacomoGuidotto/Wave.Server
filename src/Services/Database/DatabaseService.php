@@ -23,9 +23,9 @@ interface DatabaseService {
    * @return array           The token used to authenticate the user, saved in an array as object
    */
   public function login(
-      string $username,
-      string $password,
-      string $device,
+    string $username,
+    string $password,
+    string $device,
   ): array;
   
   /**
@@ -37,8 +37,8 @@ interface DatabaseService {
    * @return array|null   The eventual error array as object
    */
   public function poke(
-      string $token,
-  ): array|null;
+    string $token,
+  ): ?array;
   
   /**
    * Delete the session token.
@@ -49,8 +49,8 @@ interface DatabaseService {
    * @return array|null   The eventual error array as object
    */
   public function logout(
-      string $token,
-  ): array|null;
+    string $token,
+  ): ?array;
   
   // ==== User =====================================================================================
   // ==== Use cases related to the user management =================================================
@@ -70,12 +70,12 @@ interface DatabaseService {
    *                              object
    */
   public function createUser(
-      string      $username,
-      string      $password,
-      string      $name,
-      string      $surname,
-      string|null $phone,
-      string|null $picture,
+    string  $username,
+    string  $password,
+    string  $name,
+    string  $surname,
+    ?string $phone,
+    ?string $picture,
   ): array;
   
   /**
@@ -87,7 +87,7 @@ interface DatabaseService {
    * @return array        The public attributes of the user, saved in an array as object
    */
   public function getUserInformation(
-      string $token,
+    string $token,
   ): array;
   
   /**
@@ -107,14 +107,14 @@ interface DatabaseService {
    * @return array                The new public attributes of the user, saved in an array as object
    */
   public function changeUserInformation(
-      string      $token,
-      string|null $username,
-      string|null $name,
-      string|null $surname,
-      string|null $phone,
-      string|null $picture,
-      string|null $theme,
-      string|null $language,
+    string  $token,
+    ?string $username,
+    ?string $name,
+    ?string $surname,
+    ?string $phone,
+    ?string $picture,
+    ?string $theme,
+    ?string $language,
   ): array;
   
   /**
@@ -127,8 +127,8 @@ interface DatabaseService {
    * @return array|null   The eventual error array as object
    */
   public function deleteUser(
-      string $token,
-  ): array|null;
+    string $token,
+  ): ?array;
   
   // ==== Contact ==================================================================================
   // ==== Use cases related to the contacts management =============================================
@@ -144,8 +144,8 @@ interface DatabaseService {
    * @return array        The public attributes of the contact, saved in an array as object
    */
   public function contactRequest(
-      string $token,
-      string $user,
+    string $token,
+    string $user,
   ): array;
   
   /**
@@ -159,9 +159,9 @@ interface DatabaseService {
    * @return array|null   The eventual error array as object
    */
   public function deleteContactRequest(
-      string $token,
-      string $user,
-  ): array|null;
+    string $token,
+    string $user,
+  ): ?array;
   
   /**
    * Change a contact status
@@ -175,9 +175,9 @@ interface DatabaseService {
    * @return array            The new public attributes of the contact, saved in an array as object
    */
   public function changeContactStatus(
-      string $token,
-      string $user,
-      string $directive,
+    string $token,
+    string $user,
+    string $directive,
   ): array;
   
   /**
@@ -192,8 +192,8 @@ interface DatabaseService {
    *                           object
    */
   public function getContactInformation(
-      string      $token,
-      string|null $user,
+    string  $token,
+    ?string $user,
   ): array;
   
   // ==== Group ====================================================================================
@@ -214,11 +214,11 @@ interface DatabaseService {
    * @return array               The public attributes of the group, saved in an array as object
    */
   public function createGroup(
-      string      $token,
-      string      $name,
-      string|null $info,
-      string|null $picture,
-      array|null  $users,
+    string  $token,
+    string  $name,
+    ?string $info,
+    ?string $picture,
+    ?array  $users,
   ): array;
   
   /**
@@ -233,8 +233,8 @@ interface DatabaseService {
    * @return array             The list of groups or the single group, saved in an array as object
    */
   public function getGroupInformation(
-      string      $token,
-      string|null $group,
+    string  $token,
+    ?string $group,
   ): array;
   
   /**
@@ -248,9 +248,9 @@ interface DatabaseService {
    * @return array            The new public attributes of the group, saved in an array as object
    */
   public function changeGroupStatus(
-      string $token,
-      string $group,
-      string $directive,
+    string $token,
+    string $group,
+    string $directive,
   ): array;
   
   /**
@@ -266,11 +266,11 @@ interface DatabaseService {
    * @return array               The new public attributes of the group, saved in an array as object
    */
   public function changeGroupInformation(
-      string      $token,
-      string      $group,
-      string|null $name,
-      string|null $info,
-      string|null $picture,
+    string  $token,
+    string  $group,
+    ?string $name,
+    ?string $info,
+    ?string $picture,
   ): array;
   
   /**
@@ -283,8 +283,8 @@ interface DatabaseService {
    * @return array        The new group's list, saved in an array as object
    */
   public function exitGroup(
-      string $token,
-      string $group,
+    string $token,
+    string $group,
   ): array;
   
   // ==== Member ===================================================================================
@@ -300,9 +300,9 @@ interface DatabaseService {
    * @return array        The new member's list, saved in an array as object
    */
   public function addMember(
-      string $token,
-      string $group,
-      string $user,
+    string $token,
+    string $group,
+    string $user,
   ): array;
   
   /**
@@ -318,9 +318,9 @@ interface DatabaseService {
    * @return array             The list of members or the single member, saved in an array as object
    */
   public function getMemberList(
-      string      $token,
-      string      $group,
-      string|null $user,
+    string  $token,
+    string  $group,
+    ?string $user,
   ): array;
   
   /**
@@ -335,10 +335,10 @@ interface DatabaseService {
    * @return array             The new public attributes of the member, saved in an array as object
    */
   public function changeMemberPermission(
-      string $token,
-      string $group,
-      string $user,
-      string $permission,
+    string $token,
+    string $group,
+    string $user,
+    string $permission,
   ): array;
   
   /**
@@ -352,9 +352,9 @@ interface DatabaseService {
    * @return array        The new member's list, saved in an array as object
    */
   public function removeMember(
-      string $token,
-      string $group,
-      string $user,
+    string $token,
+    string $group,
+    string $user,
   ): array;
   
   // ==== Message ==================================================================================
@@ -382,13 +382,13 @@ interface DatabaseService {
    *                             object
    */
   public function getMessages(
-      string      $token,
-      string|null $group,
-      string|null $contact,
-      string|null $from,
-      string|null $to,
-      bool|null   $pinned,
-      string|null $message,
+    string  $token,
+    ?string $group,
+    ?string $contact,
+    ?string $from,
+    ?string $to,
+    ?bool   $pinned,
+    ?string $message,
   ): array;
   
   /**
@@ -405,12 +405,12 @@ interface DatabaseService {
    * @return array               The public attributes of the message, saved in an array as object
    */
   public function writeMessage(
-      string      $token,
-      string|null $group,
-      string|null $contact,
-      string      $content,
-      string|null $text,
-      string|null $media,
+    string  $token,
+    ?string $group,
+    ?string $contact,
+    string  $content,
+    ?string $text,
+    ?string $media,
   ): array;
   
   /**
@@ -431,14 +431,14 @@ interface DatabaseService {
    *                             object
    */
   public function changeMessage(
-      string      $token,
-      string|null $group,
-      string|null $contact,
-      string      $message,
-      string|null $content,
-      string|null $text,
-      string|null $media,
-      bool|null   $pinned,
+    string  $token,
+    ?string $group,
+    ?string $contact,
+    string  $message,
+    ?string $content,
+    ?string $text,
+    ?string $media,
+    ?bool   $pinned,
   ): array;
   
   /**
@@ -453,9 +453,9 @@ interface DatabaseService {
    * @return array|null          The eventual error array as object
    */
   public function deleteMessage(
-      string      $token,
-      string|null $group,
-      string|null $contact,
-      string      $message,
-  ): array|null;
+    string  $token,
+    ?string $group,
+    ?string $contact,
+    string  $message,
+  ): ?array;
 }

@@ -1,4 +1,4 @@
-<?php
+<?php /** @noinspection PhpMissingParentConstructorInspection */
 
 namespace Wave\Services\Database\Module;
 
@@ -22,9 +22,9 @@ class Module extends Singleton {
    */
   protected function __construct() {
     $this->database = new PDO(
-        "mysql:host=" . Database::SERVER_NAME . ";dbname=" . Database::DATABASE_NAME,
-        Database::DATABASE_USER,
-        Database::DATABASE_USER_PASSWORD
+      "mysql:host=" . Database::SERVER_NAME . ";dbname=" . Database::DATABASE_NAME,
+      Database::DATABASE_USER,
+      Database::DATABASE_USER_PASSWORD
     );
     
     $this->database->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -35,6 +35,9 @@ class Module extends Singleton {
     $statement = $this->database->prepare($query);
     
     if ($params != null) {
+      // remove exceeding params
+      $params = array_slice($params, 0, substr_count($query, ':'));
+      
       foreach ($params as $reference => &$value) {
         $statement->bindParam($reference, $value);
       }
@@ -52,7 +55,7 @@ class Module extends Singleton {
    *
    * @return bool
    */
-  public function beginTransaction(): bool {
+  public function instanceBeginTransaction(): bool {
     return $this->database->beginTransaction();
   }
   
@@ -61,7 +64,7 @@ class Module extends Singleton {
    *
    * @return bool
    */
-  public function commitTransaction(): bool {
+  public function instanceCommitTransaction(): bool {
     return $this->database->commit();
   }
   
@@ -74,7 +77,7 @@ class Module extends Singleton {
    * @param array|null $params the optional parameters
    * @return array|false the set of attributes in the row, false in case of empty
    */
-  public function fetchOne(string $query, array $params = null): array|false {
+  public function instanceFetchOne(string $query, array $params = null): array|false {
     $statement = $this->executeQuery($query, $params);
     
     return $statement->fetch();
@@ -89,7 +92,7 @@ class Module extends Singleton {
    * @param array|null $params the optional parameters
    * @return array|false the list of row, false in case of empty
    */
-  public function fetchAll(string $query, array $params = null): array|false {
+  public function instanceFetchAll(string $query, array $params = null): array|false {
     $statement = $this->executeQuery($query, $params);
     
     return $statement->fetchAll();
@@ -103,7 +106,7 @@ class Module extends Singleton {
    * @param string     $query  the query to execute
    * @param array|null $params the optional parameters
    */
-  public function execute(string $query, array $params = null): void {
+  public function instanceExecute(string $query, array $params = null): void {
     $this->executeQuery($query, $params);
   }
   
@@ -114,9 +117,9 @@ class Module extends Singleton {
    *
    * @return bool
    */
-  public static function staticTransaction(): bool {
+  public static function beginTransaction(): bool {
     $module = static::getInstance();
-    return $module->beginTransaction();
+    return $module->instanceBeginTransaction();
   }
   
   /**
@@ -124,9 +127,9 @@ class Module extends Singleton {
    *
    * @return bool
    */
-  public static function staticCommit(): bool {
+  public static function commitTransaction(): bool {
     $module = static::getInstance();
-    return $module->commitTransaction();
+    return $module->instanceCommitTransaction();
   }
   
   /**
@@ -138,9 +141,9 @@ class Module extends Singleton {
    * @param array|null $params the optional parameters
    * @return array|false the set of attributes in the row, false in case of empty
    */
-  public static function staticFetchOne(string $query, array $params = null): array|false {
+  public static function fetchOne(string $query, array $params = null): array|false {
     $module = static::getInstance();
-    return $module->fetchOne($query, $params);
+    return $module->instanceFetchOne($query, $params);
   }
   
   /**
@@ -152,9 +155,9 @@ class Module extends Singleton {
    * @param array|null $params the optional parameters
    * @return array|false the list of row, false in case of empty
    */
-  public static function staticFetchAll(string $query, array $params = null): array|false {
+  public static function fetchAll(string $query, array $params = null): array|false {
     $module = static::getInstance();
-    return $module->fetchAll($query, $params);
+    return $module->instanceFetchAll($query, $params);
   }
   
   /**
@@ -165,8 +168,8 @@ class Module extends Singleton {
    * @param string     $query  the query to execute
    * @param array|null $params the optional parameters
    */
-  public static function staticExecute(string $query, array $params = null): void {
+  public static function execute(string $query, array $params = null): void {
     $module = static::getInstance();
-    $module->execute($query, $params);
+    $module->instanceExecute($query, $params);
   }
 }

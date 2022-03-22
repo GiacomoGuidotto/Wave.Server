@@ -15,28 +15,28 @@ class ModuleTest extends TestCase {
   public function testFetch() {
     $validModule = Module::getInstance();
     
-    $validModule->beginTransaction();
-    $databaseName = $validModule->fetchOne(
-        'SELECT DATABASE()'
+    $validModule->instanceBeginTransaction();
+    $databaseName = $validModule->instanceFetchOne(
+      'SELECT DATABASE()'
     )['DATABASE()'];
-    $validModule->commitTransaction();
+    $validModule->instanceCommitTransaction();
     
     self::assertEquals(
-        'wave',
-        $databaseName
+      'wave',
+      $databaseName
     );
   }
   
   public function testFetchShortcut() {
-    Module::staticTransaction();
-    $databaseName = Module::staticFetchOne(
-        'SELECT DATABASE()'
+    Module::beginTransaction();
+    $databaseName = Module::fetchOne(
+      'SELECT DATABASE()'
     )['DATABASE()'];
-    Module::staticCommit();
+    Module::commitTransaction();
     
     self::assertEquals(
-        'wave',
-        $databaseName
+      'wave',
+      $databaseName
     );
   }
 }

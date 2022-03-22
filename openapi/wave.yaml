@@ -273,10 +273,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  token:
-                    $ref: "#/components/schemas/sessionToken"
+                $ref: "#/components/schemas/userObject"
         400:
           $ref: "#/components/responses/400"
         405:

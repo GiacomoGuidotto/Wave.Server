@@ -7,6 +7,6 @@ namespace Wave\Specifications\ErrorCases\Success;
  */
 interface Success {
   const CODE = 00;
-  const MESSAGE = 'success';
-  const DETAILS = 'action completed';
+  const MESSAGE = 'Success';
+  const DETAILS = 'Action completed';
 }

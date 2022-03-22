@@ -7,6 +7,6 @@ namespace Wave\Specifications\ErrorCases\String;
  */
 interface IncorrectParsing {
   const CODE = 22;
-  const MESSAGE = "string isn't one of the predefined";
-  const DETAILS = "the string-typed attribute doesn't correspond to predefined schema";
+  const MESSAGE = "String isn't one of the predefined";
+  const DETAILS = "The string-typed attribute doesn't correspond to predefined schema";
 }

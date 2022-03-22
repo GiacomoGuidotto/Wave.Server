@@ -43,9 +43,9 @@ class UserImpl implements User {
       return ExceedingMinLength::CODE;
     }
     if (preg_match(
-            "#^(?=.*\d)(?=.*[A-Z])(?=.*[a-z])(?=.*[^\w\d\s:])([^\s]){8,16}$#",
-            $password
-        ) != 1) {
+        "#^(?=.*\d)(?=.*[A-Z])(?=.*[a-z])(?=.*[^\w\d\s:])([^\s]){8,16}$#",
+        $password
+      ) != 1) {
       return IncorrectPattern::CODE;
     }
     
@@ -100,9 +100,9 @@ class UserImpl implements User {
       return ExceedingMinLength::CODE;
     }
     if (preg_match(
-            "#^([0-9]){5,19}$#",
-            $phone
-        ) != 1) {
+        "#^([0-9]){5,19}$#",
+        $phone
+      ) != 1) {
       return IncorrectPattern::CODE;
     }
     

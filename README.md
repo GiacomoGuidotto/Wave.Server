@@ -23,16 +23,16 @@ CREATE TABLE sessions
 ```mysql
 CREATE TABLE users
 (
-    user_id  INTEGER     NOT NULL PRIMARY KEY AUTO_INCREMENT,
-    username VARCHAR(32) NOT NULL CHECK ( LENGTH(username) > 4 ) UNIQUE,
-    password VARCHAR(32) NOT NULL CHECK ( LENGTH(password) > 4 ),
-    name     VARCHAR(64) NOT NULL,
-    surname  VARCHAR(64) NOT NULL,
+    user_id  INTEGER                 NOT NULL PRIMARY KEY AUTO_INCREMENT,
+    username VARCHAR(32)             NOT NULL CHECK ( LENGTH(username) > 4 ) UNIQUE,
+    password VARCHAR(255)            NOT NULL,
+    name     VARCHAR(64)             NOT NULL,
+    surname  VARCHAR(64)             NOT NULL,
     picture  VARCHAR(255),
     phone    VARCHAR(19) CHECK ( LENGTH(phone) > 4 ),
-    theme    VARCHAR(1)  NOT NULL,
-    language VARCHAR(2)  NOT NULL CHECK ( LENGTH(language) > 1 ),
-    active   BOOLEAN     NOT NULL
+    theme    VARCHAR(1) DEFAULT 'L'  NOT NULL,
+    language VARCHAR(2) DEFAULT 'EN' NOT NULL CHECK ( LENGTH(language) > 1 ),
+    active   BOOLEAN                 NOT NULL
 )
 ```
 

@@ -19,13 +19,13 @@ interface DatabaseService {
    *
    * @param string $username The username to authenticate, extracted from the request
    * @param string $password The user password to authenticate, extracted from the request
-   * @param string $device   The session source, extracted from the request
+   * @param string $source   The session source, extracted from the request
    * @return array           The token used to authenticate the user, saved in an array as object
    */
   public function login(
     string $username,
     string $password,
-    string $device,
+    string $source,
   ): array;
   
   /**
@@ -74,8 +74,8 @@ interface DatabaseService {
     string  $password,
     string  $name,
     string  $surname,
-    ?string $phone,
-    ?string $picture,
+    ?string $phone = null,
+    ?string $picture = null,
   ): array;
   
   /**
@@ -108,13 +108,13 @@ interface DatabaseService {
    */
   public function changeUserInformation(
     string  $token,
-    ?string $username,
-    ?string $name,
-    ?string $surname,
-    ?string $phone,
-    ?string $picture,
-    ?string $theme,
-    ?string $language,
+    ?string $username = null,
+    ?string $name = null,
+    ?string $surname = null,
+    ?string $phone = null,
+    ?string $picture = null,
+    ?string $theme = null,
+    ?string $language = null,
   ): array;
   
   /**
@@ -193,7 +193,7 @@ interface DatabaseService {
    */
   public function getContactInformation(
     string  $token,
-    ?string $user,
+    ?string $user = null,
   ): array;
   
   // ==== Group ====================================================================================
@@ -216,9 +216,9 @@ interface DatabaseService {
   public function createGroup(
     string  $token,
     string  $name,
-    ?string $info,
-    ?string $picture,
-    ?array  $users,
+    ?string $info = null,
+    ?string $picture = null,
+    ?array  $users = null,
   ): array;
   
   /**
@@ -234,7 +234,7 @@ interface DatabaseService {
    */
   public function getGroupInformation(
     string  $token,
-    ?string $group,
+    ?string $group = null,
   ): array;
   
   /**
@@ -268,9 +268,9 @@ interface DatabaseService {
   public function changeGroupInformation(
     string  $token,
     string  $group,
-    ?string $name,
-    ?string $info,
-    ?string $picture,
+    ?string $name = null,
+    ?string $info = null,
+    ?string $picture = null,
   ): array;
   
   /**
@@ -320,7 +320,7 @@ interface DatabaseService {
   public function getMemberList(
     string  $token,
     string  $group,
-    ?string $user,
+    ?string $user = null,
   ): array;
   
   /**
@@ -383,12 +383,12 @@ interface DatabaseService {
    */
   public function getMessages(
     string  $token,
-    ?string $group,
-    ?string $contact,
-    ?string $from,
-    ?string $to,
-    ?bool   $pinned,
-    ?string $message,
+    ?string $group = null,
+    ?string $contact = null,
+    ?string $from = null,
+    ?string $to = null,
+    ?bool   $pinned = null,
+    ?string $message = null,
   ): array;
   
   /**
@@ -399,18 +399,18 @@ interface DatabaseService {
    * @param string      $token   The token used to authenticate the user, extracted from the request
    * @param string|null $group   The identifier to the specific group, extracted from the request
    * @param string|null $contact The targeted contact's username, extracted from the request
-   * @param string      $content The content of the message, extracted from the request
+   * @param string|null $content The eventual content of the message, extracted from the request
    * @param string|null $text    The eventual text of the message, extracted from the request
    * @param string|null $media   The eventual media of the message, extracted from the request
    * @return array               The public attributes of the message, saved in an array as object
    */
   public function writeMessage(
     string  $token,
-    ?string $group,
-    ?string $contact,
-    string  $content,
-    ?string $text,
-    ?string $media,
+    ?string $group = null,
+    ?string $contact = null,
+    ?string $content = null,
+    ?string $text = null,
+    ?string $media = null,
   ): array;
   
   /**
@@ -420,9 +420,9 @@ interface DatabaseService {
    *
    * @param string      $token   The token used to authenticate the user, extracted from the
    *                             request
+   * @param string      $message The identifier of the specific message, extracted from the request
    * @param string|null $group   The identifier to the specific group, extracted from the request
    * @param string|null $contact The targeted contact's username, extracted from the request
-   * @param string      $message The identifier of the specific message, extracted from the request
    * @param string|null $content The eventual new message's content, extracted from the request
    * @param string|null $text    The eventual new message's text, extracted from the request
    * @param string|null $media   The eventual new message's media, extracted from the request
@@ -432,13 +432,13 @@ interface DatabaseService {
    */
   public function changeMessage(
     string  $token,
-    ?string $group,
-    ?string $contact,
     string  $message,
-    ?string $content,
-    ?string $text,
-    ?string $media,
-    ?bool   $pinned,
+    ?string $group = null,
+    ?string $contact = null,
+    ?string $content = null,
+    ?string $text = null,
+    ?string $media = null,
+    ?bool   $pinned = null,
   ): array;
   
   /**
@@ -447,15 +447,15 @@ interface DatabaseService {
    * Delete a specific message from a specific chat.
    *
    * @param string      $token   The token used to authenticate the user, extracted from the request
+   * @param string      $message The identifier to the specific message, extracted from the request
    * @param string|null $group   The identifier to the specific group, extracted from the request
    * @param string|null $contact The targeted contact's username, extracted from the request
-   * @param string      $message The identifier to the specific message, extracted from the request
    * @return array|null          The eventual error array as object
    */
   public function deleteMessage(
     string  $token,
-    ?string $group,
-    ?string $contact,
     string  $message,
+    ?string $group = null,
+    ?string $contact = null,
   ): ?array;
 }

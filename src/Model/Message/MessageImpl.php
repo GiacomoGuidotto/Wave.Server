@@ -25,7 +25,7 @@ class MessageImpl implements Message {
       return ExceedingMinLength::CODE;
     }
     if (preg_match(
-        "#^[0-9A-F]{8}-[0-9A-F]{4}-4[0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$#",
+        "#^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$#",
         $key
       ) != 1) {
       return IncorrectPattern::CODE;

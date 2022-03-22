@@ -952,8 +952,8 @@ paths:
             $ref: "#/components/schemas/userUsername"
         - name: content
           in: header
-          required: true
-          description: The content of the message.
+          required: false
+          description: The eventual content of the message.
           schema:
             $ref: "#/components/schemas/messageContent"
         - name: text
@@ -996,6 +996,7 @@ paths:
         This will trigger a ws packet to be sent to all the chat's members.
       parameters:
         - $ref: "#/components/parameters/sessionToken"
+        - $ref: "#/components/parameters/messageKEY"
         - name: group
           in: header
           required: false
@@ -1008,7 +1009,6 @@ paths:
           description: The targeted contact's username.
           schema:
             $ref: "#/components/schemas/userUsername"
-        - $ref: "#/components/parameters/messageKEY"
         - name: content
           in: header
           required: false
@@ -1059,6 +1059,7 @@ paths:
         This will trigger a ws packet to be sent to all the chat's members.
       parameters:
         - $ref: "#/components/parameters/sessionToken"
+        - $ref: "#/components/parameters/messageKEY"
         - name: group
           in: header
           required: false
@@ -1071,7 +1072,6 @@ paths:
           description: The targeted contact's username.
           schema:
             $ref: "#/components/schemas/userUsername"
-        - $ref: "#/components/parameters/messageKEY"
       responses:
         200:
           description: The message is successfully deleted.

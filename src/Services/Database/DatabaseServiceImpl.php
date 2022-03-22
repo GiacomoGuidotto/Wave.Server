@@ -4,11 +4,13 @@ namespace Wave\Services\Database;
 
 use DateInterval;
 use JetBrains\PhpStorm\ArrayShape;
+use Wave\Model\Session\SessionImpl;
 use Wave\Model\Singleton\Singleton;
 use Wave\Model\User\UserImpl;
 use Wave\Services\Database\Module\Module;
 use Wave\Specifications\ErrorCases\ErrorCases;
 use Wave\Specifications\ErrorCases\State\AlreadyExist;
+use Wave\Specifications\ErrorCases\State\NotFound;
 use Wave\Specifications\ErrorCases\State\Timeout;
 use Wave\Specifications\ErrorCases\State\Unauthorized;
 use Wave\Specifications\ErrorCases\Success\Success;
@@ -78,15 +80,19 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
   ): bool {
     // Convert the TTL string in DateTime
     $timeToLive = date_create('midnight')
-      ->add(DateInterval::createFromDateString(
-        Wave::SESSION_DURATION
-      ));
+      ->add(
+        DateInterval::createFromDateString(
+          Wave::SESSION_DURATION
+        )
+      );
     // Generate the difference between now and the moment of the last call in DateTime
     $timeDifference = date_create('midnight')
-      ->add($this->timeDifference(
-        $currentTimestamp,
-        $last_updated
-      ));
+      ->add(
+        $this->timeDifference(
+          $currentTimestamp,
+          $last_updated
+        )
+      );
     // Validate
     return $timeDifference < $timeToLive;
   }
@@ -164,10 +170,91 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
   public function login(
     string $username,
     string $password,
-    string $device,
+    string $source,
   ): array {
-    // TODO: Implement login() method.
-    return [];
+    $usernameValidation = UserImpl::validateUsername($username);
+    $passwordValidation = UserImpl::validatePassword($password);
+    $deviceValidation = SessionImpl::validateSource($source);
+    
+    if ($usernameValidation != Success::CODE) {
+      return $this->generateErrorMessage($usernameValidation);
+    }
+    if ($passwordValidation != Success::CODE) {
+      return $this->generateErrorMessage($passwordValidation);
+    }
+    if ($deviceValidation != Success::CODE) {
+      return $this->generateErrorMessage($deviceValidation);
+    }
+    
+    // =======================================
+    Module::beginTransaction();
+    
+    // ==== correct username and password ====
+    $storedPasswordRow = Module::fetchOne(
+      'SELECT user_id, password
+            FROM users
+            WHERE username = BINARY :username
+              AND active = TRUE',
+      [
+        ':username' => $username,
+      ]
+    );
+    
+    // ==== username not found ===============
+    if ($storedPasswordRow === false) {
+      Module::commitTransaction();
+      return $this->generateErrorMessage(NotFound::CODE);
+    }
+    
+    // ==== password incorrect ===============
+    $storedPassword = $storedPasswordRow['password'];
+    if (!password_verify($password, $storedPassword)) {
+      Module::commitTransaction();
+      return $this->generateErrorMessage(NotFound::CODE);
+    }
+    
+    // ==== delete token already existing ====
+    $userId = $storedPasswordRow['user_id'];
+    Module::execute(
+      'UPDATE sessions
+            SET active = FALSE
+            WHERE user = :user_id
+              AND source = :source',
+      [
+        ':user_id' => $userId,
+        ':source'  => $source,
+      ]
+    );
+    
+    // ==== create token =====================
+    Module::execute(
+      'INSERT
+            INTO sessions (session_token, source, user, creation_timestamp, last_updated, active)
+            VALUES (
+                    UUID(),
+                    :source,
+                    :user_id,
+                    CURRENT_TIMESTAMP(),
+                    CURRENT_TIMESTAMP(),
+                    :active
+            )',
+      [
+        ':source'  => $source,
+        ':user_id' => $userId,
+        'active'   => true,
+      ]
+    );
+    
+    $token = Module::fetchOne(
+      'SELECT session_token
+            FROM sessions
+            WHERE session_id = LAST_INSERT_ID()'
+    )['session_token'];
+    
+    Module::commitTransaction();
+    return [
+      'token' => $token,
+    ];
   }
   
   /**
@@ -201,8 +288,8 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
     string  $password,
     string  $name,
     string  $surname,
-    ?string $phone,
-    ?string $picture,
+    ?string $phone = null,
+    ?string $picture = null,
   ): array {
     $usernameValidation = UserImpl::validateUsername($username);
     $passwordValidation = UserImpl::validatePassword($password);
@@ -311,13 +398,13 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
    */
   public function changeUserInformation(
     string  $token,
-    ?string $username,
-    ?string $name,
-    ?string $surname,
-    ?string $phone,
-    ?string $picture,
-    ?string $theme,
-    ?string $language,
+    ?string $username = null,
+    ?string $name = null,
+    ?string $surname = null,
+    ?string $phone = null,
+    ?string $picture = null,
+    ?string $theme = null,
+    ?string $language = null,
   ): array {
     // TODO: Implement changeUserInformation() method.
     return [];
@@ -375,7 +462,7 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
    */
   public function getContactInformation(
     string  $token,
-    ?string $user,
+    ?string $user = null,
   ): array {
     // TODO: Implement getContactInformation() method.
     return [];
@@ -390,9 +477,9 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
   public function createGroup(
     string  $token,
     string  $name,
-    ?string $info,
-    ?string $picture,
-    ?array  $users,
+    ?string $info = null,
+    ?string $picture = null,
+    ?array  $users = null,
   ): array {
     // TODO: Implement createGroup() method.
     return [];
@@ -403,7 +490,7 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
    */
   public function getGroupInformation(
     string  $token,
-    ?string $group,
+    ?string $group = null,
   ): array {
     // TODO: Implement getGroupInformation() method.
     return [];
@@ -427,9 +514,9 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
   public function changeGroupInformation(
     string  $token,
     string  $group,
-    ?string $name,
-    ?string $info,
-    ?string $picture,
+    ?string $name = null,
+    ?string $info = null,
+    ?string $picture = null,
   ): array {
     // TODO: Implement changeGroupInformation() method.
     return [];
@@ -466,7 +553,7 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
   public function getMemberList(
     string  $token,
     string  $group,
-    ?string $user,
+    ?string $user = null,
   ): array {
     // TODO: Implement getMemberList() method.
     return [];
@@ -505,12 +592,12 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
    */
   public function getMessages(
     string  $token,
-    ?string $group,
-    ?string $contact,
-    ?string $from,
-    ?string $to,
-    ?bool   $pinned,
-    ?string $message,
+    ?string $group = null,
+    ?string $contact = null,
+    ?string $from = null,
+    ?string $to = null,
+    ?bool   $pinned = null,
+    ?string $message = null,
   ): array {
     // TODO: Implement getMessages() method.
     return [];
@@ -521,11 +608,11 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
    */
   public function writeMessage(
     string  $token,
-    ?string $group,
-    ?string $contact,
-    string  $content,
-    ?string $text,
-    ?string $media,
+    ?string $group = null,
+    ?string $contact = null,
+    ?string $content = null,
+    ?string $text = null,
+    ?string $media = null,
   ): array {
     // TODO: Implement writeMessage() method.
     return [];
@@ -536,13 +623,13 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
    */
   public function changeMessage(
     string  $token,
-    ?string $group,
-    ?string $contact,
     string  $message,
-    ?string $content,
-    ?string $text,
-    ?string $media,
-    ?bool   $pinned,
+    ?string $group = null,
+    ?string $contact = null,
+    ?string $content = null,
+    ?string $text = null,
+    ?string $media = null,
+    ?bool   $pinned = null,
   ): array {
     // TODO: Implement changeMessage() method.
     return [];
@@ -553,9 +640,9 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
    */
   public function deleteMessage(
     string  $token,
-    ?string $group,
-    ?string $contact,
     string  $message,
+    ?string $group = null,
+    ?string $contact = null,
   ): array|null {
     // TODO: Implement deleteMessage() method.
     return [];

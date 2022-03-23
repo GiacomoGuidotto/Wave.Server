@@ -9,6 +9,8 @@ use Wave\Services\Database\DatabaseServiceImpl;
 use Wave\Services\Database\Module\Module;
 use Wave\Specifications\ErrorCases\State\AlreadyExist;
 use Wave\Specifications\ErrorCases\State\NotFound;
+use Wave\Specifications\ErrorCases\State\Unauthorized;
+use Wave\Specifications\ErrorCases\String\IncorrectPattern;
 use Wave\Specifications\ErrorCases\Success\Success;
 
 class DatabaseServiceImplTest extends TestCase {
@@ -88,20 +90,22 @@ class DatabaseServiceImplTest extends TestCase {
   // ===============================================================================================
   
   public function testAuthenticationCases(bool $mute = false): void {
-    echo '==== Authentication ==========================================' . PHP_EOL
+    if (!$mute) echo '==== Authentication ==========================================' . PHP_EOL
       . '==============================================================' . PHP_EOL;
     $this->testLogin($mute);
+    $this->testPoke($mute);
+    $this->testLogout($mute);
   }
   
-  // ==== Login ====================================================================================
+  // ==== login ====================================================================================
   // ===============================================================================================
   
   public function testLogin(bool $mute = false): void {
-    echo PHP_EOL . '==== login ===================================================' . PHP_EOL;
-    $groupUsername = 'giacomo';
-    $groupSource = $this->generateUuid();
+    if (!$mute) echo PHP_EOL . '==== login ===================================================' . PHP_EOL;
     
     // prepare tests
+    $groupUsername = 'giacomo';
+    $groupSource = $this->generateUuid();
     $this->testCreateUserCorrectCreation($groupUsername, true);
     
     // execute group
@@ -120,7 +124,7 @@ class DatabaseServiceImplTest extends TestCase {
     string $groupUsername,
     string $groupSource,
     bool   $mute = false,
-  ): void {
+  ): ?string {
     if (!$mute) echo PHP_EOL . 'Testing correct login procedure...' . PHP_EOL;
     
     $result = $this->service->login(
@@ -135,6 +139,8 @@ class DatabaseServiceImplTest extends TestCase {
       Success::CODE,
       SessionImpl::validateToken($result['token']),
     );
+    
+    return $mute ? $result['token'] : null;
   }
   
   private function testLoginWithActiveSession(
@@ -162,7 +168,7 @@ class DatabaseServiceImplTest extends TestCase {
     string $groupUsername,
     string $groupSource,
     bool   $mute = false,
-  ) {
+  ): void {
     if (!$mute) echo PHP_EOL . 'Testing login with incorrect password...' . PHP_EOL;
     
     $randomPassword = 'Ft5/dg3D5gs$s';
@@ -184,7 +190,7 @@ class DatabaseServiceImplTest extends TestCase {
   private function testLoginWithUnknownUsername(
     string $groupSource,
     bool   $mute = false,
-  ) {
+  ): void {
     if (!$mute) echo PHP_EOL . 'Testing login with unknown username...' . PHP_EOL;
     
     $randomUsername = 'random_user';
@@ -205,7 +211,168 @@ class DatabaseServiceImplTest extends TestCase {
   
   private function clearLoginModifications(
     string $groupUsername,
-  ) {
+  ): void {
+    $this->clearCreateUserModification($groupUsername);
+  }
+  
+  // ==== poke =====================================================================================
+  // ===============================================================================================
+  
+  public function testPoke(bool $mute = false): void {
+    if (!$mute) echo PHP_EOL . '==== poke ====================================================' . PHP_EOL;
+    
+    // prepare tests
+    $groupUsername = 'giacomo';
+    $groupSource = $this->generateUuid();
+    $this->testCreateUserCorrectCreation($groupUsername, true);
+    $groupToken = $this->testLoginCorrectProcedure($groupUsername, $groupSource, true);
+    
+    // execute group
+    $this->testPokeCorrectProcedure($groupToken, $mute);
+    $this->testPokeWithUnknownToken($mute);
+    $this->testPokeWithWrongToken($mute);
+    
+    // clear tests
+    $this->clearPokeModifications($groupUsername);
+  }
+  
+  private function testPokeCorrectProcedure(
+    string $groupToken,
+    bool   $mute = false,
+  ): void {
+    if (!$mute) echo PHP_EOL . 'Testing correct poke procedure...' . PHP_EOL;
+    
+    
+    $result = $this->service->poke(
+      $groupToken,
+    );
+    
+    if (!$mute) echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    self::assertNull($result);
+  }
+  
+  private function testPokeWithUnknownToken(
+    bool $mute = false,
+  ): void {
+    if (!$mute) echo PHP_EOL . 'Testing poke with unknown token...' . PHP_EOL;
+    
+    $generatedToken = $this->generateUuid();
+    
+    $result = $this->service->poke(
+      $generatedToken,
+    );
+    
+    if (!$mute) echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    self::assertEquals(
+      Unauthorized::CODE,
+      $result['error'],
+    );
+  }
+  
+  private function testPokeWithWrongToken(
+    bool $mute = false,
+  ): void {
+    if (!$mute) echo PHP_EOL . 'Testing poke with wrong token...' . PHP_EOL;
+    
+    $wrongToken = 'tokentokentokentokentokentokentokent';
+    
+    $result = $this->service->poke(
+      $wrongToken,
+    );
+    
+    if (!$mute) echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    self::assertEquals(
+      IncorrectPattern::CODE,
+      $result['error'],
+    );
+  }
+  
+  private function clearPokeModifications(
+    string $groupUsername,
+  ): void {
+    $this->clearCreateUserModification($groupUsername);
+  }
+  
+  // ==== logout ===================================================================================
+  // ===============================================================================================
+  
+  public function testLogout(bool $mute = false): void {
+    if (!$mute) echo PHP_EOL . '==== logout ==================================================' . PHP_EOL;
+    
+    // prepare tests
+    $groupUsername = 'giacomo';
+    $groupSource = $this->generateUuid();
+    $this->testCreateUserCorrectCreation($groupUsername, true);
+    $groupToken = $this->testLoginCorrectProcedure($groupUsername, $groupSource, true);
+    
+    // execute group
+    $this->testLogoutCorrectProcedure($groupToken, $mute);
+    $this->testLogoutWithUnknownToken($mute);
+    $this->testLogoutWithWrongToken($mute);
+    
+    // clear tests
+    $this->clearLogoutModifications($groupUsername);
+  }
+  
+  private function testLogoutCorrectProcedure(
+    string $groupToken,
+    bool   $mute = false,
+  ): void {
+    if (!$mute) echo PHP_EOL . 'Testing correct logout procedure...' . PHP_EOL;
+    
+    $result = $this->service->logout(
+      $groupToken,
+    );
+    
+    if (!$mute) echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    self::assertNull($result);
+  }
+  
+  private function testLogoutWithUnknownToken(
+    bool $mute = false,
+  ): void {
+    if (!$mute) echo PHP_EOL . 'Testing token with unknown token...' . PHP_EOL;
+    
+    $generatedToken = $this->generateUuid();
+    
+    $result = $this->service->logout(
+      $generatedToken,
+    );
+    
+    if (!$mute) echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    self::assertEquals(
+      Unauthorized::CODE,
+      $result['error'],
+    );
+  }
+  
+  private function testLogoutWithWrongToken(
+    bool $mute = false,
+  ): void {
+    if (!$mute) echo PHP_EOL . 'Testing logout with wrong token...' . PHP_EOL;
+    
+    $wrongToken = 'tokentokentokentokentokentokentokent';
+    
+    $result = $this->service->logout(
+      $wrongToken,
+    );
+    
+    if (!$mute) echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    self::assertEquals(
+      IncorrectPattern::CODE,
+      $result['error'],
+    );
+  }
+  
+  private function clearLogoutModifications(
+    string $groupUsername,
+  ): void {
     $this->clearCreateUserModification($groupUsername);
   }
   
@@ -214,19 +381,20 @@ class DatabaseServiceImplTest extends TestCase {
   // ===============================================================================================
   
   public function testUserCases(bool $mute = false): void {
-    echo PHP_EOL . PHP_EOL . '==== User ====================================================' . PHP_EOL
+    if (!$mute) echo PHP_EOL . PHP_EOL . '==== User ====================================================' . PHP_EOL
       . '==============================================================' . PHP_EOL;
     $this->testCreateUser($mute);
+    $this->testGetUserInformation($mute);
   }
   
   // ==== createUser ===============================================================================
   // ===============================================================================================
   
   public function testCreateUser(bool $mute = false): void {
-    echo PHP_EOL . '==== createUser ==============================================' . PHP_EOL;
-    $groupUsername = 'giacomo';
+    if (!$mute) echo PHP_EOL . '==== createUser ==============================================' . PHP_EOL;
     
     // execute group
+    $groupUsername = 'giacomo';
     $this->testCreateUserCorrectCreation($groupUsername, $mute);
     $this->testCreateUserUniqueConstrains($groupUsername, $mute);
     
@@ -266,12 +434,20 @@ class DatabaseServiceImplTest extends TestCase {
       Success::CODE,
       UserImpl::validateSurname($result['surname']),
     );
+    self::assertEquals(
+      Success::CODE,
+      UserImpl::validateTheme($result['theme']),
+    );
+    self::assertEquals(
+      Success::CODE,
+      UserImpl::validateLanguage($result['language']),
+    );
   }
   
   private function testCreateUserUniqueConstrains(
     string $groupUsername,
     bool   $mute = false,
-  ) {
+  ): void {
     if (!$mute) echo PHP_EOL . 'Testing user unique constrains...' . PHP_EOL;
     
     $generatedName = $this->generateString(12);
@@ -302,5 +478,98 @@ class DatabaseServiceImplTest extends TestCase {
         ':username' => $groupUsername,
       ]
     );
+  }
+  
+  // ==== getUserInformation =======================================================================
+  // ===============================================================================================
+  
+  public function testGetUserInformation(bool $mute = false): void {
+    if (!$mute) echo PHP_EOL . '==== getUserInformation ======================================' . PHP_EOL;
+    
+    // prepare tests
+    $groupUsername = 'giacomo';
+    $groupSource = $this->generateUuid();
+    $this->testCreateUserCorrectCreation($groupUsername, true);
+    $groupToken = $this->testLoginCorrectProcedure($groupUsername, $groupSource, true);
+    
+    // execute group
+    $this->testGetUserInformationCorrectProcedure($groupToken, $mute);
+    $this->testGetUserInformationWithUnknownToken($mute);
+    $this->testGetUserInformationWithWrongToken($mute);
+    
+    // clear tests
+    $this->clearGetUserInformationModifications($groupUsername);
+  }
+  
+  private function testGetUserInformationCorrectProcedure(
+    string $groupToken,
+    bool   $mute = false,
+  ) {
+    if (!$mute) echo PHP_EOL . "Testing correct retrieve of the user's data..." . PHP_EOL;
+    
+    $result = $this->service->getUserInformation($groupToken);
+    
+    if (!$mute) echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    self::assertEquals(
+      Success::CODE,
+      UserImpl::validateUsername($result['username']),
+    );
+    self::assertEquals(
+      Success::CODE,
+      UserImpl::validateName($result['name']),
+    );
+    self::assertEquals(
+      Success::CODE,
+      UserImpl::validateSurname($result['surname']),
+    );
+    self::assertEquals(
+      Success::CODE,
+      UserImpl::validateTheme($result['theme']),
+    );
+    self::assertEquals(
+      Success::CODE,
+      UserImpl::validateLanguage($result['language']),
+    );
+  }
+  
+  private function testGetUserInformationWithUnknownToken(
+    bool $mute = false,
+  ) {
+    if (!$mute) echo PHP_EOL . "Testing retrieve of the user's with unknown token..." . PHP_EOL;
+    
+    $generatedToken = $this->generateUuid();
+    
+    $result = $this->service->getUserInformation($generatedToken);
+    
+    if (!$mute) echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    self::assertEquals(
+      Unauthorized::CODE,
+      $result['error'],
+    );
+  }
+  
+  private function testGetUserInformationWithWrongToken(
+    bool $mute = false,
+  ) {
+    if (!$mute) echo PHP_EOL . "Testing retrieve of the user's with unknown token..." . PHP_EOL;
+    
+    $wrongToken = 'tokentokentokentokentokentokentokent';
+    
+    $result = $this->service->getUserInformation($wrongToken);
+    
+    if (!$mute) echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    self::assertEquals(
+      IncorrectPattern::CODE,
+      $result['error'],
+    );
+  }
+  
+  private function clearGetUserInformationModifications(
+    string $groupUsername,
+  ): void {
+    $this->clearCreateUserModification($groupUsername);
   }
 }

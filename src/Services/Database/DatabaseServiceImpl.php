@@ -262,9 +262,21 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
    */
   public function poke(
     string $token,
-  ): array|null {
-    // TODO: Implement poke() method.
-    return [];
+  ): ?array {
+    $tokenValidation = SessionImpl::validateToken($token);
+    
+    if ($tokenValidation != Success::CODE) {
+      return $this->generateErrorMessage($tokenValidation);
+    }
+    
+    // ==== Token authorization ==============
+    $tokenAuthorization = $this->authorizeToken($token);
+    
+    if ($tokenAuthorization != Success::CODE) {
+      return $this->generateErrorMessage($tokenAuthorization);
+    }
+    
+    return null;
   }
   
   /**
@@ -272,9 +284,44 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
    */
   public function logout(
     string $token,
-  ): array|null {
-    // TODO: Implement logout() method.
-    return [];
+  ): ?array {
+    $tokenValidation = SessionImpl::validateToken($token);
+    
+    if ($tokenValidation != Success::CODE) {
+      return $this->generateErrorMessage($tokenValidation);
+    }
+    
+    // =======================================
+    Module::beginTransaction();
+    
+    // ==== Find token =======================
+    $tokenRow = Module::fetchOne(
+      'SELECT last_updated
+            FROM sessions
+            WHERE session_token = :session_token
+              AND active = TRUE',
+      [
+        ':session_token' => $token,
+      ]
+    );
+    
+    if ($tokenRow === false) {
+      Module::commitTransaction();
+      return $this->generateErrorMessage(Unauthorized::CODE);
+    }
+    
+    // ==== Disable token ====================
+    Module::execute(
+      'UPDATE sessions
+            SET active = FALSE
+            WHERE session_token = :session_token',
+      [
+        ':session_token' => $token,
+      ]
+    );
+    
+    Module::commitTransaction();
+    return null;
   }
   
   // ==== User =====================================================================================
@@ -365,7 +412,7 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
         ':password' => $hashedPassword,
         ':name'     => $name,
         ':surname'  => $surname,
-        ':picture'  => $picture,
+        ':picture'  => null, //TODO replace with file path
         ':phone'    => $phone,
         ':active'   => true,
       ]
@@ -389,8 +436,51 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
   public function getUserInformation(
     string $token,
   ): array {
-    // TODO: Implement getUserInformation() method.
-    return [];
+    $tokenValidation = SessionImpl::validateToken($token);
+    
+    if ($tokenValidation != Success::CODE) {
+      return $this->generateErrorMessage($tokenValidation);
+    }
+    
+    // ==== Token authorization ==============
+    $tokenAuthorization = $this->authorizeToken($token);
+    
+    if ($tokenAuthorization != Success::CODE) {
+      return $this->generateErrorMessage($tokenAuthorization);
+    }
+    
+    // =======================================
+    Module::beginTransaction();
+    
+    $user_id = Module::fetchOne(
+      'SELECT user
+            FROM sessions
+            WHERE session_token = :session_token',
+      [
+        ':session_token' => $token,
+      ]
+    )['user'];
+    
+    $user = Module::fetchOne(
+      'SELECT username, name, surname, picture, phone, theme, language
+            FROM users
+            WHERE user_id = BINARY :user_id',
+      [
+        ':user_id' => $user_id,
+      ]
+    );
+    
+    Module::commitTransaction();
+    // TODO get picture from fs
+    return [
+      'username' => $user['username'],
+      'name'     => $user['name'],
+      'surname'  => $user['surname'],
+      'picture'  => $user['picture'],
+      'phone'    => $user['phone'],
+      'theme'    => $user['theme'],
+      'language' => $user['language'],
+    ];
   }
   
   /**
@@ -415,7 +505,7 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
    */
   public function deleteUser(
     string $token,
-  ): array|null {
+  ): ?array {
     // TODO: Implement deleteUser() method.
     return [];
   }
@@ -440,7 +530,7 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
   public function deleteContactRequest(
     string $token,
     string $user,
-  ): array|null {
+  ): ?array {
     // TODO: Implement deleteContactRequest() method.
     return [];
   }
@@ -643,7 +733,7 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
     string  $message,
     ?string $group = null,
     ?string $contact = null,
-  ): array|null {
+  ): ?array {
     // TODO: Implement deleteMessage() method.
     return [];
   }

@@ -7,9 +7,11 @@ use Wave\Model\Session\SessionImpl;
 use Wave\Model\User\UserImpl;
 use Wave\Services\Database\DatabaseServiceImpl;
 use Wave\Services\Database\Module\Module;
+use Wave\Specifications\ErrorCases\Generic\NullAttributes;
 use Wave\Specifications\ErrorCases\State\AlreadyExist;
 use Wave\Specifications\ErrorCases\State\NotFound;
 use Wave\Specifications\ErrorCases\State\Unauthorized;
+use Wave\Specifications\ErrorCases\String\ExceedingMinLength;
 use Wave\Specifications\ErrorCases\String\IncorrectPattern;
 use Wave\Specifications\ErrorCases\Success\Success;
 
@@ -385,6 +387,7 @@ class DatabaseServiceImplTest extends TestCase {
       . '==============================================================' . PHP_EOL;
     $this->testCreateUser($mute);
     $this->testGetUserInformation($mute);
+    $this->testChangeUserInformation($mute);
   }
   
   // ==== createUser ===============================================================================
@@ -568,6 +571,147 @@ class DatabaseServiceImplTest extends TestCase {
   }
   
   private function clearGetUserInformationModifications(
+    string $groupUsername,
+  ): void {
+    $this->clearCreateUserModification($groupUsername);
+  }
+  
+  // ==== changeUserInformation ====================================================================
+  // ===============================================================================================
+  
+  public function testChangeUserInformation(bool $mute = false): void {
+    if (!$mute) echo PHP_EOL . '==== changeUserInformation ======================================' . PHP_EOL;
+    
+    // prepare tests
+    $groupUsername = 'giacomo';
+    $groupSource = $this->generateUuid();
+    $this->testCreateUserCorrectCreation($groupUsername, true);
+    $groupToken = $this->testLoginCorrectProcedure($groupUsername, $groupSource, true);
+    
+    // execute group
+    $this->testCorrectUserInformationChange($groupToken, $mute);
+    $this->testChangeUserInformationWithoutParameters($groupToken, $mute);
+    $this->testChangeUserUsernameWithExistingOne($groupToken, $mute);
+    $this->testChangeUserInformationWithWrongParameters($groupToken, $mute);
+    
+    // clear tests
+    $this->clearChangeUserInformationModifications($groupUsername);
+  }
+  
+  private function testCorrectUserInformationChange(
+    string $groupToken,
+    bool   $mute = false,
+  ): void {
+    if (!$mute) echo PHP_EOL . "Testing correct user's information change..." . PHP_EOL;
+    
+    $newName = 'newName';
+    $newSurname = 'New surname';
+    $newTheme = 'D';
+    
+    $result = $this->service->changeUserInformation(
+               $groupToken,
+      name   : $newName,
+      surname: $newSurname,
+      theme  : $newTheme
+    );
+    
+    if (!$mute) echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    self::assertEquals(
+      Success::CODE,
+      UserImpl::validateUsername($result['username']),
+    );
+    self::assertEquals(
+      Success::CODE,
+      UserImpl::validateName($result['name']),
+    );
+    self::assertEquals(
+      Success::CODE,
+      UserImpl::validateSurname($result['surname']),
+    );
+    self::assertEquals(
+      Success::CODE,
+      UserImpl::validateTheme($result['theme']),
+    );
+    self::assertEquals(
+      Success::CODE,
+      UserImpl::validateLanguage($result['language']),
+    );
+  }
+  
+  private function testChangeUserInformationWithoutParameters(
+    string $groupToken,
+    bool   $mute = false,
+  ): void {
+    if (!$mute) echo PHP_EOL . "Testing change user's information without parameters..." . PHP_EOL;
+    
+    $result = $this->service->changeUserInformation($groupToken);
+    
+    if (!$mute) echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    self::assertEquals(
+      NullAttributes::CODE,
+      $result['error'],
+    );
+  }
+  
+  private function testChangeUserUsernameWithExistingOne(
+    string $groupToken,
+    bool   $mute = false,
+  ): void {
+    if (!$mute) echo PHP_EOL . "Testing change user's username with an existing one..." . PHP_EOL;
+    
+    $randomUsername = 'second_user';
+    $generatedName = $this->generateString(12);
+    $generatedSurname = $this->generateString();
+    
+    $this->service->createUser(
+      $randomUsername,
+      $this->validPassword,
+      $generatedName,
+      $generatedSurname,
+    );
+    
+    $result = $this->service->changeUserInformation($groupToken, username: $randomUsername);
+    
+    if (!$mute) echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    self::assertEquals(
+      AlreadyExist::CODE,
+      $result['error'],
+    );
+    
+    Module::execute(
+      'DELETE FROM users
+            WHERE username=:username',
+      [
+        ':username' => $randomUsername,
+      ]
+    );
+  }
+  
+  private function testChangeUserInformationWithWrongParameters(
+    string $groupToken,
+    bool   $mute = false,
+  ): void {
+    if (!$mute) echo PHP_EOL . "Testing change user's information without parameters..." . PHP_EOL;
+    
+    $wrongPhone = '1234';
+    
+    $result = $this->service->changeUserInformation(
+             $groupToken,
+      phone: $wrongPhone,
+    );
+    
+    if (!$mute) echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    self::assertEquals(
+      ExceedingMinLength::CODE,
+      $result['error'],
+    );
+  }
+  
+  private function clearChangeUserInformationModifications(
     string $groupUsername,
   ): void {
     $this->clearCreateUserModification($groupUsername);

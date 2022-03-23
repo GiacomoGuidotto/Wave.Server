@@ -9,6 +9,7 @@ use Wave\Model\Singleton\Singleton;
 use Wave\Model\User\UserImpl;
 use Wave\Services\Database\Module\Module;
 use Wave\Specifications\ErrorCases\ErrorCases;
+use Wave\Specifications\ErrorCases\Generic\NullAttributes;
 use Wave\Specifications\ErrorCases\State\AlreadyExist;
 use Wave\Specifications\ErrorCases\State\NotFound;
 use Wave\Specifications\ErrorCases\State\Timeout;
@@ -496,8 +497,169 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
     ?string $theme = null,
     ?string $language = null,
   ): array {
-    // TODO: Implement changeUserInformation() method.
-    return [];
+    $tokenValidation = SessionImpl::validateToken($token);
+    
+    if ($tokenValidation != Success::CODE) {
+      return $this->generateErrorMessage($tokenValidation);
+    }
+    
+    // ==== Modular validation and query preparation ==============
+    $variableUpdateQuery =
+      '# noinspection
+      UPDATE users SET ';
+    $variableAttributes = [];
+    
+    if ($username !== null) {
+      $usernameValidation = UserImpl::validateUsername($username);
+      
+      if ($usernameValidation != Success::CODE) {
+        return $this->generateErrorMessage($usernameValidation);
+      }
+      
+      $variableUpdateQuery .= 'username = :username, ';
+      $variableAttributes[':username'] = $username;
+    }
+    
+    if ($name !== null) {
+      $nameValidation = UserImpl::validateName($name);
+      
+      if ($nameValidation != Success::CODE) {
+        return $this->generateErrorMessage($nameValidation);
+      }
+      
+      $variableUpdateQuery .= 'name = :name, ';
+      $variableAttributes[':name'] = $name;
+    }
+    
+    if ($surname !== null) {
+      $surnameValidation = UserImpl::validateSurname($surname);
+      
+      if ($surnameValidation != Success::CODE) {
+        return $this->generateErrorMessage($surnameValidation);
+      }
+      
+      $variableUpdateQuery .= 'surname = :surname, ';
+      $variableAttributes[':surname'] = $surname;
+    }
+    
+    if ($phone !== null) {
+      $phoneValidation = UserImpl::validatePhone($phone);
+      
+      if ($phoneValidation != Success::CODE) {
+        return $this->generateErrorMessage($phoneValidation);
+      }
+      
+      $variableUpdateQuery .= 'phone = :phone, ';
+      $variableAttributes[':phone'] = $phone;
+    }
+    
+    if ($picture !== null) {
+      $pictureValidation = UserImpl::validatePicture($picture);
+      
+      if ($pictureValidation != Success::CODE) {
+        return $this->generateErrorMessage($pictureValidation);
+      }
+      
+      $variableUpdateQuery .= 'picture = :picture, ';
+      $variableAttributes[':picture'] = $picture;
+    }
+    
+    if ($theme !== null) {
+      $themeValidation = UserImpl::validateTheme($theme);
+      
+      if ($themeValidation != Success::CODE) {
+        return $this->generateErrorMessage($themeValidation);
+      }
+      
+      $variableUpdateQuery .= 'theme = :theme, ';
+      $variableAttributes[':theme'] = $theme;
+    }
+    
+    if ($language !== null) {
+      $languageValidation = UserImpl::validateLanguage($language);
+      
+      if ($languageValidation != Success::CODE) {
+        return $this->generateErrorMessage($languageValidation);
+      }
+      
+      $variableUpdateQuery .= 'language = :language, ';
+      $variableAttributes[':language'] = $language;
+    }
+    
+    if (count($variableAttributes) == 0) {
+      return $this->generateErrorMessage(NullAttributes::CODE);
+    }
+    
+    $variableUpdateQuery = substr(
+        $variableUpdateQuery,
+        0,
+        strlen($variableUpdateQuery) - 2
+      ) . ' WHERE user_id = BINARY :user_id';
+    
+    // ==== Token authorization ==============
+    $tokenAuthorization = $this->authorizeToken($token);
+    
+    if ($tokenAuthorization != Success::CODE) {
+      return $this->generateErrorMessage($tokenAuthorization);
+    }
+    
+    // =======================================
+    Module::beginTransaction();
+    
+    // ==== Already exist checks =============
+    if ($username !== null) {
+      $user = Module::fetchOne(
+        'SELECT username, name
+             FROM users
+             WHERE username = BINARY :username AND active = TRUE',
+        [
+          ':username' => $username,
+        ]
+      );
+      
+      if ($user) {
+        Module::commitTransaction();
+        return $this->generateErrorMessage(AlreadyExist::CODE);
+      }
+    }
+    
+    $user_id = Module::fetchOne(
+      'SELECT user
+            FROM sessions
+            WHERE session_token = :session_token',
+      [
+        ':session_token' => $token,
+      ]
+    )['user'];
+    
+    $variableAttributes[':user_id'] = $user_id;
+    
+    Module::execute(
+      $variableUpdateQuery,
+      $variableAttributes
+    );
+    
+    $user = Module::fetchOne(
+      'SELECT username, name, surname, picture, phone, theme, language
+            FROM users
+            WHERE user_id = BINARY :user_id',
+      [
+        ':user_id' => $user_id,
+      ]
+    );
+    
+    Module::commitTransaction();
+    // TODO get picture from fs
+    // TODO send ws packet
+    return [
+      'username' => $user['username'],
+      'name'     => $user['name'],
+      'surname'  => $user['surname'],
+      'picture'  => $user['picture'],
+      'phone'    => $user['phone'],
+      'theme'    => $user['theme'],
+      'language' => $user['language'],
+    ];
   }
   
   /**

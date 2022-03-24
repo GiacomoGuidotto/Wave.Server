@@ -121,8 +121,8 @@ servers:
   - description: HTTP secured server
     url: https://localhost
   #    url: https://server.wave.com
-  - description: WS server
-    url: ws:localhost:8000
+  #  - description: WS server
+  #    url: ws:localhost:8000
   #    url: ws://server.wave.com
 tags:
   - name: Authentication
@@ -177,8 +177,6 @@ paths:
                     $ref: "#/components/schemas/sessionToken"
         400:
           $ref: "#/components/responses/400"
-        401:
-          $ref: "#/components/responses/401"
         404:
           $ref: "#/components/responses/404"
         405:

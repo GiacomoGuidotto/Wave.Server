@@ -96,11 +96,76 @@ if ($method == 'GET') {
 // ==== PUT case ===================================================================
 // =================================================================================
 if ($method == 'PUT') {
-
+  
+  // ==== Get parameters =========================================================
+  $token = $headers['token'];
+  $username = $headers['username'];
+  $name = $headers['name'];
+  $surname = $headers['surname'];
+  $phone = $headers['phone'];
+  $picture = $headers['picture'];
+  $theme = $headers['theme'];
+  $language = $headers['language'];
+  
+  // ==== Null check =============================================================
+  if ($token == null) {
+    http_response_code(ErrorCases::CODES_ASSOCIATIONS[NullAttributes::CODE]);
+    echo json_encode(
+      $service->generateErrorMessage(NullAttributes::CODE)
+    );
+    return;
+  }
+  
+  // ==== Elaboration ============================================================
+  $result = $service->changeUserInformation(
+    $token,
+    $username,
+    $name,
+    $surname,
+    $phone,
+    $picture,
+    $theme,
+    $language,
+  );
+  
+  // ==== Error case =============================================================
+  if ($result['error'] != null) {
+    http_response_code(ErrorCases::CODES_ASSOCIATIONS[$result['error']]);
+    echo json_encode($result);
+    return;
+  }
+  
+  // ==== Success case ===========================================================
+  echo json_encode($result);
+  return;
 }
 
 // ==== DELETE case ================================================================
 // =================================================================================
 if ($method == 'DELETE') {
-
+  
+  // ==== Get parameters =========================================================
+  $token = $headers['token'];
+  
+  // ==== Null check =============================================================
+  if ($token == null) {
+    http_response_code(ErrorCases::CODES_ASSOCIATIONS[NullAttributes::CODE]);
+    echo json_encode(
+      $service->generateErrorMessage(NullAttributes::CODE)
+    );
+    return;
+  }
+  
+  // ==== Elaboration ============================================================
+  $result = $service->deleteUser($token);
+  
+  // ==== Error case =============================================================
+  if ($result['error'] != null) {
+    http_response_code(ErrorCases::CODES_ASSOCIATIONS[$result['error']]);
+    echo json_encode($result);
+    return;
+  }
+  
+  // ==== Success case ===========================================================
+  return;
 }

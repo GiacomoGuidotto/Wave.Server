@@ -453,7 +453,7 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
     // =======================================
     Module::beginTransaction();
     
-    $user_id = Module::fetchOne(
+    $userId = Module::fetchOne(
       'SELECT user
             FROM sessions
             WHERE session_token = :session_token',
@@ -467,7 +467,7 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
             FROM users
             WHERE user_id = BINARY :user_id',
       [
-        ':user_id' => $user_id,
+        ':user_id' => $userId,
       ]
     );
     
@@ -623,7 +623,7 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
       }
     }
     
-    $user_id = Module::fetchOne(
+    $userId = Module::fetchOne(
       'SELECT user
             FROM sessions
             WHERE session_token = :session_token',
@@ -632,7 +632,7 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
       ]
     )['user'];
     
-    $variableAttributes[':user_id'] = $user_id;
+    $variableAttributes[':user_id'] = $userId;
     
     Module::execute(
       $variableUpdateQuery,
@@ -644,7 +644,7 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
             FROM users
             WHERE user_id = BINARY :user_id',
       [
-        ':user_id' => $user_id,
+        ':user_id' => $userId,
       ]
     );
     
@@ -668,8 +668,45 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
   public function deleteUser(
     string $token,
   ): ?array {
-    // TODO: Implement deleteUser() method.
-    return [];
+    $tokenValidation = SessionImpl::validateToken($token);
+    
+    if ($tokenValidation != Success::CODE) {
+      return $this->generateErrorMessage($tokenValidation);
+    }
+    
+    // ==== Token authorization ==============
+    $tokenAuthorization = $this->authorizeToken($token);
+    
+    if ($tokenAuthorization != Success::CODE) {
+      return $this->generateErrorMessage($tokenAuthorization);
+    }
+    
+    
+    // =======================================
+    Module::beginTransaction();
+    
+    $userId = Module::fetchOne(
+      'SELECT user
+            FROM sessions
+            WHERE session_token = :session_token',
+      [
+        ':session_token' => $token,
+      ]
+    )['user'];
+    
+    // TODO recursive deletion of contact relation and group participation, not the messages
+    
+    Module::execute(
+      'UPDATE users
+            SET active = FALSE
+            WHERE user_id = BINARY :user_id',
+      [
+        ':user_id' => $userId,
+      ]
+    );
+    
+    Module::commitTransaction();
+    return null;
   }
   
   // ==== Contact ==================================================================================

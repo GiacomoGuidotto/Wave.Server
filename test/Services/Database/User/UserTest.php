@@ -137,7 +137,7 @@ class UserTest extends TestCase {
   /**
    * @group getUserInformation
    */
-  public function testGetUserInformationCorrectProcedure() {
+  public function testGetUserInformationCorrectProcedure(): array {
     echo PHP_EOL . "Testing correct retrieve of the user's data..." . PHP_EOL;
     
     $result = self::$service->getUserInformation(self::$token);
@@ -164,14 +164,14 @@ class UserTest extends TestCase {
       Success::CODE,
       UserImpl::validateLanguage($result['language']),
     );
+    
+    return $result;
   }
   
   /**
    * @group getUserInformation
    */
-  public function testGetUserInformationWithUnknownToken(
-    bool $mute = false,
-  ) {
+  public function testGetUserInformationWithUnknownToken(): array {
     echo PHP_EOL . "Testing retrieve of the user's with unknown token..." . PHP_EOL;
     
     $generatedToken = Utilities::generateUuid();
@@ -184,12 +184,14 @@ class UserTest extends TestCase {
       Unauthorized::CODE,
       $result['error'],
     );
+    
+    return $result;
   }
   
   /**
    * @group getUserInformation
    */
-  public function testGetUserInformationWithWrongToken() {
+  public function testGetUserInformationWithWrongToken(): array {
     echo PHP_EOL . "Testing retrieve of the user's with unknown token..." . PHP_EOL;
     
     $wrongToken = 'tokentokentokentokentokentokentokent';
@@ -202,6 +204,8 @@ class UserTest extends TestCase {
       IncorrectPattern::CODE,
       $result['error'],
     );
+    
+    return $result;
   }
   
   // ==== changeUserInformation ====================================================================
@@ -210,7 +214,7 @@ class UserTest extends TestCase {
   /**
    * @group changeUserInformation
    */
-  public function testCorrectUserInformationChange(): void {
+  public function testCorrectUserInformationChange(): array {
     echo PHP_EOL . "Testing correct user's information change..." . PHP_EOL;
     
     $newName = 'newName';
@@ -246,12 +250,14 @@ class UserTest extends TestCase {
       Success::CODE,
       UserImpl::validateLanguage($result['language']),
     );
+    
+    return $result;
   }
   
   /**
    * @group changeUserInformation
    */
-  public function testChangeUserInformationWithoutParameters(): void {
+  public function testChangeUserInformationWithoutParameters(): array {
     echo PHP_EOL . "Testing change user's information without parameters..." . PHP_EOL;
     
     $result = self::$service->changeUserInformation(self::$token);
@@ -262,12 +268,14 @@ class UserTest extends TestCase {
       NullAttributes::CODE,
       $result['error'],
     );
+    
+    return $result;
   }
   
   /**
    * @group changeUserInformation
    */
-  public function testChangeUserUsernameWithExistingOne(): void {
+  public function testChangeUserUsernameWithExistingOne(): array {
     echo PHP_EOL . "Testing change user's username with an existing one..." . PHP_EOL;
     
     $randomUsername = 'second_user';
@@ -300,12 +308,14 @@ class UserTest extends TestCase {
         ':username' => $randomUsername,
       ]
     );
+    
+    return $result;
   }
   
   /**
    * @group changeUserInformation
    */
-  public function testChangeUserInformationWithWrongParameters(): void {
+  public function testChangeUserInformationWithWrongParameters(): array {
     echo PHP_EOL . "Testing change user's information without parameters..." . PHP_EOL;
     
     $wrongPhone = '1234';
@@ -321,6 +331,8 @@ class UserTest extends TestCase {
       ExceedingMinLength::CODE,
       $result['error'],
     );
+    
+    return $result;
   }
   
   public static function tearDownAfterClass(): void {
@@ -331,5 +343,63 @@ class UserTest extends TestCase {
         ':username' => self::$username,
       ]
     );
+  }
+  
+  // ==== deleteUser ===============================================================================
+  // ===============================================================================================
+  
+  /**
+   * @group deleteUser
+   */
+  public function testDeleteUserCorrectProcedure(): ?array {
+    echo PHP_EOL . "Testing correct user's deletion..." . PHP_EOL;
+    
+    $result = self::$service->deleteUser(self::$token);
+    
+    echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    self::assertNull($result);
+    
+    return $result;
+  }
+  
+  /**
+   * @group deleteUser
+   */
+  public function testDeleteUserWithUnknownToken(): array {
+    echo PHP_EOL . "Testing retrieve of the user's with unknown token..." . PHP_EOL;
+    
+    $generatedToken = Utilities::generateUuid();
+    
+    $result = self::$service->deleteUser($generatedToken);
+    
+    echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    self::assertEquals(
+      Unauthorized::CODE,
+      $result['error'],
+    );
+    
+    return $result;
+  }
+  
+  /**
+   * @group deleteUser
+   */
+  public function testDeleteUserWithWrongToken(): array {
+    echo PHP_EOL . "Testing retrieve of the user's with unknown token..." . PHP_EOL;
+    
+    $wrongToken = 'tokentokentokentokentokentokentokent';
+    
+    $result = self::$service->deleteUser($wrongToken);
+    
+    echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    self::assertEquals(
+      IncorrectPattern::CODE,
+      $result['error'],
+    );
+    
+    return $result;
   }
 }

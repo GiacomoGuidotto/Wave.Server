@@ -267,6 +267,16 @@ paths:
           required: false
           schema:
             $ref: "#/components/schemas/userPassword"
+      requestBody:
+        content:
+          image/png:
+            schema:
+              type: string
+              format: binary
+          image/jpeg:
+            schema:
+              type: string
+              format: binary
       responses:
         200:
           description: The user is successfully created.
@@ -355,6 +365,16 @@ paths:
           required: false
           schema:
             $ref: "#/components/schemas/userLanguage"
+      requestBody:
+        content:
+          image/png:
+            schema:
+              type: string
+              format: binary
+          image/jpeg:
+            schema:
+              type: string
+              format: binary
       responses:
         200:
           description: The user's information are successfully updated.
@@ -549,6 +569,16 @@ paths:
             type: array
             items:
               $ref: "#/components/schemas/userUsername"
+      requestBody:
+        content:
+          image/png:
+            schema:
+              type: string
+              format: binary
+          image/jpeg:
+            schema:
+              type: string
+              format: binary
       responses:
         200:
           description: The group is successfully created, its new information are retrieves.
@@ -661,6 +691,16 @@ paths:
           required: false
           schema:
             $ref: "#/components/schemas/groupPicture"
+      requestBody:
+        content:
+          image/png:
+            schema:
+              type: string
+              format: binary
+          image/jpeg:
+            schema:
+              type: string
+              format: binary
       responses:
         200:
           description: The group's information are successfully updated.
@@ -968,6 +1008,16 @@ paths:
           description: The eventual media of the message.
           schema:
             $ref: "#/components/schemas/messageMedia"
+      requestBody:
+        content:
+          image/png:
+            schema:
+              type: string
+              format: binary
+          image/jpeg:
+            schema:
+              type: string
+              format: binary
       responses:
         200:
           description: |
@@ -1033,6 +1083,16 @@ paths:
           description: The eventual new message's pinned state.
           schema:
             $ref: "#/components/schemas/messagePinned"
+      requestBody:
+        content:
+          image/png:
+            schema:
+              type: string
+              format: binary
+          image/jpeg:
+            schema:
+              type: string
+              format: binary
       responses:
         200:
           description: The message's content is successfully updated.

@@ -3,12 +3,10 @@
 namespace Wave\Services\Database;
 
 use DateInterval;
-use JetBrains\PhpStorm\ArrayShape;
 use Wave\Model\Session\SessionImpl;
 use Wave\Model\Singleton\Singleton;
 use Wave\Model\User\UserImpl;
-use Wave\Services\Database\Module\Module;
-use Wave\Specifications\ErrorCases\ErrorCases;
+use Wave\Services\Database\Module\DatabaseModule;
 use Wave\Specifications\ErrorCases\Generic\NullAttributes;
 use Wave\Specifications\ErrorCases\State\AlreadyExist;
 use Wave\Specifications\ErrorCases\State\NotFound;
@@ -16,6 +14,7 @@ use Wave\Specifications\ErrorCases\State\Timeout;
 use Wave\Specifications\ErrorCases\State\Unauthorized;
 use Wave\Specifications\ErrorCases\Success\Success;
 use Wave\Specifications\Wave\Wave;
+use Wave\Utilities\Utilities;
 
 /**
  * Database service class
@@ -23,29 +22,10 @@ use Wave\Specifications\Wave\Wave;
  */
 class DatabaseServiceImpl extends Singleton implements DatabaseService {
   
+  //TODO refactor to static methods and made them return the error code or null
+  
   // ==== Utility methods ==========================================================================
   // ==== Set of private methods ===================================================================
-  
-  /**
-   * Generate the error message associate in the error cases, given the code
-   *
-   * @param int $code The error code
-   * @return array    The object as array of the error message
-   */
-  #[ArrayShape([
-    'timestamp' => "string",
-    'error'     => "int",
-    'message'   => "string",
-    'details'   => "string",
-  ])] public function generateErrorMessage(int $code): array {
-    return [
-      'timestamp' => date('Y-m-d H:i:s'),
-      'error'     => $code,
-      'message'   => ErrorCases::ERROR_MESSAGES[$code],
-      'details'   => ErrorCases::ERROR_DETAILS[$code],
-    ];
-  }
-  
   
   /**
    * Calculate the time different between two date in full-time format
@@ -108,10 +88,10 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
    */
   private function authorizeToken(string $token): int {
     // =======================================
-    Module::beginTransaction();
+    DatabaseModule::beginTransaction();
     
     // ==== Find token =======================
-    $token_row = Module::fetchOne(
+    $token_row = DatabaseModule::fetchOne(
       'SELECT last_updated
              FROM sessions
              WHERE session_token = :session_token
@@ -122,20 +102,20 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
     );
     
     if ($token_row === false) {
-      Module::commitTransaction();
+      DatabaseModule::commitTransaction();
       return Unauthorized::CODE;
     }
     
     // ==== Update session TTL ===============
     $last_updated = $token_row['last_updated'];
     
-    $current_timestamp = Module::fetchOne(
+    $current_timestamp = DatabaseModule::fetchOne(
       'SELECT CURRENT_TIMESTAMP()'
     )['CURRENT_TIMESTAMP()'];
     
     if (!$this->validateTimeout($current_timestamp, $last_updated)) {
       // ==== If timeout =======================
-      Module::execute(
+      DatabaseModule::execute(
         'UPDATE sessions
                SET active = FALSE
                WHERE session_token = :session_token',
@@ -144,11 +124,11 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
         ]
       );
       
-      Module::commitTransaction();
+      DatabaseModule::commitTransaction();
       return Timeout::CODE;
     }
     
-    Module::execute(
+    DatabaseModule::execute(
       'UPDATE sessions
              SET last_updated = CURRENT_TIMESTAMP()
              WHERE session_token = :session_token',
@@ -157,7 +137,7 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
       ]
     );
     
-    Module::commitTransaction();
+    DatabaseModule::commitTransaction();
     return Success::CODE;
   }
   
@@ -177,20 +157,20 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
     $deviceValidation = SessionImpl::validateSource($source);
     
     if ($usernameValidation != Success::CODE) {
-      return $this->generateErrorMessage($usernameValidation);
+      return Utilities::generateErrorMessage($usernameValidation);
     }
     if ($passwordValidation != Success::CODE) {
-      return $this->generateErrorMessage($passwordValidation);
+      return Utilities::generateErrorMessage($passwordValidation);
     }
     if ($deviceValidation != Success::CODE) {
-      return $this->generateErrorMessage($deviceValidation);
+      return Utilities::generateErrorMessage($deviceValidation);
     }
     
     // =======================================
-    Module::beginTransaction();
+    DatabaseModule::beginTransaction();
     
     // ==== correct username and password ====
-    $storedPasswordRow = Module::fetchOne(
+    $storedPasswordRow = DatabaseModule::fetchOne(
       'SELECT user_id, password
             FROM users
             WHERE username = BINARY :username
@@ -202,20 +182,20 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
     
     // ==== username not found ===============
     if ($storedPasswordRow === false) {
-      Module::commitTransaction();
-      return $this->generateErrorMessage(NotFound::CODE);
+      DatabaseModule::commitTransaction();
+      return Utilities::generateErrorMessage(NotFound::CODE);
     }
     
     // ==== password incorrect ===============
     $storedPassword = $storedPasswordRow['password'];
     if (!password_verify($password, $storedPassword)) {
-      Module::commitTransaction();
-      return $this->generateErrorMessage(NotFound::CODE);
+      DatabaseModule::commitTransaction();
+      return Utilities::generateErrorMessage(NotFound::CODE);
     }
     
     // ==== delete token already existing ====
     $userId = $storedPasswordRow['user_id'];
-    Module::execute(
+    DatabaseModule::execute(
       'UPDATE sessions
             SET active = FALSE
             WHERE user = :user_id
@@ -227,7 +207,7 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
     );
     
     // ==== create token =====================
-    Module::execute(
+    DatabaseModule::execute(
       'INSERT
             INTO sessions (session_token, source, user, creation_timestamp, last_updated, active)
             VALUES (
@@ -245,13 +225,13 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
       ]
     );
     
-    $token = Module::fetchOne(
+    $token = DatabaseModule::fetchOne(
       'SELECT session_token
             FROM sessions
             WHERE session_id = LAST_INSERT_ID()'
     )['session_token'];
     
-    Module::commitTransaction();
+    DatabaseModule::commitTransaction();
     return [
       'token' => $token,
     ];
@@ -266,14 +246,14 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
     $tokenValidation = SessionImpl::validateToken($token);
     
     if ($tokenValidation != Success::CODE) {
-      return $this->generateErrorMessage($tokenValidation);
+      return Utilities::generateErrorMessage($tokenValidation);
     }
     
     // ==== Token authorization ==============
     $tokenAuthorization = $this->authorizeToken($token);
     
     if ($tokenAuthorization != Success::CODE) {
-      return $this->generateErrorMessage($tokenAuthorization);
+      return Utilities::generateErrorMessage($tokenAuthorization);
     }
     
     return null;
@@ -288,14 +268,14 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
     $tokenValidation = SessionImpl::validateToken($token);
     
     if ($tokenValidation != Success::CODE) {
-      return $this->generateErrorMessage($tokenValidation);
+      return Utilities::generateErrorMessage($tokenValidation);
     }
     
     // =======================================
-    Module::beginTransaction();
+    DatabaseModule::beginTransaction();
     
     // ==== Find token =======================
-    $tokenRow = Module::fetchOne(
+    $tokenRow = DatabaseModule::fetchOne(
       'SELECT last_updated
             FROM sessions
             WHERE session_token = :session_token
@@ -306,12 +286,12 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
     );
     
     if ($tokenRow === false) {
-      Module::commitTransaction();
-      return $this->generateErrorMessage(Unauthorized::CODE);
+      DatabaseModule::commitTransaction();
+      return Utilities::generateErrorMessage(Unauthorized::CODE);
     }
     
     // ==== Disable token ====================
-    Module::execute(
+    DatabaseModule::execute(
       'UPDATE sessions
             SET active = FALSE
             WHERE session_token = :session_token',
@@ -320,7 +300,7 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
       ]
     );
     
-    Module::commitTransaction();
+    DatabaseModule::commitTransaction();
     return null;
   }
   
@@ -344,40 +324,40 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
     $surnameValidation = UserImpl::validateSurname($surname);
     
     if ($usernameValidation != Success::CODE) {
-      return $this->generateErrorMessage($usernameValidation);
+      return Utilities::generateErrorMessage($usernameValidation);
     }
     if ($passwordValidation != Success::CODE) {
-      return $this->generateErrorMessage($passwordValidation);
+      return Utilities::generateErrorMessage($passwordValidation);
     }
     if ($nameValidation != Success::CODE) {
-      return $this->generateErrorMessage($nameValidation);
+      return Utilities::generateErrorMessage($nameValidation);
     }
     if ($surnameValidation != Success::CODE) {
-      return $this->generateErrorMessage($surnameValidation);
+      return Utilities::generateErrorMessage($surnameValidation);
     }
     
     if ($phone != null) {
       $phoneValidation = UserImpl::validatePhone($phone);
       
       if ($phoneValidation != Success::CODE) {
-        return $this->generateErrorMessage($phoneValidation);
+        return Utilities::generateErrorMessage($phoneValidation);
       }
     }
     
     if ($picture != null) {
-      // TODO safe picture in fs
+      // TODO save picture in fs
       $pictureValidation = UserImpl::validatePicture($picture);
       
       if ($pictureValidation != Success::CODE) {
-        return $this->generateErrorMessage($pictureValidation);
+        return Utilities::generateErrorMessage($pictureValidation);
       }
     }
     
     // =======================================
-    Module::beginTransaction();
+    DatabaseModule::beginTransaction();
     
     // ==== Already exist checks =============
-    $user = Module::fetchOne(
+    $user = DatabaseModule::fetchOne(
       'SELECT username, name
              FROM users
              WHERE username = BINARY :username AND active = TRUE',
@@ -387,15 +367,15 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
     );
     
     if ($user) {
-      Module::commitTransaction();
-      return $this->generateErrorMessage(AlreadyExist::CODE);
+      DatabaseModule::commitTransaction();
+      return Utilities::generateErrorMessage(AlreadyExist::CODE);
     }
     
     // ==== Securing password ================
     $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
     
     // ==== Insert query =====================
-    Module::execute(
+    DatabaseModule::execute(
       'INSERT
             INTO users (username, password, name, surname, picture, phone, active)
             VALUES (
@@ -418,7 +398,7 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
       ]
     );
     
-    Module::commitTransaction();
+    DatabaseModule::commitTransaction();
     return [
       'username' => $username,
       'name'     => $name,
@@ -439,20 +419,20 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
     $tokenValidation = SessionImpl::validateToken($token);
     
     if ($tokenValidation != Success::CODE) {
-      return $this->generateErrorMessage($tokenValidation);
+      return Utilities::generateErrorMessage($tokenValidation);
     }
     
     // ==== Token authorization ==============
     $tokenAuthorization = $this->authorizeToken($token);
     
     if ($tokenAuthorization != Success::CODE) {
-      return $this->generateErrorMessage($tokenAuthorization);
+      return Utilities::generateErrorMessage($tokenAuthorization);
     }
     
     // =======================================
-    Module::beginTransaction();
+    DatabaseModule::beginTransaction();
     
-    $userId = Module::fetchOne(
+    $userId = DatabaseModule::fetchOne(
       'SELECT user
             FROM sessions
             WHERE session_token = :session_token',
@@ -461,7 +441,7 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
       ]
     )['user'];
     
-    $user = Module::fetchOne(
+    $user = DatabaseModule::fetchOne(
       'SELECT username, name, surname, picture, phone, theme, language
             FROM users
             WHERE user_id = BINARY :user_id',
@@ -470,7 +450,7 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
       ]
     );
     
-    Module::commitTransaction();
+    DatabaseModule::commitTransaction();
     // TODO get picture from fs
     return [
       'username' => $user['username'],
@@ -499,7 +479,7 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
     $tokenValidation = SessionImpl::validateToken($token);
     
     if ($tokenValidation != Success::CODE) {
-      return $this->generateErrorMessage($tokenValidation);
+      return Utilities::generateErrorMessage($tokenValidation);
     }
     
     // ==== Modular validation and query preparation ==============
@@ -512,7 +492,7 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
       $usernameValidation = UserImpl::validateUsername($username);
       
       if ($usernameValidation != Success::CODE) {
-        return $this->generateErrorMessage($usernameValidation);
+        return Utilities::generateErrorMessage($usernameValidation);
       }
       
       $variableUpdateQuery .= 'username = :username, ';
@@ -523,7 +503,7 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
       $nameValidation = UserImpl::validateName($name);
       
       if ($nameValidation != Success::CODE) {
-        return $this->generateErrorMessage($nameValidation);
+        return Utilities::generateErrorMessage($nameValidation);
       }
       
       $variableUpdateQuery .= 'name = :name, ';
@@ -534,7 +514,7 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
       $surnameValidation = UserImpl::validateSurname($surname);
       
       if ($surnameValidation != Success::CODE) {
-        return $this->generateErrorMessage($surnameValidation);
+        return Utilities::generateErrorMessage($surnameValidation);
       }
       
       $variableUpdateQuery .= 'surname = :surname, ';
@@ -545,7 +525,7 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
       $phoneValidation = UserImpl::validatePhone($phone);
       
       if ($phoneValidation != Success::CODE) {
-        return $this->generateErrorMessage($phoneValidation);
+        return Utilities::generateErrorMessage($phoneValidation);
       }
       
       $variableUpdateQuery .= 'phone = :phone, ';
@@ -553,10 +533,11 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
     }
     
     if ($picture !== null) {
+      // TODO save picture in fs
       $pictureValidation = UserImpl::validatePicture($picture);
       
       if ($pictureValidation != Success::CODE) {
-        return $this->generateErrorMessage($pictureValidation);
+        return Utilities::generateErrorMessage($pictureValidation);
       }
       
       $variableUpdateQuery .= 'picture = :picture, ';
@@ -567,7 +548,7 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
       $themeValidation = UserImpl::validateTheme($theme);
       
       if ($themeValidation != Success::CODE) {
-        return $this->generateErrorMessage($themeValidation);
+        return Utilities::generateErrorMessage($themeValidation);
       }
       
       $variableUpdateQuery .= 'theme = :theme, ';
@@ -578,7 +559,7 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
       $languageValidation = UserImpl::validateLanguage($language);
       
       if ($languageValidation != Success::CODE) {
-        return $this->generateErrorMessage($languageValidation);
+        return Utilities::generateErrorMessage($languageValidation);
       }
       
       $variableUpdateQuery .= 'language = :language, ';
@@ -586,7 +567,7 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
     }
     
     if (count($variableAttributes) == 0) {
-      return $this->generateErrorMessage(NullAttributes::CODE);
+      return Utilities::generateErrorMessage(NullAttributes::CODE);
     }
     
     $variableUpdateQuery = substr(
@@ -599,15 +580,15 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
     $tokenAuthorization = $this->authorizeToken($token);
     
     if ($tokenAuthorization != Success::CODE) {
-      return $this->generateErrorMessage($tokenAuthorization);
+      return Utilities::generateErrorMessage($tokenAuthorization);
     }
     
     // =======================================
-    Module::beginTransaction();
+    DatabaseModule::beginTransaction();
     
     // ==== Already exist checks =============
     if ($username !== null) {
-      $user = Module::fetchOne(
+      $user = DatabaseModule::fetchOne(
         'SELECT username, name
              FROM users
              WHERE username = BINARY :username AND active = TRUE',
@@ -617,12 +598,12 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
       );
       
       if ($user) {
-        Module::commitTransaction();
-        return $this->generateErrorMessage(AlreadyExist::CODE);
+        DatabaseModule::commitTransaction();
+        return Utilities::generateErrorMessage(AlreadyExist::CODE);
       }
     }
     
-    $userId = Module::fetchOne(
+    $userId = DatabaseModule::fetchOne(
       'SELECT user
             FROM sessions
             WHERE session_token = :session_token',
@@ -633,12 +614,12 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
     
     $variableAttributes[':user_id'] = $userId;
     
-    Module::execute(
+    DatabaseModule::execute(
       $variableUpdateQuery,
       $variableAttributes
     );
     
-    $user = Module::fetchOne(
+    $user = DatabaseModule::fetchOne(
       'SELECT username, name, surname, picture, phone, theme, language
             FROM users
             WHERE user_id = BINARY :user_id',
@@ -647,7 +628,7 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
       ]
     );
     
-    Module::commitTransaction();
+    DatabaseModule::commitTransaction();
     // TODO get picture from fs
     // TODO send ws packet
     return [
@@ -670,21 +651,21 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
     $tokenValidation = SessionImpl::validateToken($token);
     
     if ($tokenValidation != Success::CODE) {
-      return $this->generateErrorMessage($tokenValidation);
+      return Utilities::generateErrorMessage($tokenValidation);
     }
     
     // ==== Token authorization ==============
     $tokenAuthorization = $this->authorizeToken($token);
     
     if ($tokenAuthorization != Success::CODE) {
-      return $this->generateErrorMessage($tokenAuthorization);
+      return Utilities::generateErrorMessage($tokenAuthorization);
     }
     
     
     // =======================================
-    Module::beginTransaction();
+    DatabaseModule::beginTransaction();
     
-    $userId = Module::fetchOne(
+    $userId = DatabaseModule::fetchOne(
       'SELECT user
             FROM sessions
             WHERE session_token = :session_token',
@@ -695,7 +676,7 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
     
     // TODO recursive deletion of contact relation and group participation, not the messages
     
-    Module::execute(
+    DatabaseModule::execute(
       'UPDATE users
             SET active = FALSE
             WHERE user_id = BINARY :user_id',
@@ -704,7 +685,7 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
       ]
     );
     
-    Module::commitTransaction();
+    DatabaseModule::commitTransaction();
     return null;
   }
   
@@ -945,12 +926,12 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
   public function purgeDatabase(): void {
     
     // ==== purge users ==================================================================
-    Module::execute('DELETE FROM users WHERE active = FALSE');
+    DatabaseModule::execute('DELETE FROM users WHERE active = FALSE');
     
     // ==== purge tokens =================================================================
-    Module::execute('DELETE FROM sessions WHERE active = FALSE');
+    DatabaseModule::execute('DELETE FROM sessions WHERE active = FALSE');
     
     // ==== purge groups =================================================================
-    Module::execute('DELETE FROM `groups` WHERE active = FALSE');
+    DatabaseModule::execute('DELETE FROM `groups` WHERE active = FALSE');
   }
 }

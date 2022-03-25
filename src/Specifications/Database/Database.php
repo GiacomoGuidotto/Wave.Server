@@ -3,8 +3,9 @@
 namespace Wave\Specifications\Database;
 
 /**
- * Database specifications
- * Set of global constant defining database-related details
+ * Database specifications.
+ *
+ * Set of global constant defining database-related details.
  */
 interface Database {
   const SERVER_NAME = 'localhost';

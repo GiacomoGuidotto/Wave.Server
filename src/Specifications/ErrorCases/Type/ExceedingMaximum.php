@@ -1,12 +1,12 @@
 <?php
 
-namespace Wave\Specifications\ErrorCases\Integer;
+namespace Wave\Specifications\ErrorCases\Type;
 
 /**
  * @see ErrorCases
  */
-interface ExceedingMaxRange {
-  const CODE = 30;
+interface ExceedingMaximum {
+  const CODE = 24;
   const MESSAGE = "Integer exceed the maximum value";
   const DETAILS = 'The int-typed attribute exceeds the maximum permitted value';
 }

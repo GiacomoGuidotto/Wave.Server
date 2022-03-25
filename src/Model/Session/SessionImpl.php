@@ -3,10 +3,10 @@
 namespace Wave\Model\Session;
 
 
-use Wave\Specifications\ErrorCases\String\ExceedingMaxLength;
-use Wave\Specifications\ErrorCases\String\ExceedingMinLength;
-use Wave\Specifications\ErrorCases\String\IncorrectPattern;
 use Wave\Specifications\ErrorCases\Success\Success;
+use Wave\Specifications\ErrorCases\Type\ExceedingMaxLength;
+use Wave\Specifications\ErrorCases\Type\ExceedingMinLength;
+use Wave\Specifications\ErrorCases\Type\IncorrectPattern;
 
 /**
  * Session resource class

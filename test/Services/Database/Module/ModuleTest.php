@@ -3,17 +3,17 @@
 namespace Services\Database\Module;
 
 use PHPUnit\Framework\TestCase;
-use Wave\Services\Database\Module\Module;
+use Wave\Services\Database\Module\DatabaseModule;
 
 class ModuleTest extends TestCase {
   public function testCorrectInstance() {
-    $testedModule = Module::getInstance();
+    $testedModule = DatabaseModule::getInstance();
     
-    self::assertInstanceOf(Module::class, $testedModule);
+    self::assertInstanceOf(DatabaseModule::class, $testedModule);
   }
   
   public function testFetch() {
-    $validModule = Module::getInstance();
+    $validModule = DatabaseModule::getInstance();
     
     $validModule->instanceBeginTransaction();
     $databaseName = $validModule->instanceFetchOne(
@@ -28,11 +28,11 @@ class ModuleTest extends TestCase {
   }
   
   public function testFetchShortcut() {
-    Module::beginTransaction();
-    $databaseName = Module::fetchOne(
+    DatabaseModule::beginTransaction();
+    $databaseName = DatabaseModule::fetchOne(
       'SELECT DATABASE()'
     )['DATABASE()'];
-    Module::commitTransaction();
+    DatabaseModule::commitTransaction();
     
     self::assertEquals(
       'wave',

@@ -2,17 +2,38 @@
 
 namespace Wave\Model\Group;
 
-use Wave\Specifications\ErrorCases\String\ExceedingMaxLength;
-use Wave\Specifications\ErrorCases\String\ExceedingMinLength;
-use Wave\Specifications\ErrorCases\String\IncorrectParsing;
-use Wave\Specifications\ErrorCases\String\IncorrectPattern;
+use Wave\Specifications\ErrorCases\Mime\IncorrectPayload;
 use Wave\Specifications\ErrorCases\Success\Success;
+use Wave\Specifications\ErrorCases\Type\ExceedingMaxLength;
+use Wave\Specifications\ErrorCases\Type\ExceedingMinLength;
+use Wave\Specifications\ErrorCases\Type\IncorrectParsing;
+use Wave\Specifications\ErrorCases\Type\IncorrectPattern;
 
 /**
  * Group resource class
  * The implementation of the Group interface
  */
 class GroupImpl implements Group {
+  
+  /**
+   * @inheritDoc
+   */
+  public static function validateGroup(string $group): int {
+    if (strlen($group) > 36) {
+      return ExceedingMaxLength::CODE;
+    }
+    if (strlen($group) < 36) {
+      return ExceedingMinLength::CODE;
+    }
+    if (preg_match(
+        "#^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$#",
+        $group
+      ) != 1) {
+      return IncorrectPattern::CODE;
+    }
+    
+    return Success::CODE;
+  }
   
   /**
    * @inheritDoc
@@ -46,7 +67,9 @@ class GroupImpl implements Group {
    * @inheritDoc
    */
   public static function validatePicture(string $picture): int {
-    // TODO base64 encoded image/png or image/jpg validation
+    if (!file_exists($picture)) {
+      return IncorrectPayload::CODE;
+    }
     
     return Success::CODE;
   }

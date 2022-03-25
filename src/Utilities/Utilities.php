@@ -2,7 +2,31 @@
 
 namespace Wave\Utilities;
 
+use JetBrains\PhpStorm\ArrayShape;
+use Wave\Specifications\ErrorCases\ErrorCases;
+
 class Utilities {
+  
+  /**
+   * Generate the error message associate in the error cases, given the code
+   *
+   * @param int $code The error code
+   * @return array    The object as array of the error message
+   */
+  #[ArrayShape([
+    'timestamp' => "string",
+    'error'     => "int",
+    'message'   => "string",
+    'details'   => "string",
+  ])] public static function generateErrorMessage(int $code): array {
+    return [
+      'timestamp' => date('Y-m-d H:i:s'),
+      'error'     => $code,
+      'message'   => ErrorCases::ERROR_MESSAGES[$code],
+      'details'   => ErrorCases::ERROR_DETAILS[$code],
+    ];
+  }
+  
   /**
    * Generate a random string for attribute testing
    *
@@ -51,6 +75,4 @@ class Utilities {
       mt_rand(0, 0xffff)
     );
   }
-  
-  
 }

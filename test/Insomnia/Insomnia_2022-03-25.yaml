@@ -1,11 +1,11 @@
 _type: export
 __export_format: 4
-__export_date: 2022-03-25T11:23:05.503Z
+__export_date: 2022-03-25T11:59:29.605Z
 __export_source: insomnia.desktop.app:v2022.2.1
 resources:
   - _id: req_ef7a4cfc9a0f42beb3b683e1bd0d7292
     parentId: fld_3d08978deae44f3ba8bff26813094da6
-    modified: 1648205357579
+    modified: 1648208805085
     created: 1648203861649
     url: "{{ _.root }}"
     name: 200 OK
@@ -42,40 +42,9 @@ resources:
     description: ""
     scope: collection
     _type: workspace
-  - _id: req_40cc6ed25616403b937a96c6928c45df
-    parentId: fld_08142e7d8f9042f4977529d826e58968
-    modified: 1648207027209
-    created: 1648205619787
-    url: "{{ _.auth }}"
-    name: 405 Invalid method
-    description: ""
-    method: HEAD
-    body: {}
-    parameters: []
-    headers: []
-    authentication: {}
-    metaSortKey: -1648204194670
-    isPrivate: false
-    settingStoreCookies: true
-    settingSendCookies: true
-    settingDisableRenderRequestBody: false
-    settingEncodeUrl: true
-    settingRebuildPath: true
-    settingFollowRedirects: global
-    _type: request
-  - _id: fld_08142e7d8f9042f4977529d826e58968
-    parentId: wrk_54d78f42b92f4f3cb37e379497710434
-    modified: 1648205370823
-    created: 1648204174034
-    name: Authentication
-    description: ""
-    environment: {}
-    environmentPropertyOrder: null
-    metaSortKey: -1648205337501
-    _type: request_group
   - _id: req_5a183bcf1781457eada6c0b988b1db41
     parentId: fld_6f83fcc6d797491fb18f613ef01f1988
-    modified: 1648206721579
+    modified: 1648208882022
     created: 1648205481025
     url: "{{ _.auth }}"
     name: 200 OK
@@ -115,6 +84,16 @@ resources:
     environment: {}
     environmentPropertyOrder: null
     metaSortKey: -1648204194620
+    _type: request_group
+  - _id: fld_08142e7d8f9042f4977529d826e58968
+    parentId: wrk_54d78f42b92f4f3cb37e379497710434
+    modified: 1648205370823
+    created: 1648204174034
+    name: Authentication
+    description: ""
+    environment: {}
+    environmentPropertyOrder: null
+    metaSortKey: -1648205337501
     _type: request_group
   - _id: req_43ec72732f134310b48ce1bafb738ab0
     parentId: fld_6f83fcc6d797491fb18f613ef01f1988
@@ -358,11 +337,11 @@ resources:
     settingRebuildPath: true
     settingFollowRedirects: global
     _type: request
-  - _id: req_e4bac6f9e40d49bdab946b659e952cd7
-    parentId: fld_5570efe221134e27acbe02813c2c3b00
-    modified: 1648206859474
-    created: 1648205287805
-    url: "{{ _.user }}"
+  - _id: req_40cc6ed25616403b937a96c6928c45df
+    parentId: fld_08142e7d8f9042f4977529d826e58968
+    modified: 1648209543225
+    created: 1648205619787
+    url: "{{ _.auth }}"
     name: 405 Invalid method
     description: ""
     method: HEAD
@@ -370,7 +349,7 @@ resources:
     parameters: []
     headers: []
     authentication: {}
-    metaSortKey: -1648204218232
+    metaSortKey: -1648204194545
     isPrivate: false
     settingStoreCookies: true
     settingSendCookies: true
@@ -379,19 +358,9 @@ resources:
     settingRebuildPath: true
     settingFollowRedirects: global
     _type: request
-  - _id: fld_5570efe221134e27acbe02813c2c3b00
-    parentId: wrk_54d78f42b92f4f3cb37e379497710434
-    modified: 1648204179660
-    created: 1648204179660
-    name: User
-    description: ""
-    environment: {}
-    environmentPropertyOrder: null
-    metaSortKey: -1648204179660
-    _type: request_group
   - _id: req_c2caa95bc9364f17a1df1dee00d388e6
     parentId: fld_8d06ece0417b4ac38513d3c36c026b67
-    modified: 1648206716769
+    modified: 1648208857482
     created: 1648204389410
     url: "{{ _.user }}"
     name: 200 OK
@@ -435,6 +404,16 @@ resources:
     environment: {}
     environmentPropertyOrder: null
     metaSortKey: -1648204218182
+    _type: request_group
+  - _id: fld_5570efe221134e27acbe02813c2c3b00
+    parentId: wrk_54d78f42b92f4f3cb37e379497710434
+    modified: 1648204179660
+    created: 1648204179660
+    name: User
+    description: ""
+    environment: {}
+    environmentPropertyOrder: null
+    metaSortKey: -1648204179660
     _type: request_group
   - _id: req_f21dbe053b104feeb11ffeac51745eb1
     parentId: fld_8d06ece0417b4ac38513d3c36c026b67
@@ -685,7 +664,7 @@ resources:
     _type: request
   - _id: req_a61b1742c2064f178afef9274effb4e8
     parentId: fld_a71f2ed9f01f49d8a2fac66267011884
-    modified: 1648207347691
+    modified: 1648208741522
     created: 1648207241126
     url: "{{ _.user }}"
     name: 409 Alreader exist
@@ -799,9 +778,81 @@ resources:
     settingRebuildPath: true
     settingFollowRedirects: global
     _type: request
+  - _id: req_e4bac6f9e40d49bdab946b659e952cd7
+    parentId: fld_5570efe221134e27acbe02813c2c3b00
+    modified: 1648209540646
+    created: 1648205287805
+    url: "{{ _.user }}"
+    name: 405 Invalid method
+    description: ""
+    method: HEAD
+    body: {}
+    parameters: []
+    headers: []
+    authentication: {}
+    metaSortKey: -1648204217982
+    isPrivate: false
+    settingStoreCookies: true
+    settingSendCookies: true
+    settingDisableRenderRequestBody: false
+    settingEncodeUrl: true
+    settingRebuildPath: true
+    settingFollowRedirects: global
+    _type: request
+  - _id: req_afd21a177d9d4e0d8effae213800b29a
+    parentId: fld_9f61a736aa5c47ba96fdd0d28636803a
+    modified: 1648209274561
+    created: 1648208890826
+    url: "{{ _.admin }}"
+    name: 200 OK
+    description: ""
+    method: OPTIONS
+    body: {}
+    parameters: []
+    headers:
+      - id: pair_e39f2795c7554dbd9fa9c989bcc587ca
+        name: admin
+        value: GbM/7PB6u3hPOD8G5/0utuyCZvBID9oIw6w6RGx3Bdx0G.QsXgL8q
+        description: ""
+        disabled: false
+      - id: pair_8c497f26950b4cdb9eb34e45088ad43d
+        name: directive
+        value: 4PmB3be8Dd1azYT9IWTmeufGIMRVWVGNlmVBWOruj2tSLV6QoTpFe
+        description: ""
+        disabled: false
+    authentication: {}
+    metaSortKey: -1648208890826
+    isPrivate: false
+    settingStoreCookies: true
+    settingSendCookies: true
+    settingDisableRenderRequestBody: false
+    settingEncodeUrl: true
+    settingRebuildPath: true
+    settingFollowRedirects: global
+    _type: request
+  - _id: fld_9f61a736aa5c47ba96fdd0d28636803a
+    parentId: fld_f1effb12c6d3435cbde1c301c75ca2ad
+    modified: 1648209229575
+    created: 1648209224511
+    name: Purge database
+    description: ""
+    environment: {}
+    environmentPropertyOrder: null
+    metaSortKey: -1648208890876
+    _type: request_group
+  - _id: fld_f1effb12c6d3435cbde1c301c75ca2ad
+    parentId: wrk_54d78f42b92f4f3cb37e379497710434
+    modified: 1648209254061
+    created: 1648208839441
+    name: Admin
+    description: ""
+    environment: {}
+    environmentPropertyOrder: null
+    metaSortKey: -1648204179610
+    _type: request_group
   - _id: env_495dac2c0b3545e832abe47b82e5556dac8478d2
     parentId: wrk_54d78f42b92f4f3cb37e379497710434
-    modified: 1648207347042
+    modified: 1648208881360
     created: 1648203529511
     name: Base Environment
     data:
@@ -810,6 +861,7 @@ resources:
       api_address: /api
       base_url: "{{ _.protocol }}://{{ _.server_domain }}{{ _.api_address }}"
       root: "{{ _.base_url }}/"
+      admin: "{{ _.base_url }}/admin"
       auth: "{{ _.base_url }}/auth"
       user: "{{ _.base_url }}/user"
       standard_username: insomnia_agent
@@ -825,6 +877,7 @@ resources:
         - api_address
         - base_url
         - root
+        - admin
         - auth
         - user
         - standard_username

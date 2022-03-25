@@ -5,6 +5,7 @@ use Wave\Services\Cors\Cors;
 use Wave\Services\Database\DatabaseServiceImpl;
 use Wave\Specifications\ErrorCases\ErrorCases;
 use Wave\Specifications\ErrorCases\Generic\NullAttributes;
+use Wave\Utilities\Utilities;
 
 
 $service = DatabaseServiceImpl::getInstance();
@@ -39,7 +40,7 @@ if ($method == 'POST') {
   if ($username == null || $password == null || $source == null) {
     http_response_code(ErrorCases::CODES_ASSOCIATIONS[NullAttributes::CODE]);
     echo json_encode(
-      $service->generateErrorMessage(NullAttributes::CODE)
+      Utilities::generateErrorMessage(NullAttributes::CODE)
     );
     return;
   }
@@ -70,7 +71,7 @@ if ($method == 'PUT') {
   if ($token == null) {
     http_response_code(ErrorCases::CODES_ASSOCIATIONS[NullAttributes::CODE]);
     echo json_encode(
-      $service->generateErrorMessage(NullAttributes::CODE)
+      Utilities::generateErrorMessage(NullAttributes::CODE)
     );
     return;
   }
@@ -100,7 +101,7 @@ if ($method == 'DELETE') {
   if ($token == null) {
     http_response_code(ErrorCases::CODES_ASSOCIATIONS[NullAttributes::CODE]);
     echo json_encode(
-      $service->generateErrorMessage(NullAttributes::CODE)
+      Utilities::generateErrorMessage(NullAttributes::CODE)
     );
     return;
   }

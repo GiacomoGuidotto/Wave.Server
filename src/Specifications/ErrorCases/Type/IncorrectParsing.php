@@ -1,6 +1,6 @@
 <?php
 
-namespace Wave\Specifications\ErrorCases\String;
+namespace Wave\Specifications\ErrorCases\Type;
 
 /**
  * @see ErrorCases

@@ -2,10 +2,10 @@
 
 namespace Wave\Model\Contact;
 
-use Wave\Specifications\ErrorCases\String\ExceedingMaxLength;
-use Wave\Specifications\ErrorCases\String\ExceedingMinLength;
-use Wave\Specifications\ErrorCases\String\IncorrectParsing;
 use Wave\Specifications\ErrorCases\Success\Success;
+use Wave\Specifications\ErrorCases\Type\ExceedingMaxLength;
+use Wave\Specifications\ErrorCases\Type\ExceedingMinLength;
+use Wave\Specifications\ErrorCases\Type\IncorrectParsing;
 
 /**
  * Contact resource class

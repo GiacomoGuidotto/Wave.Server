@@ -5,11 +5,11 @@ namespace Services\Database\Authentication;
 use PHPUnit\Framework\TestCase;
 use Wave\Model\Session\SessionImpl;
 use Wave\Services\Database\DatabaseServiceImpl;
-use Wave\Services\Database\Module\Module;
+use Wave\Services\Database\Module\DatabaseModule;
 use Wave\Specifications\ErrorCases\State\NotFound;
 use Wave\Specifications\ErrorCases\State\Unauthorized;
-use Wave\Specifications\ErrorCases\String\IncorrectPattern;
 use Wave\Specifications\ErrorCases\Success\Success;
+use Wave\Specifications\ErrorCases\Type\IncorrectPattern;
 use Wave\Utilities\Utilities;
 
 class AuthenticationTest extends TestCase {
@@ -268,7 +268,7 @@ class AuthenticationTest extends TestCase {
   }
   
   public static function tearDownAfterClass(): void {
-    Module::execute(
+    DatabaseModule::execute(
       'DELETE FROM users
             WHERE username=:username',
       [

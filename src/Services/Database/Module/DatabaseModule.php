@@ -12,11 +12,11 @@ use Wave\Specifications\Database\Database;
  *
  * Access point to the MySQL database
  */
-class Module extends Singleton {
+class DatabaseModule extends Singleton {
   private PDO $database;
   
   /**
-   * Module constructor, called only on the first run.
+   * DatabaseModule constructor, called only on the first run.
    *
    * Initialize the database connection
    */

@@ -3,8 +3,9 @@
 namespace Wave\Specifications\Wave;
 
 /**
- * Wave specifications
- * Set of global constant defining general details
+ * Wave specifications.
+ *
+ * Set of global constant defining general details.
  */
 interface Wave {
   const SESSION_DURATION = '15 minutes';

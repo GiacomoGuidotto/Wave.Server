@@ -2,11 +2,12 @@
 
 namespace Wave\Model\User;
 
-use Wave\Specifications\ErrorCases\String\ExceedingMaxLength;
-use Wave\Specifications\ErrorCases\String\ExceedingMinLength;
-use Wave\Specifications\ErrorCases\String\IncorrectParsing;
-use Wave\Specifications\ErrorCases\String\IncorrectPattern;
+use Wave\Specifications\ErrorCases\Mime\IncorrectPayload;
 use Wave\Specifications\ErrorCases\Success\Success;
+use Wave\Specifications\ErrorCases\Type\ExceedingMaxLength;
+use Wave\Specifications\ErrorCases\Type\ExceedingMinLength;
+use Wave\Specifications\ErrorCases\Type\IncorrectParsing;
+use Wave\Specifications\ErrorCases\Type\IncorrectPattern;
 use Wave\Specifications\Wave\Wave;
 
 /**
@@ -84,7 +85,9 @@ class UserImpl implements User {
    * @inheritDoc
    */
   public static function validatePicture(string $picture): int {
-    // TODO base64 encoded image/png or image/jpg validation
+    if (!file_exists($picture)) {
+      return IncorrectPayload::CODE;
+    }
     
     return Success::CODE;
   }

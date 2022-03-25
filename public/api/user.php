@@ -5,6 +5,7 @@ use Wave\Services\Cors\Cors;
 use Wave\Services\Database\DatabaseServiceImpl;
 use Wave\Specifications\ErrorCases\ErrorCases;
 use Wave\Specifications\ErrorCases\Generic\NullAttributes;
+use Wave\Utilities\Utilities;
 
 
 $service = DatabaseServiceImpl::getInstance();
@@ -25,6 +26,7 @@ if (!in_array($method, $validMethods)) {
 }
 
 $headers = getallheaders();
+$body = trim(file_get_contents('php://input'), '"');
 
 // ==== POST case ==================================================================
 // =================================================================================
@@ -36,7 +38,7 @@ if ($method == 'POST') {
   $name = $headers['name'];
   $surname = $headers['surname'];
   $phone = $headers['phone'];
-  $picture = $headers['picture'];
+  $picture = $body;
   
   // ==== Null check =============================================================
   if ($username == null || $password == null || $name == null || $surname == null) {
@@ -103,7 +105,7 @@ if ($method == 'PUT') {
   $name = $headers['name'];
   $surname = $headers['surname'];
   $phone = $headers['phone'];
-  $picture = $headers['picture'];
+  $picture = $body;
   $theme = $headers['theme'];
   $language = $headers['language'];
   
@@ -111,12 +113,13 @@ if ($method == 'PUT') {
   if ($token == null) {
     http_response_code(ErrorCases::CODES_ASSOCIATIONS[NullAttributes::CODE]);
     echo json_encode(
-      $service->generateErrorMessage(NullAttributes::CODE)
+      Utilities::generateErrorMessage(NullAttributes::CODE)
     );
     return;
   }
   
   // ==== Elaboration ============================================================
+  // TODO fetch req body
   $result = $service->changeUserInformation(
     $token,
     $username,
@@ -151,7 +154,7 @@ if ($method == 'DELETE') {
   if ($token == null) {
     http_response_code(ErrorCases::CODES_ASSOCIATIONS[NullAttributes::CODE]);
     echo json_encode(
-      $service->generateErrorMessage(NullAttributes::CODE)
+      Utilities::generateErrorMessage(NullAttributes::CODE)
     );
     return;
   }

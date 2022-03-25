@@ -259,22 +259,16 @@ paths:
           required: false
           schema:
             $ref: "#/components/schemas/userPhone"
-        - name: picture
-          in: header
-          description: The eventual new user's profile picture.
-          required: false
-          schema:
-            $ref: "#/components/schemas/userPassword"
       requestBody:
+        required: false
+        description: The eventual new user's picture.
         content:
           image/png:
             schema:
-              type: string
-              format: binary
+              $ref: "#/components/schemas/userPicture"
           image/jpeg:
             schema:
-              type: string
-              format: binary
+              $ref: "#/components/schemas/userPicture"
       responses:
         200:
           description: The user is successfully created.
@@ -345,12 +339,6 @@ paths:
           required: false
           schema:
             $ref: "#/components/schemas/userPhone"
-        - name: picture
-          in: header
-          description: The eventual new user's picture.
-          required: false
-          schema:
-            $ref: "#/components/schemas/userPicture"
         - name: theme
           in: header
           description: The eventual new user's theme.
@@ -364,15 +352,15 @@ paths:
           schema:
             $ref: "#/components/schemas/userLanguage"
       requestBody:
+        required: false
+        description: The eventual new user's picture.
         content:
           image/png:
             schema:
-              type: string
-              format: binary
+              $ref: "#/components/schemas/userPicture"
           image/jpeg:
             schema:
-              type: string
-              format: binary
+              $ref: "#/components/schemas/userPicture"
       responses:
         200:
           description: The user's information are successfully updated.
@@ -553,12 +541,6 @@ paths:
           required: false
           schema:
             $ref: "#/components/schemas/groupInfo"
-        - name: picture
-          in: header
-          description: The eventual group's picture.
-          required: false
-          schema:
-            $ref: "#/components/schemas/groupPicture"
         - name: users
           in: header
           description: The eventual list of group's new members.
@@ -568,15 +550,15 @@ paths:
             items:
               $ref: "#/components/schemas/userUsername"
       requestBody:
+        required: false
+        description: The eventual group's picture.
         content:
           image/png:
             schema:
-              type: string
-              format: binary
+              $ref: "#/components/schemas/groupPicture"
           image/jpeg:
             schema:
-              type: string
-              format: binary
+              $ref: "#/components/schemas/groupPicture"
       responses:
         200:
           description: The group is successfully created, its new information are retrieves.
@@ -683,22 +665,16 @@ paths:
           required: false
           schema:
             $ref: "#/components/schemas/groupInfo"
-        - name: picture
-          in: header
-          description: The eventual new group's picture.
-          required: false
-          schema:
-            $ref: "#/components/schemas/groupPicture"
       requestBody:
+        required: false
+        description: The eventual group's picture.
         content:
           image/png:
             schema:
-              type: string
-              format: binary
+              $ref: "#/components/schemas/groupPicture"
           image/jpeg:
             schema:
-              type: string
-              format: binary
+              $ref: "#/components/schemas/groupPicture"
       responses:
         200:
           description: The group's information are successfully updated.
@@ -1000,22 +976,16 @@ paths:
           description: The eventual text of the message.
           schema:
             $ref: "#/components/schemas/messageText"
-        - name: media
-          in: header
-          required: false
-          description: The eventual media of the message.
-          schema:
-            $ref: "#/components/schemas/messageMedia"
       requestBody:
+        required: false
+        description: The eventual media of the message.
         content:
           image/png:
             schema:
-              type: string
-              format: binary
+              $ref: "#/components/schemas/messageMedia"
           image/jpeg:
             schema:
-              type: string
-              format: binary
+              $ref: "#/components/schemas/messageMedia"
       responses:
         200:
           description: |
@@ -1069,12 +1039,6 @@ paths:
           description: The eventual new message's text.
           schema:
             $ref: "#/components/schemas/messageText"
-        - name: media
-          in: header
-          required: false
-          description: The eventual new message's media.
-          schema:
-            $ref: "#/components/schemas/messageMedia"
         - name: pinned
           in: header
           required: false
@@ -1082,15 +1046,15 @@ paths:
           schema:
             $ref: "#/components/schemas/messagePinned"
       requestBody:
+        required: false
+        description: The eventual new message's media.
         content:
           image/png:
             schema:
-              type: string
-              format: binary
+              $ref: "#/components/schemas/messageMedia"
           image/jpeg:
             schema:
-              type: string
-              format: binary
+              $ref: "#/components/schemas/messageMedia"
       responses:
         200:
           description: The message's content is successfully updated.

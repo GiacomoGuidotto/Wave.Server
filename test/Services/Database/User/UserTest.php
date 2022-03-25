@@ -5,13 +5,13 @@ namespace Services\Database\User;
 use PHPUnit\Framework\TestCase;
 use Wave\Model\User\UserImpl;
 use Wave\Services\Database\DatabaseServiceImpl;
-use Wave\Services\Database\Module\Module;
+use Wave\Services\Database\Module\DatabaseModule;
 use Wave\Specifications\ErrorCases\Generic\NullAttributes;
 use Wave\Specifications\ErrorCases\State\AlreadyExist;
 use Wave\Specifications\ErrorCases\State\Unauthorized;
-use Wave\Specifications\ErrorCases\String\ExceedingMinLength;
-use Wave\Specifications\ErrorCases\String\IncorrectPattern;
 use Wave\Specifications\ErrorCases\Success\Success;
+use Wave\Specifications\ErrorCases\Type\ExceedingMinLength;
+use Wave\Specifications\ErrorCases\Type\IncorrectPattern;
 use Wave\Utilities\Utilities;
 
 class UserTest extends TestCase {
@@ -120,7 +120,7 @@ class UserTest extends TestCase {
       $result['error'],
     );
     
-    Module::execute(
+    DatabaseModule::execute(
       'DELETE FROM users
             WHERE username=:username',
       [
@@ -301,7 +301,7 @@ class UserTest extends TestCase {
       $result['error'],
     );
     
-    Module::execute(
+    DatabaseModule::execute(
       'DELETE FROM users
             WHERE username=:username',
       [
@@ -336,7 +336,7 @@ class UserTest extends TestCase {
   }
   
   public static function tearDownAfterClass(): void {
-    Module::execute(
+    DatabaseModule::execute(
       'DELETE FROM users
             WHERE username=:username',
       [

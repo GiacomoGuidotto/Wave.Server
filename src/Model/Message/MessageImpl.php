@@ -2,11 +2,12 @@
 
 namespace Wave\Model\Message;
 
-use Wave\Specifications\ErrorCases\String\ExceedingMaxLength;
-use Wave\Specifications\ErrorCases\String\ExceedingMinLength;
-use Wave\Specifications\ErrorCases\String\IncorrectParsing;
-use Wave\Specifications\ErrorCases\String\IncorrectPattern;
+use Wave\Specifications\ErrorCases\Mime\IncorrectPayload;
 use Wave\Specifications\ErrorCases\Success\Success;
+use Wave\Specifications\ErrorCases\Type\ExceedingMaxLength;
+use Wave\Specifications\ErrorCases\Type\ExceedingMinLength;
+use Wave\Specifications\ErrorCases\Type\IncorrectParsing;
+use Wave\Specifications\ErrorCases\Type\IncorrectPattern;
 
 /**
  * Message resource class
@@ -92,7 +93,9 @@ class MessageImpl implements Message {
    * @inheritDoc
    */
   public static function validateMedia(string $media): int {
-    // TODO base64 encoded image/png or image/jpg validation
+    if (!file_exists($media)) {
+      return IncorrectPayload::CODE;
+    }
     
     return Success::CODE;
   }

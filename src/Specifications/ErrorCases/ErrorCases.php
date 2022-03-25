@@ -3,18 +3,21 @@
 namespace Wave\Specifications\ErrorCases;
 
 use Wave\Specifications\ErrorCases\Generic\NullAttributes;
-use Wave\Specifications\ErrorCases\Integer\ExceedingMaxRange;
-use Wave\Specifications\ErrorCases\Integer\ExceedingMinRange;
+use Wave\Specifications\ErrorCases\Mime\DecodingFailed;
+use Wave\Specifications\ErrorCases\Mime\IncorrectFileType;
+use Wave\Specifications\ErrorCases\Mime\IncorrectPayload;
 use Wave\Specifications\ErrorCases\State\AlreadyExist;
 use Wave\Specifications\ErrorCases\State\Forbidden;
 use Wave\Specifications\ErrorCases\State\NotFound;
 use Wave\Specifications\ErrorCases\State\Timeout;
 use Wave\Specifications\ErrorCases\State\Unauthorized;
-use Wave\Specifications\ErrorCases\String\ExceedingMaxLength;
-use Wave\Specifications\ErrorCases\String\ExceedingMinLength;
-use Wave\Specifications\ErrorCases\String\IncorrectParsing;
-use Wave\Specifications\ErrorCases\String\IncorrectPattern;
 use Wave\Specifications\ErrorCases\Success\Success;
+use Wave\Specifications\ErrorCases\Type\ExceedingMaximum;
+use Wave\Specifications\ErrorCases\Type\ExceedingMaxLength;
+use Wave\Specifications\ErrorCases\Type\ExceedingMinimum;
+use Wave\Specifications\ErrorCases\Type\ExceedingMinLength;
+use Wave\Specifications\ErrorCases\Type\IncorrectParsing;
+use Wave\Specifications\ErrorCases\Type\IncorrectPattern;
 
 /**
  * Error cases' set
@@ -32,15 +35,18 @@ use Wave\Specifications\ErrorCases\Success\Success;
  * ==== generic ================
  * 10 Null attributes
  *
- * ==== string-related =========
+ * ==== type-related =========
  * 20 Exceeding max length
  * 21 Exceeding min length
  * 22 Incorrect parsing
  * 23 Incorrect pattern
+ * 24 Exceeding maximum
+ * 25 Exceeding minimum
  *
- * ==== int-related ============
- * 30 Exceeding max range
- * 31 Exceeding min range
+ * ==== mime-related ===========
+ * 30 Incorrect payload
+ * 31 Incorrect file type
+ * 32 Decoding failed
  *
  * ==== state-related ==========
  * 40 Unauthorized
@@ -57,8 +63,11 @@ interface ErrorCases {
     ExceedingMinLength::CODE => 400,
     IncorrectParsing::CODE   => 400,
     IncorrectPattern::CODE   => 400,
-    ExceedingMaxRange::CODE  => 400,
-    ExceedingMinRange::CODE  => 400,
+    ExceedingMaximum::CODE   => 400,
+    ExceedingMinimum::CODE   => 400,
+    IncorrectPayload::CODE   => 400,
+    IncorrectFileType::CODE  => 400,
+    DecodingFailed::CODE     => 400,
     Unauthorized::CODE       => 401,
     Timeout::CODE            => 401,
     Forbidden::CODE          => 403,
@@ -73,8 +82,11 @@ interface ErrorCases {
     ExceedingMinLength::CODE => ExceedingMinLength::MESSAGE,
     IncorrectParsing::CODE   => IncorrectParsing::MESSAGE,
     IncorrectPattern::CODE   => IncorrectPattern::MESSAGE,
-    ExceedingMaxRange::CODE  => ExceedingMaxRange::MESSAGE,
-    ExceedingMinRange::CODE  => ExceedingMinRange::MESSAGE,
+    ExceedingMaximum::CODE   => ExceedingMaximum::MESSAGE,
+    ExceedingMinimum::CODE   => ExceedingMinimum::MESSAGE,
+    IncorrectPayload::CODE   => IncorrectPayload::MESSAGE,
+    IncorrectFileType::CODE  => IncorrectFileType::MESSAGE,
+    DecodingFailed::CODE     => DecodingFailed::MESSAGE,
     Unauthorized::CODE       => Unauthorized::MESSAGE,
     Timeout::CODE            => Timeout::MESSAGE,
     Forbidden::CODE          => Forbidden::MESSAGE,
@@ -89,8 +101,11 @@ interface ErrorCases {
     ExceedingMinLength::CODE => ExceedingMinLength::DETAILS,
     IncorrectParsing::CODE   => IncorrectParsing::DETAILS,
     IncorrectPattern::CODE   => IncorrectPattern::DETAILS,
-    ExceedingMaxRange::CODE  => ExceedingMaxRange::DETAILS,
-    ExceedingMinRange::CODE  => ExceedingMinRange::DETAILS,
+    ExceedingMaximum::CODE   => ExceedingMaximum::DETAILS,
+    ExceedingMinimum::CODE   => ExceedingMinimum::DETAILS,
+    IncorrectPayload::CODE   => IncorrectPayload::DETAILS,
+    IncorrectFileType::CODE  => IncorrectFileType::DETAILS,
+    DecodingFailed::CODE     => DecodingFailed::DETAILS,
     Unauthorized::CODE       => Unauthorized::DETAILS,
     Timeout::CODE            => Timeout::DETAILS,
     Forbidden::CODE          => Forbidden::DETAILS,

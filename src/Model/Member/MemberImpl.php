@@ -2,9 +2,9 @@
 
 namespace Wave\Model\Member;
 
-use Wave\Specifications\ErrorCases\Integer\ExceedingMaxRange;
-use Wave\Specifications\ErrorCases\Integer\ExceedingMinRange;
 use Wave\Specifications\ErrorCases\Success\Success;
+use Wave\Specifications\ErrorCases\Type\ExceedingMaximum;
+use Wave\Specifications\ErrorCases\Type\ExceedingMinimum;
 
 /**
  * Member resource class
@@ -17,10 +17,10 @@ class MemberImpl implements Member {
    */
   public static function validatePermission(int $permission): int {
     if ($permission > 127) {
-      return ExceedingMaxRange::CODE;
+      return ExceedingMaximum::CODE;
     }
     if ($permission < 0) {
-      return ExceedingMinRange::CODE;
+      return ExceedingMinimum::CODE;
     }
     
     return Success::CODE;

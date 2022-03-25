@@ -458,4 +458,14 @@ interface DatabaseService {
     ?string $group = null,
     ?string $contact = null,
   ): ?array;
+  
+  // ==== Administration ===========================================================================
+  // ==== Use cases related to the database administration =========================================
+  
+  /**
+   * Delete all the unused database's entities
+   *
+   * Delete the database's entities where "active" is set to "false"
+   */
+  public function purgeDatabase(): void;
 }

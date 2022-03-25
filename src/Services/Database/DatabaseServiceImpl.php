@@ -23,7 +23,6 @@ use Wave\Specifications\Wave\Wave;
  */
 class DatabaseServiceImpl extends Singleton implements DatabaseService {
   
-  
   // ==== Utility methods ==========================================================================
   // ==== Set of private methods ===================================================================
   
@@ -935,5 +934,23 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
   ): ?array {
     // TODO: Implement deleteMessage() method.
     return [];
+  }
+  
+  // ==== Administration ===========================================================================
+  // ==== Use cases related to the database administration =========================================
+  
+  /**
+   * @inheritDoc
+   */
+  public function purgeDatabase(): void {
+    
+    // ==== purge users ==================================================================
+    Module::execute('DELETE FROM users WHERE active = FALSE');
+    
+    // ==== purge tokens =================================================================
+    Module::execute('DELETE FROM sessions WHERE active = FALSE');
+    
+    // ==== purge groups =================================================================
+    Module::execute('DELETE FROM `groups` WHERE active = FALSE');
   }
 }

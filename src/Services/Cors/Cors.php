@@ -16,16 +16,51 @@ class Cors {
       ];
       
       $allowedMethods = [
-        'auth'    => ['POST', 'PUT', 'DELETE'],
-        'user'    => ['POST', 'GET', 'PUT', 'DELETE'],
-        'contact' => ['POST', 'GET', 'PUT', 'DELETE'],
-        'group'   => ['POST', 'GET', 'PATCH', 'PUT', 'DELETE'],
-        'member'  => ['POST', 'GET', 'PUT', 'DELETE'],
-        'message' => ['POST', 'GET', 'PUT', 'DELETE'],
+        'auth'    => [
+          'POST',
+          'PUT',
+          'DELETE',
+        ],
+        'user'    => [
+          'POST',
+          'GET',
+          'PUT',
+          'DELETE',
+        ],
+        'contact' => [
+          'POST',
+          'GET',
+          'PUT',
+          'DELETE',
+        ],
+        'group'   => [
+          'POST',
+          'GET',
+          'PATCH',
+          'PUT',
+          'DELETE',
+        ],
+        'member'  => [
+          'POST',
+          'GET',
+          'PUT',
+          'DELETE',
+        ],
+        'message' => [
+          'POST',
+          'GET',
+          'PUT',
+          'DELETE',
+        ],
       ];
       
       $allowedHeaders = [
-        'auth'    => ['username', 'password', 'device', 'token'],
+        'auth'    => [
+          'username',
+          'password',
+          'device',
+          'token',
+        ],
         'user'    => [
           'username',
           'password',
@@ -37,9 +72,26 @@ class Cors {
           'language',
           'token',
         ],
-        'contact' => ['token', 'user', 'directive'],
-        'group'   => ['token', 'name', 'info', 'picture', 'users', 'group', 'directive'],
-        'member'  => ['token', 'group', 'user', 'permission'],
+        'contact' => [
+          'token',
+          'user',
+          'directive',
+        ],
+        'group'   => [
+          'token',
+          'name',
+          'info',
+          'picture',
+          'users',
+          'group',
+          'directive',
+        ],
+        'member'  => [
+          'token',
+          'group',
+          'user',
+          'permission',
+        ],
         'message' => [
           'token',
           'group',
@@ -57,7 +109,9 @@ class Cors {
       foreach ($allowedOrigins as $allowedOrigin) {
         if (preg_match('#' . $allowedOrigin . '#', $_SERVER['HTTP_ORIGIN'])) {
           header('Access-Control-Allow-Origin: ' . $_SERVER['HTTP_ORIGIN']);
-          header('Access-Control-Allow-Methods: OPTIONS, ' . join(', ', $allowedMethods[$endpoint]));
+          header(
+            'Access-Control-Allow-Methods: OPTIONS, ' . join(', ', $allowedMethods[$endpoint])
+          );
           header('Access-Control-Max-Age: 1000');
           header('Access-Control-Allow-Headers: ' . join(', ', $allowedHeaders[$endpoint]));
           break;

@@ -1,6 +1,6 @@
 _type: export
 __export_format: 4
-__export_date: 2022-03-26T15:04:32.845Z
+__export_date: 2022-03-26T20:29:17.669Z
 __export_source: insomnia.desktop.app:v2022.2.1
 resources:
   - _id: req_ef7a4cfc9a0f42beb3b683e1bd0d7292
@@ -44,7 +44,7 @@ resources:
     _type: workspace
   - _id: req_5a183bcf1781457eada6c0b988b1db41
     parentId: fld_6f83fcc6d797491fb18f613ef01f1988
-    modified: 1648307036654
+    modified: 1648326515288
     created: 1648205481025
     url: "{{ _.auth }}"
     name: 200 OK
@@ -360,7 +360,7 @@ resources:
     _type: request
   - _id: req_c2caa95bc9364f17a1df1dee00d388e6
     parentId: fld_8d06ece0417b4ac38513d3c36c026b67
-    modified: 1648306926869
+    modified: 1648326330137
     created: 1648204389410
     url: "{{ _.user }}"
     name: 200 OK
@@ -496,7 +496,7 @@ resources:
     _type: request
   - _id: req_d281b579ffb749b29e33e499cdaaf66e
     parentId: fld_247ac6c24dd54c30a93ebe1cb5f750df
-    modified: 1648306858939
+    modified: 1648326333642
     created: 1648206099609
     url: "{{ _.user }}"
     name: 200 OK
@@ -709,7 +709,7 @@ resources:
     _type: request
   - _id: req_3c2ac786a3b84efabf83847097e33c5b
     parentId: fld_c3624710464742c58fa19686323b8ee5
-    modified: 1648306923882
+    modified: 1648326220866
     created: 1648206531958
     url: "{{ _.user }}"
     name: 200 OK

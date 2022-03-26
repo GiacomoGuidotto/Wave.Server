@@ -455,12 +455,16 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
     );
     
     DatabaseModule::commitTransaction();
-    // TODO get picture from fs
+    
+    // ==== Retrieve picture =====================
+    $filepath = $user['picture'];
+    $picture = !is_null($filepath) ? MIMEServiceImpl::retrieveImage($filepath) : null;
+    
     return [
       'username' => $user['username'],
       'name'     => $user['name'],
       'surname'  => $user['surname'],
-      'picture'  => $user['picture'],
+      'picture'  => $picture,
       'phone'    => $user['phone'],
       'theme'    => $user['theme'],
       'language' => $user['language'],
@@ -688,8 +692,25 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
       ]
     )['user'];
     
-    // TODO delete picture from fs
+    // ==== Delete picture =======================
+    $filepath = DatabaseModule::fetchOne(
+      'SELECT picture
+            FROM users
+            WHERE user_id = :user_id',
+      [
+        ':user_id' => $userId,
+      ]
+    )['picture'];
     
+    if (!is_null($filepath)) {
+      $result = MIMEServiceImpl::deleteImage($filepath);
+      if (!is_null($result)) {
+        DatabaseModule::commitTransaction();
+        return Utilities::generateErrorMessage($result);
+      }
+    }
+    
+    // ==== Delete user ==========================
     // TODO recursive deletion of contact relation and group participation, not the messages
     
     DatabaseModule::execute(

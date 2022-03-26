@@ -13,17 +13,29 @@ class MIMEModuleTest extends TestCase {
       . '==============================================================' . PHP_EOL;
   }
   
-  public function testCorrectMediaInsertion(): string {
+  public function testCorrectMediaRetrieve(): string {
+    echo PHP_EOL . 'Testing correct media retrieve...' . PHP_EOL;
+    
+    $filepath = '../../../../assets/icons/favicon.png';
+    
+    $result = MIMEModule::retrieveMedia($filepath);
+    
+    echo 'Result: ' . substr($result, 0, 50) . '...' . PHP_EOL;
+    
+    self::assertIsString($result);
+    
+    return $result;
+  }
+  
+  /**
+   * @depends testCorrectMediaRetrieve
+   */
+  public function testCorrectMediaInsertion(string $media): string {
     echo PHP_EOL . 'Testing correct media insertion...' . PHP_EOL;
     
-    $path = '../../../../assets/icons/favicon.png';
-    $type = pathinfo($path, PATHINFO_EXTENSION);
-    $data = file_get_contents($path);
-    $media = 'data:image/' . $type . ';base64,' . base64_encode($data);
+    $newFilepath = '../../../../filesystem/tests/test';
     
-    $filepath = '../../../../filesystem/tests/test';
-    
-    $result = MIMEModule::saveMedia($filepath, $media);
+    $result = MIMEModule::saveMedia($newFilepath, $media);
     
     echo 'Result: ' . $result . PHP_EOL;
     
@@ -33,5 +45,20 @@ class MIMEModuleTest extends TestCase {
     );
     
     return $result;
+  }
+  
+  /**
+   * @depends testCorrectMediaInsertion
+   */
+  public function testCorrectMediaDeletion(
+    string $filepath
+  ) {
+    echo PHP_EOL . 'Testing correct media deletion...' . PHP_EOL;
+    
+    $result = MIMEModule::deleteMedia($filepath);
+    
+    echo 'Result: ' . $result . PHP_EOL;
+    
+    self::assertNull($result);
   }
 }

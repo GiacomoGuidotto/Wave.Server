@@ -8,17 +8,6 @@ namespace Wave\Services\MIME;
  * Save MIMEs, specifically images, in the filesystem and translate them in filepath
  */
 interface MIMEService {
-  
-  /**
-   * Retrieve an image from the filesystem
-   *
-   * Use the given filepath for locating and returning the image from the filesystem
-   *
-   * @param string $filepath The requested image's filepath
-   * @return string|int      The decoded image or the error code
-   */
-  public static function retrieveImage(string $filepath): string|int;
-  
   /**
    * Save a user's profile picture into the filesystem
    *
@@ -45,4 +34,25 @@ interface MIMEService {
    * @return string|int     The generated filepath or the error code
    */
   public static function saveMessageMedia(string $image, string $message): string|int;
+  
+  /**
+   * Retrieve an image from the filesystem
+   *
+   * Use the given filepath for locating and returning the image from the filesystem
+   *
+   * @param string $filepath The requested image's filepath
+   * @return string|int      The decoded image or the error code
+   */
+  public static function retrieveImage(string $filepath): string|int;
+  
+  /**
+   * Delete an image from the filesystem
+   *
+   * Use the given filepath for locating and deleting the image from the filesystem
+   *
+   * @param string $filepath The targeted image's filepath
+   * @return int|null        The eventual error code
+   */
+  public static function deleteImage(string $filepath): ?int;
+  
 }

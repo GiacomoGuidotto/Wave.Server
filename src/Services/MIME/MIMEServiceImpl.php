@@ -11,13 +11,6 @@ use Wave\Specifications\ErrorCases\Success\Success;
 
 class MIMEServiceImpl extends Singleton implements MIMEService {
   
-  /**
-   * @inheritDoc
-   */
-  public static function retrieveImage(string $filepath): string|int {
-    // TODO: Implement retrieveImage() method.
-    return '';
-  }
   
   /**
    * @inheritDoc
@@ -74,5 +67,19 @@ class MIMEServiceImpl extends Singleton implements MIMEService {
     $filepath = $_SERVER['DOCUMENT_ROOT'] . "filesystem/images/message/$message";
     
     return MIMEModule::saveMedia($filepath, $image);
+  }
+  
+  /**
+   * @inheritDoc
+   */
+  public static function retrieveImage(string $filepath): string|int {
+    return MIMEModule::retrieveMedia($filepath);
+  }
+  
+  /**
+   * @inheritDoc
+   */
+  public static function deleteImage(string $filepath): ?int {
+    return MIMEModule::deleteMedia($filepath);
   }
 }

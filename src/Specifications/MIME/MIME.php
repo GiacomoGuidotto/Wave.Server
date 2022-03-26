@@ -10,5 +10,4 @@ namespace Wave\Specifications\MIME;
 interface MIME {
   const SUPPORTED_IMAGES = ['jpg', 'jpeg', 'png'];
   const SUPPORTED_MIME = ['jpg', 'jpeg', 'png'];
-  const BASE_URI = '../../../filesystem/images';
 }

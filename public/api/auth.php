@@ -32,12 +32,12 @@ $headers = getallheaders();
 if ($method == 'POST') {
   
   // ==== Get parameters =========================================================
-  $username = $headers['username'];
-  $password = $headers['password'];
-  $source = $headers['source'];
+  $username = $headers['username'] ?? null;
+  $password = $headers['password'] ?? null;
+  $source = $headers['source'] ?? null;
   
   // ==== Null check =============================================================
-  if ($username == null || $password == null || $source == null) {
+  if (is_null($username) || is_null($password) || is_null($source)) {
     http_response_code(ErrorCases::CODES_ASSOCIATIONS[NullAttributes::CODE]);
     echo json_encode(
       Utilities::generateErrorMessage(NullAttributes::CODE)
@@ -49,7 +49,7 @@ if ($method == 'POST') {
   $result = $service->login($username, $password, $source);
   
   // ==== Error case =============================================================
-  if ($result['error'] != null) {
+  if (isset($result['error'])) {
     http_response_code(ErrorCases::CODES_ASSOCIATIONS[$result['error']]);
     echo json_encode($result);
     return;
@@ -65,10 +65,10 @@ if ($method == 'POST') {
 if ($method == 'PUT') {
   
   // ==== Get parameters =========================================================
-  $token = $headers['token'];
+  $token = $headers['token'] ?? null;
   
   // ==== Null check =============================================================
-  if ($token == null) {
+  if (is_null($token)) {
     http_response_code(ErrorCases::CODES_ASSOCIATIONS[NullAttributes::CODE]);
     echo json_encode(
       Utilities::generateErrorMessage(NullAttributes::CODE)
@@ -80,7 +80,7 @@ if ($method == 'PUT') {
   $result = $service->poke($token);
   
   // ==== Error case =============================================================
-  if ($result['error'] != null) {
+  if (isset($result['error'])) {
     http_response_code(ErrorCases::CODES_ASSOCIATIONS[$result['error']]);
     echo json_encode($result);
     return;
@@ -95,10 +95,10 @@ if ($method == 'PUT') {
 if ($method == 'DELETE') {
   
   // ==== Get parameters =========================================================
-  $token = $headers['token'];
+  $token = $headers['token'] ?? null;
   
   // ==== Null check =============================================================
-  if ($token == null) {
+  if (is_null($token)) {
     http_response_code(ErrorCases::CODES_ASSOCIATIONS[NullAttributes::CODE]);
     echo json_encode(
       Utilities::generateErrorMessage(NullAttributes::CODE)
@@ -110,7 +110,7 @@ if ($method == 'DELETE') {
   $result = $service->logout($token);
   
   // ==== Error case =============================================================
-  if ($result['error'] != null) {
+  if (isset($result['error'])) {
     http_response_code(ErrorCases::CODES_ASSOCIATIONS[$result['error']]);
     echo json_encode($result);
     return;

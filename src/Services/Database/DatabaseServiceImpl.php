@@ -7,6 +7,7 @@ use Wave\Model\Session\SessionImpl;
 use Wave\Model\Singleton\Singleton;
 use Wave\Model\User\UserImpl;
 use Wave\Services\Database\Module\DatabaseModule;
+use Wave\Services\MIME\MIMEServiceImpl;
 use Wave\Specifications\ErrorCases\Generic\NullAttributes;
 use Wave\Specifications\ErrorCases\State\AlreadyExist;
 use Wave\Specifications\ErrorCases\State\NotFound;
@@ -344,19 +345,10 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
       }
     }
     
-    if ($picture != null) {
-      // TODO save picture in fs
-      $pictureValidation = UserImpl::validatePicture($picture);
-      
-      if ($pictureValidation != Success::CODE) {
-        return Utilities::generateErrorMessage($pictureValidation);
-      }
-    }
-    
-    // =======================================
+    // ===========================================
     DatabaseModule::beginTransaction();
     
-    // ==== Already exist checks =============
+    // ==== Already exist checks =================
     $user = DatabaseModule::fetchOne(
       'SELECT username, name
              FROM users
@@ -371,10 +363,22 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
       return Utilities::generateErrorMessage(AlreadyExist::CODE);
     }
     
-    // ==== Securing password ================
+    // ==== Save image into the fs ===============
+    $filepath = null;
+    
+    if ($picture != null) {
+      $filepath = MIMEServiceImpl::saveUserImage($picture, $username);
+      
+      if (!is_string($filepath)) {
+        DatabaseModule::commitTransaction();
+        return Utilities::generateErrorMessage($filepath);
+      }
+    }
+    
+    // ==== Securing password ====================
     $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
     
-    // ==== Insert query =====================
+    // ==== Insert query =========================
     DatabaseModule::execute(
       'INSERT
             INTO users (username, password, name, surname, picture, phone, active)
@@ -392,7 +396,7 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
         ':password' => $hashedPassword,
         ':name'     => $name,
         ':surname'  => $surname,
-        ':picture'  => null, //TODO replace with file path
+        ':picture'  => $filepath,
         ':phone'    => $phone,
         ':active'   => true,
       ]
@@ -532,18 +536,6 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
       $variableAttributes[':phone'] = $phone;
     }
     
-    if ($picture !== null) {
-      // TODO save picture in fs
-      $pictureValidation = UserImpl::validatePicture($picture);
-      
-      if ($pictureValidation != Success::CODE) {
-        return Utilities::generateErrorMessage($pictureValidation);
-      }
-      
-      $variableUpdateQuery .= 'picture = :picture, ';
-      $variableAttributes[':picture'] = $picture;
-    }
-    
     if ($theme !== null) {
       $themeValidation = UserImpl::validateTheme($theme);
       
@@ -570,26 +562,29 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
       return Utilities::generateErrorMessage(NullAttributes::CODE);
     }
     
-    $variableUpdateQuery = substr(
-        $variableUpdateQuery,
-        0,
-        strlen($variableUpdateQuery) - 2
-      ) . ' WHERE user_id = BINARY :user_id';
-    
-    // ==== Token authorization ==============
+    // ==== Token authorization ==================
     $tokenAuthorization = $this->authorizeToken($token);
     
     if ($tokenAuthorization != Success::CODE) {
       return Utilities::generateErrorMessage($tokenAuthorization);
     }
     
-    // =======================================
+    // ===========================================
     DatabaseModule::beginTransaction();
     
-    // ==== Already exist checks =============
+    $userId = DatabaseModule::fetchOne(
+      'SELECT user
+            FROM sessions
+            WHERE session_token = :session_token',
+      [
+        ':session_token' => $token,
+      ]
+    )['user'];
+    
+    // ==== Already exist checks =================
     if ($username !== null) {
       $user = DatabaseModule::fetchOne(
-        'SELECT username, name
+        'SELECT username
              FROM users
              WHERE username = BINARY :username AND active = TRUE',
         [
@@ -603,15 +598,35 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
       }
     }
     
-    $userId = DatabaseModule::fetchOne(
-      'SELECT user
-            FROM sessions
-            WHERE session_token = :session_token',
-      [
-        ':session_token' => $token,
-      ]
-    )['user'];
+    // ==== Save image into the fs ===============
+    if ($picture !== null) {
+      $storedUsername = DatabaseModule::fetchOne(
+        'SELECT username
+             FROM users
+             WHERE user_id = BINARY :user_id AND active = TRUE',
+        [
+          ':user_id' => $userId,
+        ]
+      )['username'];
+      
+      $filepath = MIMEServiceImpl::saveUserImage($picture, $storedUsername);
+      
+      if (!is_string($filepath)) {
+        DatabaseModule::commitTransaction();
+        return Utilities::generateErrorMessage($filepath);
+      }
+      
+      $variableUpdateQuery .= 'picture = :picture, ';
+      $variableAttributes[':picture'] = $filepath;
+    }
     
+    // ==== Update user ==========================
+    
+    $variableUpdateQuery = substr(
+        $variableUpdateQuery,
+        0,
+        strlen($variableUpdateQuery) - 2
+      ) . ' WHERE user_id = BINARY :user_id';
     $variableAttributes[':user_id'] = $userId;
     
     DatabaseModule::execute(
@@ -629,13 +644,12 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
     );
     
     DatabaseModule::commitTransaction();
-    // TODO get picture from fs
     // TODO send ws packet
     return [
       'username' => $user['username'],
       'name'     => $user['name'],
       'surname'  => $user['surname'],
-      'picture'  => $user['picture'],
+      'picture'  => $picture,
       'phone'    => $user['phone'],
       'theme'    => $user['theme'],
       'language' => $user['language'],
@@ -673,6 +687,8 @@ class DatabaseServiceImpl extends Singleton implements DatabaseService {
         ':session_token' => $token,
       ]
     )['user'];
+    
+    // TODO delete picture from fs
     
     // TODO recursive deletion of contact relation and group participation, not the messages
     

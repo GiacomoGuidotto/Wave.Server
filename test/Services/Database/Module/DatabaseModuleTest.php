@@ -5,7 +5,12 @@ namespace Services\Database\Module;
 use PHPUnit\Framework\TestCase;
 use Wave\Services\Database\Module\DatabaseModule;
 
-class ModuleTest extends TestCase {
+class DatabaseModuleTest extends TestCase {
+  public static function setUpBeforeClass(): void {
+    echo '==== Database module =========================================' . PHP_EOL
+      . '==============================================================' . PHP_EOL;
+  }
+  
   public function testCorrectInstance() {
     $testedModule = DatabaseModule::getInstance();
     

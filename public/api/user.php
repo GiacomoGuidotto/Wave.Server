@@ -26,34 +26,41 @@ if (!in_array($method, $validMethods)) {
 }
 
 $headers = getallheaders();
-$body = trim(file_get_contents('php://input'), '"');
+$body = json_decode(file_get_contents('php://input'), JSON_OBJECT_AS_ARRAY);
 
 // ==== POST case ==================================================================
 // =================================================================================
 if ($method == 'POST') {
   
   // ==== Get parameters =========================================================
-  $username = $headers['username'];
-  $password = $headers['password'];
-  $name = $headers['name'];
-  $surname = $headers['surname'];
-  $phone = $headers['phone'];
-  $picture = $body;
+  $username = $headers['username'] ?? null;
+  $password = $headers['password'] ?? null;
+  $name = $headers['name'] ?? null;
+  $surname = $headers['surname'] ?? null;
+  $picture = $body['picture'] ?? null;
+  $phone = $headers['phone'] ?? null;
   
   // ==== Null check =============================================================
-  if ($username == null || $password == null || $name == null || $surname == null) {
+  if (is_null($username) || is_null($password) || is_null($name) || is_null($surname)) {
     http_response_code(ErrorCases::CODES_ASSOCIATIONS[NullAttributes::CODE]);
     echo json_encode(
-      $service->generateErrorMessage(NullAttributes::CODE)
+      Utilities::generateErrorMessage(NullAttributes::CODE)
     );
     return;
   }
   
   // ==== Elaboration ============================================================
-  $result = $service->createUser($username, $password, $name, $surname, $phone, $picture);
+  $result = $service->createUser(
+    $username,
+    $password,
+    $name,
+    $surname,
+    $phone,
+    $picture,
+  );
   
   // ==== Error case =============================================================
-  if ($result['error'] != null) {
+  if (isset($result['error'])) {
     http_response_code(ErrorCases::CODES_ASSOCIATIONS[$result['error']]);
     echo json_encode($result);
     return;
@@ -69,13 +76,13 @@ if ($method == 'POST') {
 if ($method == 'GET') {
   
   // ==== Get parameters =========================================================
-  $token = $headers['token'];
+  $token = $headers['token'] ?? null;
   
   // ==== Null check =============================================================
-  if ($token == null) {
+  if (is_null($token)) {
     http_response_code(ErrorCases::CODES_ASSOCIATIONS[NullAttributes::CODE]);
     echo json_encode(
-      $service->generateErrorMessage(NullAttributes::CODE)
+      Utilities::generateErrorMessage(NullAttributes::CODE)
     );
     return;
   }
@@ -84,7 +91,7 @@ if ($method == 'GET') {
   $result = $service->getUserInformation($token);
   
   // ==== Error case =============================================================
-  if ($result['error'] != null) {
+  if (isset($result['error'])) {
     http_response_code(ErrorCases::CODES_ASSOCIATIONS[$result['error']]);
     echo json_encode($result);
     return;
@@ -100,17 +107,17 @@ if ($method == 'GET') {
 if ($method == 'PUT') {
   
   // ==== Get parameters =========================================================
-  $token = $headers['token'];
-  $username = $headers['username'];
-  $name = $headers['name'];
-  $surname = $headers['surname'];
-  $phone = $headers['phone'];
-  $picture = $body;
-  $theme = $headers['theme'];
-  $language = $headers['language'];
+  $token = $headers['token'] ?? null;
+  $username = $headers['username'] ?? null;
+  $name = $headers['name'] ?? null;
+  $surname = $headers['surname'] ?? null;
+  $phone = $headers['phone'] ?? null;
+  $picture = $body['picture'] ?? null;
+  $theme = $headers['theme'] ?? null;
+  $language = $headers['language'] ?? null;
   
   // ==== Null check =============================================================
-  if ($token == null) {
+  if (is_null($token)) {
     http_response_code(ErrorCases::CODES_ASSOCIATIONS[NullAttributes::CODE]);
     echo json_encode(
       Utilities::generateErrorMessage(NullAttributes::CODE)
@@ -119,7 +126,6 @@ if ($method == 'PUT') {
   }
   
   // ==== Elaboration ============================================================
-  // TODO fetch req body
   $result = $service->changeUserInformation(
     $token,
     $username,
@@ -132,7 +138,7 @@ if ($method == 'PUT') {
   );
   
   // ==== Error case =============================================================
-  if ($result['error'] != null) {
+  if (isset($result['error'])) {
     http_response_code(ErrorCases::CODES_ASSOCIATIONS[$result['error']]);
     echo json_encode($result);
     return;
@@ -148,10 +154,10 @@ if ($method == 'PUT') {
 if ($method == 'DELETE') {
   
   // ==== Get parameters =========================================================
-  $token = $headers['token'];
+  $token = $headers['token'] ?? null;
   
   // ==== Null check =============================================================
-  if ($token == null) {
+  if (is_null($token)) {
     http_response_code(ErrorCases::CODES_ASSOCIATIONS[NullAttributes::CODE]);
     echo json_encode(
       Utilities::generateErrorMessage(NullAttributes::CODE)
@@ -163,7 +169,7 @@ if ($method == 'DELETE') {
   $result = $service->deleteUser($token);
   
   // ==== Error case =============================================================
-  if ($result['error'] != null) {
+  if (isset($result['error'])) {
     http_response_code(ErrorCases::CODES_ASSOCIATIONS[$result['error']]);
     echo json_encode($result);
     return;

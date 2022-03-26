@@ -22,9 +22,9 @@ $headers = getallheaders();
 
 // ==== Authentication =============================================================================
 
-$admin = $headers['admin'];
+$admin = $headers['admin'] ?? null;
 
-if ($admin === null) {
+if (is_null($admin)) {
   http_response_code(400);
   return;
 }
@@ -44,9 +44,9 @@ if (!in_array($admin, $admins)) {
 // ==== Directives =================================================================================
 // =================================================================================================
 
-$directive = $headers['directive'];
+$directive = $headers['directive'] ?? null;
 
-if ($directive === null) {
+if (is_null($directive)) {
   http_response_code(400);
   return;
 }

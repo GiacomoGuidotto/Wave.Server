@@ -2,72 +2,315 @@
 
 namespace Wave\Services\Database;
 
+use DateInterval;
+use Wave\Model\Session\Session;
+use Wave\Model\Singleton\Singleton;
+use Wave\Model\User\User;
+use Wave\Services\Database\Module\DatabaseModule;
+use Wave\Services\MIME\MIMEService;
+use Wave\Specifications\ErrorCases\Generic\NullAttributes;
+use Wave\Specifications\ErrorCases\State\AlreadyExist;
+use Wave\Specifications\ErrorCases\State\NotFound;
+use Wave\Specifications\ErrorCases\State\Timeout;
+use Wave\Specifications\ErrorCases\State\Unauthorized;
+use Wave\Specifications\ErrorCases\Success\Success;
+use Wave\Specifications\Wave\Wave;
+use Wave\Utilities\Utilities;
+
 /**
- * Database service
+ * Database service class
  *
- * Query the MySQL database following the use cases
+ * The implementation of the DatabaseServiceInterface interface made for the MySQL database
  */
-interface DatabaseService {
+class DatabaseService extends Singleton implements DatabaseServiceInterface {
+  
+  //TODO refactor to static methods and made them return the error code or null
+  
+  // ==== Utility methods ==========================================================================
+  // ==== Set of private methods ===================================================================
+  
+  /**
+   * Calculate the time different between two date in full-time format
+   *
+   * @param string $initialTime The first time in chronological order
+   * @param string $finalTime   The second time in chronological order
+   * @return DateInterval       The time difference in full-time format
+   */
+  private function timeDifference(
+    string $initialTime,
+    string $finalTime,
+  ): DateInterval {
+    $finalDate = date_create($finalTime);
+    $initialDate = date_create($initialTime);
+    
+    return $finalDate->diff($initialDate, true);
+  }
+  
+  /**
+   * Internal check for validating if the last call from this session is not old enough for the
+   * Specification-defined SESSION_DURATION
+   *
+   * @param string $currentTimestamp The actual timestamp
+   * @param string $last_updated     The timestamp of the last call
+   * @return bool                    The validation, true if the call didn't exceeded the
+   *                                 SESSION_DURATION
+   * @see Wave::SESSION_DURATION
+   */
+  private function validateTimeout(
+    string $currentTimestamp,
+    string $last_updated
+  ): bool {
+    // Convert the TTL string in DateTime
+    $timeToLive = date_create('midnight')
+      ->add(
+        DateInterval::createFromDateString(
+          Wave::SESSION_DURATION
+        )
+      );
+    // Generate the difference between now and the moment of the last call in DateTime
+    $timeDifference = date_create('midnight')
+      ->add(
+        $this->timeDifference(
+          $currentTimestamp,
+          $last_updated
+        )
+      );
+    // Validate
+    return $timeDifference < $timeToLive;
+  }
+  
+  /**
+   * Validate the existence of the token.
+   *
+   *
+   * Also, update the last_updated attribute, if it didn't exceeded the SESSION_DURATION
+   *
+   * @param string $token The token to verify
+   * @return int          Either the error code or the success code
+   */
+  private function authorizeToken(string $token): int {
+    // =======================================
+    DatabaseModule::beginTransaction();
+    
+    // ==== Find token =======================
+    $token_row = DatabaseModule::fetchOne(
+      'SELECT last_updated
+             FROM sessions
+             WHERE session_token = :session_token
+               AND active = TRUE',
+      [
+        ':session_token' => $token,
+      ]
+    );
+    
+    if ($token_row === false) {
+      DatabaseModule::commitTransaction();
+      return Unauthorized::CODE;
+    }
+    
+    // ==== Update session TTL ===============
+    $last_updated = $token_row['last_updated'];
+    
+    $current_timestamp = DatabaseModule::fetchOne(
+      'SELECT CURRENT_TIMESTAMP()'
+    )['CURRENT_TIMESTAMP()'];
+    
+    if (!$this->validateTimeout($current_timestamp, $last_updated)) {
+      // ==== If timeout =======================
+      DatabaseModule::execute(
+        'UPDATE sessions
+               SET active = FALSE
+               WHERE session_token = :session_token',
+        [
+          ':session_token' => $token,
+        ]
+      );
+      
+      DatabaseModule::commitTransaction();
+      return Timeout::CODE;
+    }
+    
+    DatabaseModule::execute(
+      'UPDATE sessions
+             SET last_updated = CURRENT_TIMESTAMP()
+             WHERE session_token = :session_token',
+      [
+        ':session_token' => $token,
+      ]
+    );
+    
+    DatabaseModule::commitTransaction();
+    return Success::CODE;
+  }
   
   // ==== Authentication ===========================================================================
   // ==== Use cases related to the authentication process ==========================================
   
   /**
-   * Get the session token.
-   *
-   * Retrieve the session token with the username/password combination.
-   *
-   * @param string $username The username to authenticate, extracted from the request
-   * @param string $password The user password to authenticate, extracted from the request
-   * @param string $source   The session source, extracted from the request
-   * @return array           The token used to authenticate the user, saved in an array as object
+   * @inheritDoc
    */
   public function login(
     string $username,
     string $password,
     string $source,
-  ): array;
+  ): array {
+    $usernameValidation = User::validateUsername($username);
+    $passwordValidation = User::validatePassword($password);
+    $deviceValidation = Session::validateSource($source);
+    
+    if ($usernameValidation != Success::CODE) {
+      return Utilities::generateErrorMessage($usernameValidation);
+    }
+    if ($passwordValidation != Success::CODE) {
+      return Utilities::generateErrorMessage($passwordValidation);
+    }
+    if ($deviceValidation != Success::CODE) {
+      return Utilities::generateErrorMessage($deviceValidation);
+    }
+    
+    // =======================================
+    DatabaseModule::beginTransaction();
+    
+    // ==== correct username and password ====
+    $storedPasswordRow = DatabaseModule::fetchOne(
+      'SELECT user_id, password
+            FROM users
+            WHERE username = BINARY :username
+              AND active = TRUE',
+      [
+        ':username' => $username,
+      ]
+    );
+    
+    // ==== username not found ===============
+    if ($storedPasswordRow === false) {
+      DatabaseModule::commitTransaction();
+      return Utilities::generateErrorMessage(NotFound::CODE);
+    }
+    
+    // ==== password incorrect ===============
+    $storedPassword = $storedPasswordRow['password'];
+    if (!password_verify($password, $storedPassword)) {
+      DatabaseModule::commitTransaction();
+      return Utilities::generateErrorMessage(NotFound::CODE);
+    }
+    
+    // ==== delete token already existing ====
+    $userId = $storedPasswordRow['user_id'];
+    DatabaseModule::execute(
+      'UPDATE sessions
+            SET active = FALSE
+            WHERE user = :user_id
+              AND source = :source',
+      [
+        ':user_id' => $userId,
+        ':source'  => $source,
+      ]
+    );
+    
+    // ==== create token =====================
+    DatabaseModule::execute(
+      'INSERT
+            INTO sessions (session_token, source, user, creation_timestamp, last_updated, active)
+            VALUES (
+                    UUID(),
+                    :source,
+                    :user_id,
+                    CURRENT_TIMESTAMP(),
+                    CURRENT_TIMESTAMP(),
+                    :active
+            )',
+      [
+        ':source'  => $source,
+        ':user_id' => $userId,
+        'active'   => true,
+      ]
+    );
+    
+    $token = DatabaseModule::fetchOne(
+      'SELECT session_token
+            FROM sessions
+            WHERE session_id = LAST_INSERT_ID()'
+    )['session_token'];
+    
+    DatabaseModule::commitTransaction();
+    return [
+      'token' => $token,
+    ];
+  }
   
   /**
-   * Update the session's TTL.
-   *
-   * Refresh the session timeout without actions.
-   *
-   * @param string $token The token used to authenticate the user, extracted from the request
-   * @return array|null   The eventual error array as object
+   * @inheritDoc
    */
   public function poke(
     string $token,
-  ): ?array;
+  ): ?array {
+    $tokenValidation = Session::validateToken($token);
+    
+    if ($tokenValidation != Success::CODE) {
+      return Utilities::generateErrorMessage($tokenValidation);
+    }
+    
+    // ==== Token authorization ==============
+    $tokenAuthorization = $this->authorizeToken($token);
+    
+    if ($tokenAuthorization != Success::CODE) {
+      return Utilities::generateErrorMessage($tokenAuthorization);
+    }
+    
+    return null;
+  }
   
   /**
-   * Delete the session token.
-   *
-   * Make a specific session token unreachable.
-   *
-   * @param string $token The token used to authenticate the user, extracted from the request
-   * @return array|null   The eventual error array as object
+   * @inheritDoc
    */
   public function logout(
     string $token,
-  ): ?array;
+  ): ?array {
+    $tokenValidation = Session::validateToken($token);
+    
+    if ($tokenValidation != Success::CODE) {
+      return Utilities::generateErrorMessage($tokenValidation);
+    }
+    
+    // =======================================
+    DatabaseModule::beginTransaction();
+    
+    // ==== Find token =======================
+    $tokenRow = DatabaseModule::fetchOne(
+      'SELECT last_updated
+            FROM sessions
+            WHERE session_token = :session_token
+              AND active = TRUE',
+      [
+        ':session_token' => $token,
+      ]
+    );
+    
+    if ($tokenRow === false) {
+      DatabaseModule::commitTransaction();
+      return Utilities::generateErrorMessage(Unauthorized::CODE);
+    }
+    
+    // ==== Disable token ====================
+    DatabaseModule::execute(
+      'UPDATE sessions
+            SET active = FALSE
+            WHERE session_token = :session_token',
+      [
+        ':session_token' => $token,
+      ]
+    );
+    
+    DatabaseModule::commitTransaction();
+    return null;
+  }
   
-  // ==== User =====================================================================================
+  // ==== UserInterface =====================================================================================
   // ==== Use cases related to the user management =================================================
   
   /**
-   * Create a new user.
-   *
-   * Create a new user using the given parameters.
-   *
-   * @param string      $username The user's identifier, extracted from the request
-   * @param string      $password The clear password of the user, extracted from the request
-   * @param string      $name     The user's name, extracted from the request
-   * @param string      $surname  The user's surname, extracted from the request
-   * @param string|null $phone    The optional user's phone, extracted from the request
-   * @param string|null $picture  The optional user's picture, extracted from the request
-   * @return array                The token used to authenticate the user, saved in an array as
-   *                              object
+   * @inheritDoc
    */
   public function createUser(
     string  $username,
@@ -76,35 +319,162 @@ interface DatabaseService {
     string  $surname,
     ?string $phone = null,
     ?string $picture = null,
-  ): array;
+  ): array {
+    $usernameValidation = User::validateUsername($username);
+    $passwordValidation = User::validatePassword($password);
+    $nameValidation = User::validateName($name);
+    $surnameValidation = User::validateSurname($surname);
+    
+    if ($usernameValidation != Success::CODE) {
+      return Utilities::generateErrorMessage($usernameValidation);
+    }
+    if ($passwordValidation != Success::CODE) {
+      return Utilities::generateErrorMessage($passwordValidation);
+    }
+    if ($nameValidation != Success::CODE) {
+      return Utilities::generateErrorMessage($nameValidation);
+    }
+    if ($surnameValidation != Success::CODE) {
+      return Utilities::generateErrorMessage($surnameValidation);
+    }
+    
+    if ($phone != null) {
+      $phoneValidation = User::validatePhone($phone);
+      
+      if ($phoneValidation != Success::CODE) {
+        return Utilities::generateErrorMessage($phoneValidation);
+      }
+    }
+    
+    // ===========================================
+    DatabaseModule::beginTransaction();
+    
+    // ==== Already exist checks =================
+    $user = DatabaseModule::fetchOne(
+      'SELECT username, name
+             FROM users
+             WHERE username = BINARY :username AND active = TRUE',
+      [
+        ':username' => $username,
+      ]
+    );
+    
+    if ($user) {
+      DatabaseModule::commitTransaction();
+      return Utilities::generateErrorMessage(AlreadyExist::CODE);
+    }
+    
+    // ==== Save image into the fs ===============
+    $filepath = null;
+    
+    if ($picture != null) {
+      $filepath = $_SERVER['DOCUMENT_ROOT'] . "filesystem/images/user/$username";
+      $filepath = MIMEService::createMedia($filepath, $picture);
+      
+      if (!is_string($filepath)) {
+        DatabaseModule::commitTransaction();
+        return Utilities::generateErrorMessage($filepath);
+      }
+    }
+    
+    // ==== Securing password ====================
+    $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+    
+    // ==== Insert query =========================
+    DatabaseModule::execute(
+      'INSERT
+            INTO users (username, password, name, surname, picture, phone, active)
+            VALUES (
+                :username,
+                :password,
+                :name,
+                :surname,
+                :picture,
+                :phone,
+                :active
+            )',
+      [
+        ':username' => $username,
+        ':password' => $hashedPassword,
+        ':name'     => $name,
+        ':surname'  => $surname,
+        ':picture'  => $filepath,
+        ':phone'    => $phone,
+        ':active'   => true,
+      ]
+    );
+    
+    DatabaseModule::commitTransaction();
+    return [
+      'username' => $username,
+      'name'     => $name,
+      'surname'  => $surname,
+      'picture'  => $picture,
+      'phone'    => $phone,
+      'theme'    => 'L',
+      'language' => 'EN',
+    ];
+  }
   
   /**
-   * Get the user's information.
-   *
-   * Retrieve the user's information given the session token.
-   *
-   * @param string $token The token used to authenticate the user, extracted from the request
-   * @return array        The public attributes of the user, saved in an array as object
+   * @inheritDoc
    */
   public function getUserInformation(
     string $token,
-  ): array;
+  ): array {
+    $tokenValidation = Session::validateToken($token);
+    
+    if ($tokenValidation != Success::CODE) {
+      return Utilities::generateErrorMessage($tokenValidation);
+    }
+    
+    // ==== Token authorization ==============
+    $tokenAuthorization = $this->authorizeToken($token);
+    
+    if ($tokenAuthorization != Success::CODE) {
+      return Utilities::generateErrorMessage($tokenAuthorization);
+    }
+    
+    // =======================================
+    DatabaseModule::beginTransaction();
+    
+    $userId = DatabaseModule::fetchOne(
+      'SELECT user
+            FROM sessions
+            WHERE session_token = :session_token',
+      [
+        ':session_token' => $token,
+      ]
+    )['user'];
+    
+    $user = DatabaseModule::fetchOne(
+      'SELECT username, name, surname, picture, phone, theme, language
+            FROM users
+            WHERE user_id = BINARY :user_id',
+      [
+        ':user_id' => $userId,
+      ]
+    );
+    
+    DatabaseModule::commitTransaction();
+    
+    // ==== Retrieve picture =====================
+    $filepath = $user['picture'];
+    $picture = !is_null($filepath) ? MIMEService::researchMedia($filepath) : null;
+    
+    return [
+      'username' => $user['username'],
+      'name'     => $user['name'],
+      'surname'  => $user['surname'],
+      'picture'  => $picture,
+      'phone'    => $user['phone'],
+      'theme'    => $user['theme'],
+      'language' => $user['language'],
+    ];
+  }
   
   /**
-   * Change the user's information
-   *
-   * Change the specific user's information with the specific new value.
-   *
-   * @param string      $token    The token used to authenticate the user, extracted from the
-   *                              request
-   * @param string|null $username The optional new user's username, extracted from the request
-   * @param string|null $name     The optional new user's name, extracted from the request
-   * @param string|null $surname  The optional new user's surname, extracted from the request
-   * @param string|null $phone    The optional new user's phone, extracted from the request
-   * @param string|null $picture  The optional new user's picture, extracted from the request
-   * @param string|null $theme    The optional new user's theme, extracted from the request
-   * @param string|null $language The optional new user's language, extracted from the request
-   * @return array                The new public attributes of the user, saved in an array as object
+   * @inheritDoc
    */
   public function changeUserInformation(
     string  $token,
@@ -115,103 +485,303 @@ interface DatabaseService {
     ?string $picture = null,
     ?string $theme = null,
     ?string $language = null,
-  ): array;
+  ): array {
+    $tokenValidation = Session::validateToken($token);
+    
+    if ($tokenValidation != Success::CODE) {
+      return Utilities::generateErrorMessage($tokenValidation);
+    }
+    
+    // ==== Modular validation and query preparation ==============
+    $variableUpdateQuery =
+      '# noinspection
+      UPDATE users SET ';
+    $variableAttributes = [];
+    
+    if ($username !== null) {
+      $usernameValidation = User::validateUsername($username);
+      
+      if ($usernameValidation != Success::CODE) {
+        return Utilities::generateErrorMessage($usernameValidation);
+      }
+      
+      $variableUpdateQuery .= 'username = :username, ';
+      $variableAttributes[':username'] = $username;
+    }
+    
+    if ($name !== null) {
+      $nameValidation = User::validateName($name);
+      
+      if ($nameValidation != Success::CODE) {
+        return Utilities::generateErrorMessage($nameValidation);
+      }
+      
+      $variableUpdateQuery .= 'name = :name, ';
+      $variableAttributes[':name'] = $name;
+    }
+    
+    if ($surname !== null) {
+      $surnameValidation = User::validateSurname($surname);
+      
+      if ($surnameValidation != Success::CODE) {
+        return Utilities::generateErrorMessage($surnameValidation);
+      }
+      
+      $variableUpdateQuery .= 'surname = :surname, ';
+      $variableAttributes[':surname'] = $surname;
+    }
+    
+    if ($phone !== null) {
+      $phoneValidation = User::validatePhone($phone);
+      
+      if ($phoneValidation != Success::CODE) {
+        return Utilities::generateErrorMessage($phoneValidation);
+      }
+      
+      $variableUpdateQuery .= 'phone = :phone, ';
+      $variableAttributes[':phone'] = $phone;
+    }
+    
+    if ($theme !== null) {
+      $themeValidation = User::validateTheme($theme);
+      
+      if ($themeValidation != Success::CODE) {
+        return Utilities::generateErrorMessage($themeValidation);
+      }
+      
+      $variableUpdateQuery .= 'theme = :theme, ';
+      $variableAttributes[':theme'] = $theme;
+    }
+    
+    if ($language !== null) {
+      $languageValidation = User::validateLanguage($language);
+      
+      if ($languageValidation != Success::CODE) {
+        return Utilities::generateErrorMessage($languageValidation);
+      }
+      
+      $variableUpdateQuery .= 'language = :language, ';
+      $variableAttributes[':language'] = $language;
+    }
+    
+    if (count($variableAttributes) == 0) {
+      return Utilities::generateErrorMessage(NullAttributes::CODE);
+    }
+    
+    // ==== Token authorization ==================
+    $tokenAuthorization = $this->authorizeToken($token);
+    
+    if ($tokenAuthorization != Success::CODE) {
+      return Utilities::generateErrorMessage($tokenAuthorization);
+    }
+    
+    // ===========================================
+    DatabaseModule::beginTransaction();
+    
+    $userId = DatabaseModule::fetchOne(
+      'SELECT user
+            FROM sessions
+            WHERE session_token = :session_token',
+      [
+        ':session_token' => $token,
+      ]
+    )['user'];
+    
+    // ==== Already exist checks =================
+    if ($username !== null) {
+      $user = DatabaseModule::fetchOne(
+        'SELECT username
+             FROM users
+             WHERE username = BINARY :username AND active = TRUE',
+        [
+          ':username' => $username,
+        ]
+      );
+      
+      if ($user) {
+        DatabaseModule::commitTransaction();
+        return Utilities::generateErrorMessage(AlreadyExist::CODE);
+      }
+    }
+    
+    // ==== Save image into the fs ===============
+    if ($picture !== null) {
+      $storedUsername = DatabaseModule::fetchOne(
+        'SELECT username
+             FROM users
+             WHERE user_id = BINARY :user_id AND active = TRUE',
+        [
+          ':user_id' => $userId,
+        ]
+      )['username'];
+      
+      $filepath = $_SERVER['DOCUMENT_ROOT'] . "filesystem/images/user/$storedUsername";
+      $filepath = MIMEService::updateMedia($filepath, $picture);
+      
+      if (!is_string($filepath)) {
+        DatabaseModule::commitTransaction();
+        return Utilities::generateErrorMessage($filepath);
+      }
+      
+      $variableUpdateQuery .= 'picture = :picture, ';
+      $variableAttributes[':picture'] = $filepath;
+    }
+    
+    // ==== Update user ==========================
+    
+    $variableUpdateQuery = substr(
+        $variableUpdateQuery,
+        0,
+        strlen($variableUpdateQuery) - 2
+      ) . ' WHERE user_id = BINARY :user_id';
+    $variableAttributes[':user_id'] = $userId;
+    
+    DatabaseModule::execute(
+      $variableUpdateQuery,
+      $variableAttributes
+    );
+    
+    $user = DatabaseModule::fetchOne(
+      'SELECT username, name, surname, picture, phone, theme, language
+            FROM users
+            WHERE user_id = BINARY :user_id',
+      [
+        ':user_id' => $userId,
+      ]
+    );
+    
+    DatabaseModule::commitTransaction();
+    // TODO send ws packet
+    return [
+      'username' => $user['username'],
+      'name'     => $user['name'],
+      'surname'  => $user['surname'],
+      'picture'  => $picture,
+      'phone'    => $user['phone'],
+      'theme'    => $user['theme'],
+      'language' => $user['language'],
+    ];
+  }
   
   /**
-   * Delete a specific user
-   *
-   * Delete the user associated with a given token.
-   * This will trigger the recursive deletion of all the user's properties.
-   *
-   * @param string $token The token used to authenticate the user, extracted from the request
-   * @return array|null   The eventual error array as object
+   * @inheritDoc
    */
   public function deleteUser(
     string $token,
-  ): ?array;
+  ): ?array {
+    $tokenValidation = Session::validateToken($token);
+    
+    if ($tokenValidation != Success::CODE) {
+      return Utilities::generateErrorMessage($tokenValidation);
+    }
+    
+    // ==== Token authorization ==============
+    $tokenAuthorization = $this->authorizeToken($token);
+    
+    if ($tokenAuthorization != Success::CODE) {
+      return Utilities::generateErrorMessage($tokenAuthorization);
+    }
+    
+    
+    // =======================================
+    DatabaseModule::beginTransaction();
+    
+    $userId = DatabaseModule::fetchOne(
+      'SELECT user
+            FROM sessions
+            WHERE session_token = :session_token',
+      [
+        ':session_token' => $token,
+      ]
+    )['user'];
+    
+    // ==== Delete picture =======================
+    $filepath = DatabaseModule::fetchOne(
+      'SELECT picture
+            FROM users
+            WHERE user_id = :user_id',
+      [
+        ':user_id' => $userId,
+      ]
+    )['picture'];
+    
+    if (!is_null($filepath)) {
+      $result = MIMEService::deleteMedia($filepath);
+      if (!is_null($result)) {
+        DatabaseModule::commitTransaction();
+        return Utilities::generateErrorMessage($result);
+      }
+    }
+    
+    // ==== Delete user ==========================
+    // TODO recursive deletion of contact relation and group participation, not the messages
+    
+    DatabaseModule::execute(
+      'UPDATE users
+            SET active = FALSE
+            WHERE user_id = BINARY :user_id',
+      [
+        ':user_id' => $userId,
+      ]
+    );
+    
+    DatabaseModule::commitTransaction();
+    return null;
+  }
   
-  // ==== Contact ==================================================================================
+  // ==== ContactInterface ==================================================================================
   // ==== Use cases related to the contacts management =============================================
   
   /**
-   * Create a new contact request
-   *
-   * Create a new pending relation (contact) request between the user identified from the token and
-   * a second specified user.
-   *
-   * @param string $token The token used to authenticate the user, extracted from the request
-   * @param string $user  The targeted user's username, extracted from the request
-   * @return array        The public attributes of the contact, saved in an array as object
+   * @inheritDoc
    */
   public function contactRequest(
     string $token,
     string $user,
-  ): array;
+  ): array {
+    // TODO: Implement contactRequest() method.
+    return [];
+  }
   
   /**
-   * Delete a pending contact request
-   *
-   * Delete a pending relation (contact) request between the user identified from the token and a
-   * second specified user.
-   *
-   * @param string $token The token used to authenticate the user, extracted from the request
-   * @param string $user  The targeted user's username, extracted from the request
-   * @return array|null   The eventual error array as object
+   * @inheritDoc
    */
   public function deleteContactRequest(
     string $token,
     string $user,
-  ): ?array;
+  ): ?array {
+    // TODO: Implement deleteContactRequest() method.
+    return [];
+  }
   
   /**
-   * Change a contact status
-   *
-   * Either respond to a first pending request or update an existing contact from a specific user,
-   * depending from the given response.
-   *
-   * @param string $token     The token used to authenticate the user, extracted from the request
-   * @param string $user      The targeted user's username, extracted from the request
-   * @param string $directive The command to apply to the request, extracted from the request
-   * @return array            The new public attributes of the contact, saved in an array as object
+   * @inheritDoc
    */
   public function changeContactStatus(
     string $token,
     string $user,
     string $directive,
-  ): array;
+  ): array {
+    // TODO: Implement changeContactStatus() method.
+    return [];
+  }
   
   /**
-   * Get one or all contact's information
-   *
-   * Retrieve the list of the user's contacts.
-   * If a contact's name is given, the information of that specified contact are retrieved.
-   *
-   * @param string      $token The token used to authenticate the user, extracted from the request
-   * @param string|null $user  The optional targeted user's username, extracted from the request
-   * @return array             The list of contacts or the single contact, saved in an array as
-   *                           object
+   * @inheritDoc
    */
   public function getContactInformation(
     string  $token,
     ?string $user = null,
-  ): array;
+  ): array {
+    // TODO: Implement getContactInformation() method.
+    return [];
+  }
   
-  // ==== Group ====================================================================================
+  // ==== GroupInterface ====================================================================================
   // ==== Use cases related to the groups management ===============================================
   
   /**
-   * Create a new group
-   *
-   * Create a new group with the given parameters.
-   *
-   * @param string      $token   The token used to authenticate the user, extracted from the
-   *                             request
-   * @param string      $name    The new group's name, extracted from the request
-   * @param string|null $info    The eventual group's info, extracted from the request
-   * @param string|null $picture The eventual group's picture, extracted from the request
-   * @param array|null  $users   The eventual list of group's new members, extracted from the
-   *                             request
-   * @return array               The public attributes of the group, saved in an array as object
+   * @inheritDoc
    */
   public function createGroup(
     string  $token,
@@ -219,51 +789,36 @@ interface DatabaseService {
     ?string $info = null,
     ?string $picture = null,
     ?array  $users = null,
-  ): array;
+  ): array {
+    // TODO: Implement createGroup() method.
+    return [];
+  }
   
   /**
-   * Get one or all groups' information
-   *
-   * Retrieve the list of the user's groups.
-   * If a group's name is given, the information of that specified group are retrieved.
-   *
-   * @param string      $token The token used to authenticate the user, extracted from the request
-   * @param string|null $group The optional identifier to the specific group, extracted from the
-   *                           request
-   * @return array             The list of groups or the single group, saved in an array as object
+   * @inheritDoc
    */
   public function getGroupInformation(
     string  $token,
     ?string $group = null,
-  ): array;
+  ): array {
+    // TODO: Implement getGroupInformation() method.
+    return [];
+  }
   
   /**
-   * Change a group's status for the user
-   *
-   * Change a group's status, either its place (archived, pinned) or its notifications mode (mute).
-   *
-   * @param string $token     The token used to authenticate the user, extracted from the request
-   * @param string $group     The identifier to the specific group, extracted from the request
-   * @param string $directive The command to apply to the request, extracted from the request
-   * @return array            The new public attributes of the group, saved in an array as object
+   * @inheritDoc
    */
   public function changeGroupStatus(
     string $token,
     string $group,
     string $directive,
-  ): array;
+  ): array {
+    // TODO: Implement changeGroupStatus() method.
+    return [];
+  }
   
   /**
-   * Change a group's information
-   *
-   * Change a specific group's information with the specific new value.
-   *
-   * @param string      $token   The token used to authenticate the user, extracted from the request
-   * @param string      $group   The identifier to the specific group, extracted from the request
-   * @param string|null $name    The eventual new group's name, extracted from the request
-   * @param string|null $info    The eventual new group's info, extracted from the request
-   * @param string|null $picture The eventual new group's picture, extracted from the request
-   * @return array               The new public attributes of the group, saved in an array as object
+   * @inheritDoc
    */
   public function changeGroupInformation(
     string  $token,
@@ -271,115 +826,78 @@ interface DatabaseService {
     ?string $name = null,
     ?string $info = null,
     ?string $picture = null,
-  ): array;
+  ): array {
+    // TODO: Implement changeGroupInformation() method.
+    return [];
+  }
   
   /**
-   * Exit from the group
-   *
-   * Delete a group participation. If its the last one, delete the group itself.
-   *
-   * @param string $token The token used to authenticate the user, extracted from the request
-   * @param string $group The identifier to the specific group, extracted from the request
-   * @return array        The new group's list, saved in an array as object
+   * @inheritDoc
    */
   public function exitGroup(
     string $token,
     string $group,
-  ): array;
+  ): array {
+    // TODO: Implement exitGroup() method.
+    return [];
+  }
   
-  // ==== Member ===================================================================================
+  // ==== MemberInterface ===================================================================================
   
   /**
-   * Add a group's member
-   *
-   * Add a specific user to a specific group.
-   *
-   * @param string $token The token used to authenticate the user, extracted from the request
-   * @param string $group The identifier to the specific group, extracted from the request
-   * @param string $user  The targeted user's username, extracted from the request
-   * @return array        The new member's list, saved in an array as object
+   * @inheritDoc
    */
   public function addMember(
     string $token,
     string $group,
     string $user,
-  ): array;
+  ): array {
+    // TODO: Implement addMember() method.
+    return [];
+  }
   
   /**
-   * Get one or all group's members
-   *
-   * Retrieve the list of the group's members.
-   * If a member's name is given, the information of that specified member are retrieved.
-   *
-   * @param string      $token The token used to authenticate the user, extracted from the request
-   * @param string      $group The identifier to the specific group, extracted from the request
-   * @param string|null $user  The optional identifier to the specific member, extracted from the
-   *                           request
-   * @return array             The list of members or the single member, saved in an array as object
+   * @inheritDoc
    */
   public function getMemberList(
     string  $token,
     string  $group,
     ?string $user = null,
-  ): array;
+  ): array {
+    // TODO: Implement getMemberList() method.
+    return [];
+  }
   
   /**
-   * Change a group's member permissions
-   *
-   * Change a specific group's member with the given permission.
-   *
-   * @param string $token      The token used to authenticate the user, extracted from the request
-   * @param string $group      The identifier to the specific group, extracted from the request
-   * @param string $user       The targeted user's username, extracted from the request
-   * @param string $permission The new member's permission, extracted from the request
-   * @return array             The new public attributes of the member, saved in an array as object
+   * @inheritDoc
    */
   public function changeMemberPermission(
     string $token,
     string $group,
     string $user,
     string $permission,
-  ): array;
+  ): array {
+    // TODO: Implement changeMemberPermission() method.
+    return [];
+  }
   
   /**
-   * Remove a group's member
-   *
-   * Remove a specific user from a specific group.
-   *
-   * @param string $token The token used to authenticate the user, extracted from the request
-   * @param string $group The identifier to the specific group, extracted from the request
-   * @param string $user  The targeted user's username, extracted from the request
-   * @return array        The new member's list, saved in an array as object
+   * @inheritDoc
    */
   public function removeMember(
     string $token,
     string $group,
     string $user,
-  ): array;
+  ): array {
+    // TODO: Implement removeMember() method.
+    return [];
+  }
   
-  // ==== Message ==================================================================================
+  // ==== MessageInterface ==================================================================================
   // ==== Use cases related to the messages management =============================================
   
   /**
-   * Get the chat's messages in various ways
-   *
-   * Retrieve the messages of either a specified group or a specified contact.
-   * If a time period's start and end is given, the messages are retrieved based on that time
-   * range.
-   * If a pinned flag is given, only the pinned messages are retrieved.
-   * If a message's key is given, only the public information of that message are retrieved.
-   *
-   * @param string      $token   The token used to authenticate the user, extracted from the
-   *                             request
-   * @param string|null $group   The identifier to the specific group, extracted from the request
-   * @param string|null $contact The targeted contact's username, extracted from the request
-   * @param string|null $from    The optional start of the time range, extracted from the request
-   * @param string|null $to      The optional end of the time range, extracted from the request
-   * @param bool|null   $pinned  The optional pinned flag, extracted from the request
-   * @param string|null $message The optional identifier of the specific message, extracted from
-   *                             the request
-   * @return array               The list of messages or the single message, saved in an array as
-   *                             object
+   * @inheritDoc
    */
   public function getMessages(
     string  $token,
@@ -389,20 +907,13 @@ interface DatabaseService {
     ?string $to = null,
     ?bool   $pinned = null,
     ?string $message = null,
-  ): array;
+  ): array {
+    // TODO: Implement getMessages() method.
+    return [];
+  }
   
   /**
-   * Write a message
-   *
-   * Write a message with the given data.
-   *
-   * @param string      $token   The token used to authenticate the user, extracted from the request
-   * @param string|null $group   The identifier to the specific group, extracted from the request
-   * @param string|null $contact The targeted contact's username, extracted from the request
-   * @param string|null $content The eventual content of the message, extracted from the request
-   * @param string|null $text    The eventual text of the message, extracted from the request
-   * @param string|null $media   The eventual media of the message, extracted from the request
-   * @return array               The public attributes of the message, saved in an array as object
+   * @inheritDoc
    */
   public function writeMessage(
     string  $token,
@@ -411,24 +922,13 @@ interface DatabaseService {
     ?string $content = null,
     ?string $text = null,
     ?string $media = null,
-  ): array;
+  ): array {
+    // TODO: Implement writeMessage() method.
+    return [];
+  }
   
   /**
-   * Change a message's content
-   *
-   * Change a specific message content.
-   *
-   * @param string      $token   The token used to authenticate the user, extracted from the
-   *                             request
-   * @param string      $message The identifier of the specific message, extracted from the request
-   * @param string|null $group   The identifier to the specific group, extracted from the request
-   * @param string|null $contact The targeted contact's username, extracted from the request
-   * @param string|null $content The eventual new message's content, extracted from the request
-   * @param string|null $text    The eventual new message's text, extracted from the request
-   * @param string|null $media   The eventual new message's media, extracted from the request
-   * @param bool|null   $pinned  The eventual new message's pinned state, extracted from the request
-   * @return array               The new public attributes of the message, saved in an array as
-   *                             object
+   * @inheritDoc
    */
   public function changeMessage(
     string  $token,
@@ -439,33 +939,39 @@ interface DatabaseService {
     ?string $text = null,
     ?string $media = null,
     ?bool   $pinned = null,
-  ): array;
+  ): array {
+    // TODO: Implement changeMessage() method.
+    return [];
+  }
   
   /**
-   * Delete a chat's message
-   *
-   * Delete a specific message from a specific chat.
-   *
-   * @param string      $token   The token used to authenticate the user, extracted from the request
-   * @param string      $message The identifier to the specific message, extracted from the request
-   * @param string|null $group   The identifier to the specific group, extracted from the request
-   * @param string|null $contact The targeted contact's username, extracted from the request
-   * @return array|null          The eventual error array as object
+   * @inheritDoc
    */
   public function deleteMessage(
     string  $token,
     string  $message,
     ?string $group = null,
     ?string $contact = null,
-  ): ?array;
+  ): ?array {
+    // TODO: Implement deleteMessage() method.
+    return [];
+  }
   
   // ==== Administration ===========================================================================
   // ==== Use cases related to the database administration =========================================
   
   /**
-   * Delete all the unused database's entities
-   *
-   * Delete the database's entities where "active" is set to "false"
+   * @inheritDoc
    */
-  public function purgeDatabase(): void;
+  public function purgeDatabase(): void {
+    
+    // ==== purge users ==================================================================
+    DatabaseModule::execute('DELETE FROM users WHERE active = FALSE');
+    
+    // ==== purge tokens =================================================================
+    DatabaseModule::execute('DELETE FROM sessions WHERE active = FALSE');
+    
+    // ==== purge groups =================================================================
+    DatabaseModule::execute('DELETE FROM `groups` WHERE active = FALSE');
+  }
 }

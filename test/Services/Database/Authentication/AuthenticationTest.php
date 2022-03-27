@@ -3,8 +3,8 @@
 namespace Services\Database\Authentication;
 
 use PHPUnit\Framework\TestCase;
-use Wave\Model\Session\SessionImpl;
-use Wave\Services\Database\DatabaseServiceImpl;
+use Wave\Model\Session\Session;
+use Wave\Services\Database\DatabaseService;
 use Wave\Services\Database\Module\DatabaseModule;
 use Wave\Specifications\ErrorCases\State\NotFound;
 use Wave\Specifications\ErrorCases\State\Unauthorized;
@@ -13,7 +13,7 @@ use Wave\Specifications\ErrorCases\Type\IncorrectPattern;
 use Wave\Utilities\Utilities;
 
 class AuthenticationTest extends TestCase {
-  private static DatabaseServiceImpl $service;
+  private static DatabaseService $service;
   
   private static string $username = 'giacomo';
   private static string $password = 'Fr6/ese342f';
@@ -23,7 +23,7 @@ class AuthenticationTest extends TestCase {
     echo '==== Authentication ==========================================' . PHP_EOL
       . '==============================================================' . PHP_EOL;
     
-    self::$service = DatabaseServiceImpl::getInstance();
+    self::$service = DatabaseService::getInstance();
     self::$source = Utilities::generateUuid();
     
     // ==== generate dummy user
@@ -59,7 +59,7 @@ class AuthenticationTest extends TestCase {
     
     self::assertEquals(
       Success::CODE,
-      SessionImpl::validateToken($result['token']),
+      Session::validateToken($result['token']),
     );
     
     return $result;
@@ -82,7 +82,7 @@ class AuthenticationTest extends TestCase {
     
     self::assertEquals(
       Success::CODE,
-      SessionImpl::validateToken($result['token']),
+      Session::validateToken($result['token']),
     );
     return $result;
   }

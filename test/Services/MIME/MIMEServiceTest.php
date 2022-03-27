@@ -1,13 +1,13 @@
 <?php
 
-namespace Services\MIME\Module;
+namespace Services\MIME;
 
 use PHPUnit\Framework\TestCase;
-use Wave\Model\User\UserImpl;
-use Wave\Services\MIME\Module\MIMEModule;
+use Wave\Model\User\User;
+use Wave\Services\MIME\MIMEService;
 use Wave\Specifications\ErrorCases\Success\Success;
 
-class MIMEModuleTest extends TestCase {
+class MIMEServiceTest extends TestCase {
   public static function setUpBeforeClass(): void {
     echo '==== MIME module =============================================' . PHP_EOL
       . '==============================================================' . PHP_EOL;
@@ -16,13 +16,15 @@ class MIMEModuleTest extends TestCase {
   public function testCorrectMediaRetrieve(): string {
     echo PHP_EOL . 'Testing correct media retrieve...' . PHP_EOL;
     
-    $filepath = '../../../../assets/icons/favicon.png';
+    $filepath = '../../../assets/icons/favicon.png';
     
-    $result = MIMEModule::retrieveMedia($filepath);
+    $result = MIMEService::researchMedia($filepath);
     
-    echo 'Result: ' . substr($result, 0, 50) . '...' . PHP_EOL;
+    echo 'Result: ' . substr($result, 0, 50);
     
     self::assertIsString($result);
+    
+    echo '...' . PHP_EOL;
     
     return $result;
   }
@@ -33,15 +35,15 @@ class MIMEModuleTest extends TestCase {
   public function testCorrectMediaInsertion(string $media): string {
     echo PHP_EOL . 'Testing correct media insertion...' . PHP_EOL;
     
-    $newFilepath = '../../../../filesystem/tests/test';
+    $newFilepath = '../../../filesystem/tests/test';
     
-    $result = MIMEModule::saveMedia($newFilepath, $media);
+    $result = MIMEService::createMedia($newFilepath, $media);
     
     echo 'Result: ' . $result . PHP_EOL;
     
     self::assertEquals(
       Success::CODE,
-      UserImpl::validatePicture($result),
+      User::validatePicture($result),
     );
     
     return $result;
@@ -55,7 +57,7 @@ class MIMEModuleTest extends TestCase {
   ) {
     echo PHP_EOL . 'Testing correct media deletion...' . PHP_EOL;
     
-    $result = MIMEModule::deleteMedia($filepath);
+    $result = MIMEService::deleteMedia($filepath);
     
     echo 'Result: ' . $result . PHP_EOL;
     

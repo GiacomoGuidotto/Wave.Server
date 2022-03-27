@@ -2,57 +2,112 @@
 
 namespace Wave\Services\MIME;
 
+use Wave\Model\Singleton\Singleton;
+use Wave\Model\User\User;
+use Wave\Specifications\ErrorCases\Mime\IncorrectFileType;
+use Wave\Specifications\ErrorCases\Mime\IncorrectPayload;
+use Wave\Specifications\ErrorCases\Success\Success;
+use Wave\Specifications\MIME\MIME;
+
 /**
- * MIME service
+ * MIME service class
  *
- * Save MIMEs, specifically images, in the filesystem and translate them in filepath
+ * The implementation of the MIMEServiceInterface interface
  */
-interface MIMEService {
-  /**
-   * Save a user's profile picture into the filesystem
-   *
-   * @param string $image    The decoded image
-   * @param string $username The user's username
-   * @return string|int      The generated filepath or the error code
-   */
-  public static function saveUserImage(string $image, string $username): string|int;
+class MIMEService extends Singleton implements MIMEServiceInterface {
   
   /**
-   * Save a group's picture into the filesystem
-   *
-   * @param string $image The decoded image
-   * @param string $group The group's UUID
-   * @return string|int   The generated filepath or the error code
+   * @inheritDoc
    */
-  public static function saveGroupImage(string $image, string $group): string|int;
+  public static function createMedia(
+    string $filepath,
+    string $media,
+  ): int|string {
+    // ==== Validate media =======================
+    if (preg_match('/^data:image\/(\w+);base64,/', $media, $type) !== false) {
+      $type = strtolower($type[1]);
+      if (!in_array($type, MIME::SUPPORTED_MIME)) {
+        return IncorrectFileType::CODE;
+      }
+    } else {
+      return IncorrectPayload::CODE;
+    }
+    
+    // ==== Prepare media ========================
+    $data = substr($media, strpos($media, ',') + 1);
+    $data = str_replace(' ', '+', $data);
+    
+    $data = base64_decode($data);
+    
+    if ($data === false) {
+      return IncorrectPayload::CODE;
+    }
+    
+    // ==== Insert media =========================
+    $filepath .= ".$type";
+    
+    file_put_contents($filepath, $data, LOCK_EX);
+    
+    return $filepath;
+  }
   
   /**
-   * Save a message's media into the filesystem
-   *
-   * @param string $image   The decoded image
-   * @param string $message The message's key
-   * @return string|int     The generated filepath or the error code
+   * @inheritDoc
    */
-  public static function saveMessageMedia(string $image, string $message): string|int;
+  public static function researchMedia(
+    string $filepath,
+  ): int|string {
+    // ==== Validate filepath ====================
+    $filepathValidation = User::validatePicture($filepath);
+    
+    if ($filepathValidation != Success::CODE) {
+      return $filepathValidation;
+    }
+    
+    // ==== Retrieve media =======================
+    $data = base64_encode(file_get_contents($filepath));
+    
+    // ==== Prepare media ========================
+    $type = pathinfo($filepath, PATHINFO_EXTENSION);
+    $media = 'data:image/' . $type . ';base64,' . $data;
+    
+    // ==== Validate media =======================
+    if (preg_match('/^data:image\/(\w+);base64,/', $media, $type) !== false) {
+      $type = strtolower($type[1]);
+      if (!in_array($type, MIME::SUPPORTED_MIME)) {
+        return IncorrectFileType::CODE;
+      }
+    } else {
+      return IncorrectPayload::CODE;
+    }
+    return $media;
+  }
   
   /**
-   * Retrieve an image from the filesystem
-   *
-   * Use the given filepath for locating and returning the image from the filesystem
-   *
-   * @param string $filepath The requested image's filepath
-   * @return string|int      The decoded image or the error code
+   * @inheritDoc
    */
-  public static function retrieveImage(string $filepath): string|int;
+  public static function updateMedia(
+    string $filepath,
+    string $media,
+  ): int|string {
+    return self::createMedia($filepath, $media);
+  }
   
   /**
-   * Delete an image from the filesystem
-   *
-   * Use the given filepath for locating and deleting the image from the filesystem
-   *
-   * @param string $filepath The targeted image's filepath
-   * @return int|null        The eventual error code
+   * @inheritDoc
    */
-  public static function deleteImage(string $filepath): ?int;
-  
+  public static function deleteMedia(
+    string $filepath,
+  ): ?int {
+    // ==== Validate filepath ====================
+    $filepathValidation = User::validatePicture($filepath);
+    
+    if ($filepathValidation != Success::CODE) {
+      return $filepathValidation;
+    }
+    
+    // ==== Delete media =========================
+    unlink($filepath);
+    return null;
+  }
 }

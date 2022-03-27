@@ -1,8 +1,7 @@
 <?php
-
-use Wave\Services\Database\DatabaseServiceImpl;
-
 require '../../vendor/autoload.php';
+
+use Wave\Services\Database\DatabaseService;
 
 if ($_SERVER['REQUEST_METHOD'] != 'OPTIONS') {
   echo '
@@ -18,6 +17,7 @@ if ($_SERVER['REQUEST_METHOD'] != 'OPTIONS') {
 ';
   return;
 }
+
 $headers = getallheaders();
 
 // ==== Authentication =============================================================================
@@ -51,7 +51,7 @@ if (is_null($directive)) {
   return;
 }
 
-$service = DatabaseServiceImpl::getInstance();
+$service = DatabaseService::getInstance();
 
 // ==== Purge database =============================================================================
 

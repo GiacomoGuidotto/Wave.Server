@@ -1,19 +1,19 @@
 <?php
 require '../../vendor/autoload.php';
 
-use Wave\Services\Cors\Cors;
-use Wave\Services\Database\DatabaseServiceImpl;
+use Wave\Services\Cors\CorsService;
+use Wave\Services\Database\DatabaseService;
 use Wave\Specifications\ErrorCases\ErrorCases;
 use Wave\Specifications\ErrorCases\Generic\NullAttributes;
 use Wave\Utilities\Utilities;
 
 
-$service = DatabaseServiceImpl::getInstance();
+$service = DatabaseService::getInstance();
 
 $method = $_SERVER['REQUEST_METHOD'];
 
-// ==== Cors check =================================================================
-Cors::handle('auth');
+// ==== CorsService check =================================================================
+CorsService::handle('auth');
 
 if ($method == 'OPTIONS') return;
 

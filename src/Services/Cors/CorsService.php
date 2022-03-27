@@ -7,7 +7,7 @@ namespace Wave\Services\Cors;
  * if request is made by a web browser the cors headers must be return
  * in response of a "preflight" of the origin (an OPTIONS request)
  */
-class Cors {
+class CorsService {
   public static function handle(string $endpoint) {
     if (isset($_SERVER['HTTP_ORIGIN']) && $_SERVER['HTTP_ORIGIN'] != '') {
       $allowedOrigins = [

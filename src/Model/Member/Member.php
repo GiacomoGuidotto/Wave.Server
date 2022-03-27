@@ -2,16 +2,27 @@
 
 namespace Wave\Model\Member;
 
+use Wave\Specifications\ErrorCases\Success\Success;
+use Wave\Specifications\ErrorCases\Type\ExceedingMaximum;
+use Wave\Specifications\ErrorCases\Type\ExceedingMinimum;
+
 /**
- * Member resource
- * Set of static methods for the member's attributes validations
+ * MemberInterface resource class
+ * The implementation of the MemberInterface interface
  */
-interface Member {
+class Member implements MemberInterface {
+  
   /**
-   * Check the constrains of the permission attribute
-   *
-   * @param int $permission the permission to check
-   * @return int            either the error code or the success code
+   * @inheritDoc
    */
-  public static function validatePermission(int $permission): int;
+  public static function validatePermission(int $permission): int {
+    if ($permission > 127) {
+      return ExceedingMaximum::CODE;
+    }
+    if ($permission < 0) {
+      return ExceedingMinimum::CODE;
+    }
+    
+    return Success::CODE;
+  }
 }

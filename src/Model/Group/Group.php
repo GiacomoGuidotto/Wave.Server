@@ -2,56 +2,114 @@
 
 namespace Wave\Model\Group;
 
+use Wave\Specifications\ErrorCases\Mime\IncorrectPayload;
+use Wave\Specifications\ErrorCases\Success\Success;
+use Wave\Specifications\ErrorCases\Type\ExceedingMaxLength;
+use Wave\Specifications\ErrorCases\Type\ExceedingMinLength;
+use Wave\Specifications\ErrorCases\Type\IncorrectParsing;
+use Wave\Specifications\ErrorCases\Type\IncorrectPattern;
+
 /**
- * Group resource
- * Set of static methods for the group's attributes validations
+ * GroupInterface resource class
+ * The implementation of the GroupInterface interface
  */
-interface Group {
-  /**
-   * Check the constrains of the uuid attribute.
-   *
-   * @param string $group The uuid to check.
-   * @return int          Either the error code or the success code.
-   */
-  public static function validateGroup(string $group): int;
+class Group implements GroupInterface {
   
   /**
-   * Check the constrains of the name attribute.
-   *
-   * @param string $name The name to check.
-   * @return int         Either the error code or the success code.
+   * @inheritDoc
    */
-  public static function validateName(string $name): int;
+  public static function validateGroup(string $group): int {
+    if (strlen($group) > 36) {
+      return ExceedingMaxLength::CODE;
+    }
+    if (strlen($group) < 36) {
+      return ExceedingMinLength::CODE;
+    }
+    if (preg_match(
+        "#^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$#",
+        $group
+      ) != 1) {
+      return IncorrectPattern::CODE;
+    }
+    
+    return Success::CODE;
+  }
   
   /**
-   * Check the constrains of the info attribute.
-   *
-   * @param string $info The info to check.
-   * @return int         Either the error code or the success code.
+   * @inheritDoc
    */
-  public static function validateInfo(string $info): int;
+  public static function validateName(string $name): int {
+    if (strlen($name) > 64) {
+      return ExceedingMaxLength::CODE;
+    }
+    if (strlen($name) < 1) {
+      return ExceedingMinLength::CODE;
+    }
+    
+    return Success::CODE;
+  }
   
   /**
-   * Check the constrains of the picture attribute.
-   *
-   * @param string $picture The picture to check.
-   * @return int            Either the error code or the success code.
+   * @inheritDoc
    */
-  public static function validatePicture(string $picture): int;
+  public static function validateInfo(string $info): int {
+    if (strlen($info) > 225) {
+      return ExceedingMaxLength::CODE;
+    }
+    if (strlen($info) < 1) {
+      return ExceedingMinLength::CODE;
+    }
+    
+    return Success::CODE;
+  }
   
   /**
-   * Check the constrains of the chat attribute.
-   *
-   * @param string $chat The chat to check.
-   * @return int         Either the error code or the success code.
+   * @inheritDoc
    */
-  public static function validateChat(string $chat): int;
+  public static function validatePicture(string $picture): int {
+    if (!file_exists($picture)) {
+      return IncorrectPayload::CODE;
+    }
+    
+    return Success::CODE;
+  }
   
   /**
-   * Check the constrains of the state attribute.
-   *
-   * @param string $state The state to check.
-   * @return int          Either the error code or the success code.
+   * @inheritDoc
    */
-  public static function validateState(string $state): int;
+  public static function validateChat(string $chat): int {
+    if (strlen($chat) > 36) {
+      return ExceedingMaxLength::CODE;
+    }
+    if (strlen($chat) < 36) {
+      return ExceedingMinLength::CODE;
+    }
+    if (preg_match(
+        "#^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$#",
+        $chat
+      ) != 1) {
+      return IncorrectPattern::CODE;
+    }
+    
+    return Success::CODE;
+  }
+  
+  /**
+   * @inheritDoc
+   */
+  public static function validateState(string $state): int {
+    if (strlen($state) > 1) {
+      return ExceedingMaxLength::CODE;
+    }
+    if (strlen($state) < 1) {
+      return ExceedingMinLength::CODE;
+    }
+    
+    $enum = ['N', 'A', 'P'];
+    if (!in_array($state, $enum, true)) {
+      return IncorrectParsing::CODE;
+    }
+    
+    return Success::CODE;
+  }
 }

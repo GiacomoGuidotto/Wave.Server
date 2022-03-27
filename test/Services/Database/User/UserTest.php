@@ -3,8 +3,8 @@
 namespace Services\Database\User;
 
 use PHPUnit\Framework\TestCase;
-use Wave\Model\User\UserImpl;
-use Wave\Services\Database\DatabaseServiceImpl;
+use Wave\Model\User\User;
+use Wave\Services\Database\DatabaseService;
 use Wave\Services\Database\Module\DatabaseModule;
 use Wave\Specifications\ErrorCases\Generic\NullAttributes;
 use Wave\Specifications\ErrorCases\State\AlreadyExist;
@@ -15,7 +15,7 @@ use Wave\Specifications\ErrorCases\Type\IncorrectPattern;
 use Wave\Utilities\Utilities;
 
 class UserTest extends TestCase {
-  protected static DatabaseServiceImpl $service;
+  protected static DatabaseService $service;
   
   private static string $username = 'giacomo';
   private static string $password = 'Fr6/ese342f';
@@ -23,10 +23,10 @@ class UserTest extends TestCase {
   private static string $token;
   
   public static function setUpBeforeClass(): void {
-    echo '==== User ====================================================' . PHP_EOL
+    echo '==== UserInterface ====================================================' . PHP_EOL
       . '==============================================================' . PHP_EOL;
     
-    self::$service = DatabaseServiceImpl::getInstance();
+    self::$service = DatabaseService::getInstance();
     self::$source = Utilities::generateUuid();
     
     // ==== generate dummy user
@@ -74,23 +74,23 @@ class UserTest extends TestCase {
     
     self::assertEquals(
       Success::CODE,
-      UserImpl::validateUsername($result['username']),
+      User::validateUsername($result['username']),
     );
     self::assertEquals(
       Success::CODE,
-      UserImpl::validateName($result['name']),
+      User::validateName($result['name']),
     );
     self::assertEquals(
       Success::CODE,
-      UserImpl::validateSurname($result['surname']),
+      User::validateSurname($result['surname']),
     );
     self::assertEquals(
       Success::CODE,
-      UserImpl::validateTheme($result['theme']),
+      User::validateTheme($result['theme']),
     );
     self::assertEquals(
       Success::CODE,
-      UserImpl::validateLanguage($result['language']),
+      User::validateLanguage($result['language']),
     );
     
     return $result;
@@ -146,23 +146,23 @@ class UserTest extends TestCase {
     
     self::assertEquals(
       Success::CODE,
-      UserImpl::validateUsername($result['username']),
+      User::validateUsername($result['username']),
     );
     self::assertEquals(
       Success::CODE,
-      UserImpl::validateName($result['name']),
+      User::validateName($result['name']),
     );
     self::assertEquals(
       Success::CODE,
-      UserImpl::validateSurname($result['surname']),
+      User::validateSurname($result['surname']),
     );
     self::assertEquals(
       Success::CODE,
-      UserImpl::validateTheme($result['theme']),
+      User::validateTheme($result['theme']),
     );
     self::assertEquals(
       Success::CODE,
-      UserImpl::validateLanguage($result['language']),
+      User::validateLanguage($result['language']),
     );
     
     return $result;
@@ -232,23 +232,23 @@ class UserTest extends TestCase {
     
     self::assertEquals(
       Success::CODE,
-      UserImpl::validateUsername($result['username']),
+      User::validateUsername($result['username']),
     );
     self::assertEquals(
       Success::CODE,
-      UserImpl::validateName($result['name']),
+      User::validateName($result['name']),
     );
     self::assertEquals(
       Success::CODE,
-      UserImpl::validateSurname($result['surname']),
+      User::validateSurname($result['surname']),
     );
     self::assertEquals(
       Success::CODE,
-      UserImpl::validateTheme($result['theme']),
+      User::validateTheme($result['theme']),
     );
     self::assertEquals(
       Success::CODE,
-      UserImpl::validateLanguage($result['language']),
+      User::validateLanguage($result['language']),
     );
     
     return $result;

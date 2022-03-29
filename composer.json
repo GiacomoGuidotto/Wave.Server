@@ -6,7 +6,8 @@
     "cboden/ratchet": "^0.4.4",
     "react/zmq": "^v0.4.0",
     "ext-pdo": "*",
-    "monolog/monolog": "^2.4"
+    "monolog/monolog": "^2.4",
+    "ext-zmq": "*"
   },
   "require-dev": {
     "phpunit/phpunit": "^9.5"

@@ -6,7 +6,7 @@ use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use Wave\Model\Singleton\Singleton;
-use Wave\Specifications\Wave\Wave;
+use Wave\Specifications\Logging\Logging;
 
 class LogModule extends Singleton {
   private static StreamHandler $defaultStream;
@@ -26,7 +26,7 @@ class LogModule extends Singleton {
       Logger::DEBUG
     );
     // Set .log files format
-    $formatter = new LineFormatter(Wave::LOG_MESSAGE_FORMAT, Wave::LOG_DATE_FORMAT);
+    $formatter = new LineFormatter(Logging::LOG_MESSAGE_FORMAT, Logging::LOG_DATE_FORMAT);
     self::$defaultStream->setFormatter($formatter);
     self::$errorStream->setFormatter($formatter);
   }

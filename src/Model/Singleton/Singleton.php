@@ -43,13 +43,13 @@ class Singleton {
   /**
    * Retrieve the Singleton's instance.
    */
-  public static function getInstance() {
+  public static function getInstance(...$parameters) {
     $subclass = static::class;
     
     // first run
     if (!isset(self::$instances[$subclass])) {
       // "static" keyword replace literally the subclass name
-      self::$instances[$subclass] = new static();
+      self::$instances[$subclass] = new static(...$parameters);
     }
     
     return self::$instances[$subclass];

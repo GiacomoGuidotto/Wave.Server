@@ -23,7 +23,7 @@ class UserTest extends TestCase {
   private static string $token;
   
   public static function setUpBeforeClass(): void {
-    echo '==== UserInterface ====================================================' . PHP_EOL
+    echo PHP_EOL . '==== User ====================================================' . PHP_EOL
       . '==============================================================' . PHP_EOL;
     
     self::$service = DatabaseService::getInstance();

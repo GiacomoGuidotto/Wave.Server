@@ -80,6 +80,7 @@ class MIMEService extends Singleton implements MIMEServiceInterface {
     } else {
       return IncorrectPayload::CODE;
     }
+    
     return $media;
   }
   

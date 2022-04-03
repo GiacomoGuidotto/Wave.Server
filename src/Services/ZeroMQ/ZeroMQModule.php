@@ -7,11 +7,16 @@ use React\EventLoop\LoopInterface;
 use React\ZMQ\Context;
 use React\ZMQ\SocketWrapper;
 use Wave\Model\Singleton\Singleton;
-use Wave\Specifications\WebSocket\ZeroMQ\ZeroMQ;
+use Wave\Specifications\Wave\Wave;
 use ZMQ;
 use ZMQContext;
 use ZMQSocket;
 
+/**
+ * ZeroMQ module
+ *
+ * Module for the management of the MessageQueue sockets
+ */
 class ZeroMQModule extends Singleton {
   private ZMQSocket $pushSocket;
   private SocketWrapper $pullSocket;
@@ -28,27 +33,24 @@ class ZeroMQModule extends Singleton {
     // PULL socket initialization
     $context = new Context($loop);
     $this->pullSocket = $context->getSocket(ZMQ::SOCKET_PULL);
-    $this->pullSocket->bind(ZeroMQ::DSN);
+    $this->pullSocket->bind(Wave::ZEROMQ_DSN);
     
     // PUSH socket initialization
     $context = new ZMQContext();
     $this->pushSocket = $context->getSocket(ZMQ::SOCKET_PUSH);
-    $this->pushSocket->connect(ZeroMQ::DSN);
+    $this->pushSocket->connect(Wave::ZEROMQ_DSN);
     
   }
   
   /**
    * Bind a callback to a message received at the PULL socket (sent from the PUSH socket)
    *
-   * //TODO add type to ws server
-   * //TODO add this in the bin/execute.php when initializing the ws server
-   *
-   * @param        $server //The instance of the class that contain the method
-   * @param string $method The literal name of the method to bind
+   * @param string   $event  The type of event to bind the function to
+   * @param callable $method The function to bind
    * @return void
    */
-  public function bindCallback($server, string $method): void {
-    $this->pullSocket->on('message', [$server, $method]);
+  public function bindCallback(callable $method, string $event = 'message'): void {
+    $this->pullSocket->on($event, $method);
   }
   
   /**

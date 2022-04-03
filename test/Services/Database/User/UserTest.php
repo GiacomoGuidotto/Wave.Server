@@ -1,6 +1,6 @@
 <?php
 
-namespace Services\Database\User;
+namespace Wave\Tests\Services\Database\User;
 
 use PHPUnit\Framework\TestCase;
 use Wave\Model\User\User;

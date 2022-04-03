@@ -1,6 +1,6 @@
 <?php
 
-namespace Services\ZeroMQ;
+namespace Wave\Tests\Services\ZeroMQ;
 
 use Exception;
 use PHPUnit\Framework\TestCase;
@@ -34,7 +34,7 @@ class ZeroMQModuleTest extends TestCase {
     
     $result = ZeroMQModule::getInstance(self::$loop);
     
-    $result->bindCallback(new ZeroMQModuleTest(), 'simulatedCallback');
+    $result->bindCallback([$this, 'simulatedCallback']);
     
     $result->sendData(['test' => 'data']);
     

@@ -1,6 +1,6 @@
 <?php
 
-namespace Services\Database\Authentication;
+namespace Wave\Tests\Services\Database\Authentication;
 
 use PHPUnit\Framework\TestCase;
 use Wave\Model\Session\Session;

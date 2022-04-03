@@ -17,6 +17,11 @@
       "Wave\\": "src/"
     }
   },
+  "autoload-dev": {
+    "psr-4": {
+      "Wave\\Tests\\": "test/"
+    }
+  },
   "authors": [
     {
       "name": "GiacomoGuidotto",

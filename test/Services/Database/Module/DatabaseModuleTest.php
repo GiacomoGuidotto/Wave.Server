@@ -1,6 +1,6 @@
 <?php
 
-namespace Services\Database\Module;
+namespace Wave\Tests\Services\Database\Module;
 
 use PHPUnit\Framework\TestCase;
 use Wave\Services\Database\Module\DatabaseModule;

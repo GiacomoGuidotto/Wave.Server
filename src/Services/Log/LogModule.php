@@ -8,6 +8,11 @@ use Monolog\Logger;
 use Wave\Model\Singleton\Singleton;
 use Wave\Specifications\Logging\Logging;
 
+/**
+ * Logging module
+ *
+ * Module for the management of the .log files
+ */
 class LogModule extends Singleton {
   private static StreamHandler $defaultStream;
   private static StreamHandler $errorStream;

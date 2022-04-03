@@ -1,6 +1,6 @@
 <?php
 
-namespace Services\MIME;
+namespace Wave\Tests\Services\MIME;
 
 use PHPUnit\Framework\TestCase;
 use Wave\Model\User\User;
@@ -16,7 +16,7 @@ class MIMEServiceTest extends TestCase {
   public function testCorrectMediaRetrieve(): string {
     echo PHP_EOL . 'Testing correct media retrieve...' . PHP_EOL;
     
-    $filepath = '../../../assets/icons/favicon.png';
+    $filepath = '../../../public/assets/icons/favicon.png';
     
     $result = MIMEService::researchMedia($filepath);
     

@@ -61,12 +61,9 @@ class ZeroMQModule extends Singleton {
    */
   public function sendData(array $data): void {
     try {
-      // If the script side isn't running the PULL socket isn't ready
-      if (is_null($this->pullSocket)) {
-        throw new Exception('PULL socket is null');
-      }
       $this->pushSocket->send(json_encode($data));
     } catch (Exception $e) {
+      // If the script side isn't running the PULL socket isn't ready
       LogModule::log(
         'ZeroMQ',
         'data sending',

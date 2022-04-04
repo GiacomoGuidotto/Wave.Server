@@ -3,7 +3,6 @@ require __DIR__ . '/../vendor/autoload.php';
 
 use Ratchet\Http\HttpServer;
 use Ratchet\Server\IoServer;
-use Ratchet\Wamp\WampServer;
 use Ratchet\WebSocket\WsServer;
 use React\EventLoop\Loop;
 use React\Socket\SocketServer;
@@ -23,9 +22,7 @@ $zeroMQ->bindCallback([$channel, 'onAPIRequest']);
 new IoServer(
   new HttpServer(
     new WsServer(
-      new WampServer(
-        $channel
-      )
+      $channel
     )
   ),
   new SocketServer(Wave::CHANNEL_URI)

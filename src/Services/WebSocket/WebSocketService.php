@@ -5,26 +5,29 @@ namespace Wave\Services\WebSocket;
 use Exception;
 use JetBrains\PhpStorm\Pure;
 use Ratchet\ConnectionInterface;
-use Ratchet\Wamp\WampServerInterface;
-use SplObjectStorage;
+use Ratchet\MessageComponentInterface;
 use Wave\Model\Singleton\Singleton;
+use Wave\Services\Database\DatabaseService;
 use Wave\Services\Log\LogModule;
+use Wave\Services\WebSocket\Connection\UsersConnectionStorage;
 use Wave\Services\ZeroMQ\ZeroMQModule;
+use Wave\Specifications\ErrorCases\Generic\NullAttributes;
+use Wave\Utilities\Utilities;
 
 /**
  * WebSocket service
  *
  * WAMP-based service for the "Channel" management
  */
-class WebSocketService extends Singleton implements WampServerInterface, WebSocketInterface {
+class WebSocketService extends Singleton implements MessageComponentInterface, WebSocketInterface {
   
-  protected SplObjectStorage $users;
+  protected UsersConnectionStorage $users;
   
   private array $contacts = [];
   private array $groups = [];
   
   #[Pure] public function __construct() {
-    $this->users = new SplObjectStorage();
+    $this->users = new UsersConnectionStorage();
     // TODO fill $contacts with "username" => "username" and $groups "group_UUID" => ["members"]
     //    from existing entity from database
   }
@@ -87,6 +90,69 @@ class WebSocketService extends Singleton implements WampServerInterface, WebSock
         ],
       ]
     );
+  }
+  
+  // ==== Native WebSocket methods =================================================================
+  
+  /**
+   * @inheritDoc
+   */
+  public function onOpen(ConnectionInterface $conn) {}
+  
+  /**
+   * Used only for validating the connection with a message of this schema:
+   * {
+   *  "token": ...
+   * }
+   *
+   * After validation the connection can be saved in the storage with the user's username as key
+   *
+   * @inheritDoc
+   */
+  function onMessage(ConnectionInterface $from, $msg) {
+    $packet = json_decode($msg, JSON_OBJECT_AS_ARRAY);
+    
+    $token = $packet['token'] ?? null;
+    if (is_null($token)) {
+      $from->send(
+        json_encode(Utilities::generateErrorMessage(NullAttributes::CODE))
+      );
+      return;
+    }
+    
+    $username = DatabaseService::validateUser($token);
+    if (!is_string($username)) {
+      $from->send(
+        json_encode(Utilities::generateErrorMessage($username))
+      );
+      return;
+    }
+    
+    $this->users->attach($from, $username);
+  }
+  
+  /**
+   * @inheritDoc
+   */
+  public function onClose(ConnectionInterface $conn) {
+    if ($this->users->contains($conn)) {
+      $this->users->detach($conn);
+    }
+  }
+  
+  /**
+   * @inheritDoc
+   */
+  public function onError(ConnectionInterface $conn, Exception $e) {
+    LogModule::log(
+      'WebSocket',
+      'Connection interface',
+      'General error caught by the interface: ' . $e->getMessage(),
+      true,
+    );
+    if ($this->users->contains($conn)) {
+      $this->users->detach($conn);
+    }
   }
   
   // ==== API request handing ======================================================================
@@ -174,7 +240,6 @@ class WebSocketService extends Singleton implements WampServerInterface, WebSock
     string $origin,
     array  $payload,
   ): void {
-    echo 'On contact create: ' . json_encode($payload, JSON_PRETTY_PRINT) . PHP_EOL;
     // TODO: Implement onContactCreate() method.
   }
   
@@ -185,7 +250,15 @@ class WebSocketService extends Singleton implements WampServerInterface, WebSock
     string $origin,
     array  $payload,
   ): void {
-    // TODO: Implement onContactUpdate() method.
+    $headers = $payload['headers'] ?? null;
+    $body = $payload['headers'] ?? null;
+    
+    if (is_null($headers['directive'] ?? null)) {
+      // "New contact infos" case
+      // TODO parse through contacts reference with old_username in headers, then change reference
+    } else {
+      // "New contact status/reply" case
+    }
   }
   
   /**
@@ -286,79 +359,5 @@ class WebSocketService extends Singleton implements WampServerInterface, WebSock
     array  $payload,
   ): void {
     // TODO: Implement onMessageDelete() method.
-  }
-  
-  // ==== Native WAMP methods ======================================================================
-  
-  /**
-   * @inheritDoc
-   */
-  public function onOpen(ConnectionInterface $conn) {
-    $this->users->attach($conn);
-    // TODO: attach users with theirs username as keys of the array
-    // https://stackoverflow.com/questions/28792051/find-object-in-splobjectstorage-by-attached-info
-  }
-  
-  /**
-   * @inheritDoc
-   */
-  public function onClose(ConnectionInterface $conn) {
-    if ($this->users->contains($conn)) {
-      $this->users->detach($conn);
-    }
-  }
-  
-  /**
-   * @inheritDoc
-   */
-  public function onError(ConnectionInterface $conn, Exception $e) {
-    // TODO: Implement onError() method.
-  }
-  
-  // ==== Forbidden methods ========================================================================
-  
-  /**
-   * @inheritDoc
-   */
-  public function onCall(
-    ConnectionInterface $conn,
-                        $id,
-                        $topic,
-    array               $params
-  ) {
-    // TODO: Implement Forbidden response.
-  }
-  
-  /**
-   * @inheritDoc
-   */
-  public function onSubscribe(
-    ConnectionInterface $conn,
-                        $topic
-  ) {
-    // TODO: Implement Forbidden response.
-  }
-  
-  /**
-   * @inheritDoc
-   */
-  public function onUnSubscribe(
-    ConnectionInterface $conn,
-                        $topic
-  ) {
-    // TODO: Implement Forbidden response.
-  }
-  
-  /**
-   * @inheritDoc
-   */
-  public function onPublish(
-    ConnectionInterface $conn,
-                        $topic,
-                        $event,
-    array               $exclude,
-    array               $eligible
-  ) {
-    // TODO: Implement Forbidden response.
   }
 }

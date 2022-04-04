@@ -26,7 +26,7 @@ use Wave\Utilities\Utilities;
  */
 class DatabaseService extends Singleton implements DatabaseServiceInterface {
   
-  //TODO refactor to static methods and made them return the error code or null
+  // TODO refactor to static methods and made them return the error code or null
   // TODO change WHERE to Case sensitive
   
   // ==== Utility methods ==========================================================================
@@ -392,7 +392,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     return null;
   }
   
-  // ==== UserInterface ============================================================================
+  // ==== User ============================================================================
   // ==== Use cases related to the user management =================================================
   
   /**
@@ -692,17 +692,17 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
       }
     }
     
-    // ==== Save image into the fs ===============
-    if ($picture !== null) {
-      $storedUsername = DatabaseModule::fetchOne(
-        'SELECT username
+    $storedUsername = DatabaseModule::fetchOne(
+      'SELECT username
                FROM users
                WHERE user_id = BINARY :user_id AND active = TRUE',
-        [
-          ':user_id' => $userId,
-        ]
-      )['username'];
-      
+      [
+        ':user_id' => $userId,
+      ]
+    )['username'];
+    
+    // ==== Save image into the fs ===============
+    if ($picture !== null) {
       $filepath = $_SERVER['DOCUMENT_ROOT'] . "filesystem/images/user/$storedUsername";
       $filepath = MIMEService::updateMedia($filepath, $picture);
       
@@ -740,18 +740,23 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     
     DatabaseModule::commitTransaction();
     
-    // ==== Channel packet ===============================================================
-    WebSocketService::sendToWebSocket(
-            $user['username'],
-            'UPDATE',
-            'contact/information',
-      body: [
-              'username' => $user['username'],
-              'name'     => $user['name'],
-              'surname'  => $user['surname'],
-              'picture'  => $picture,
-            ],
-    );
+    // ==== Send channel packet to all contacts if some shared attribute has been changed
+    if ($username !== null || $name !== null || $surname !== null || $picture !== null) {
+      WebSocketService::sendToWebSocket(
+                 $user['username'],
+                 'UPDATE',
+                 'contact/information',
+        headers: [
+                   'old_username' => $storedUsername,
+                 ],
+        body   : [
+                   'username' => $user['username'],
+                   'name'     => $user['name'],
+                   'surname'  => $user['surname'],
+                   'picture'  => $picture,
+                 ],
+      );
+    }
     
     return [
       'username' => $user['username'],
@@ -830,7 +835,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     return null;
   }
   
-  // ==== ContactInterface ==================================================================================
+  // ==== Contact ==================================================================================
   // ==== Use cases related to the contacts management =============================================
   
   /**
@@ -941,7 +946,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     } else {
       $contactStatus = 'P';
       
-      // === Creating new entity ========================================================
+      // ==== Creating new entity ========================================================
       $chatUUID = DatabaseModule::fetchOne(
         'SELECT UUID()'
       )['UUID()'];
@@ -1044,7 +1049,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     return [];
   }
   
-  // ==== GroupInterface ====================================================================================
+  // ==== Group ====================================================================================
   // ==== Use cases related to the groups management ===============================================
   
   /**
@@ -1109,7 +1114,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     return [];
   }
   
-  // ==== MemberInterface ===================================================================================
+  // ==== Member ===================================================================================
   
   /**
    * @inheritDoc
@@ -1160,7 +1165,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     return [];
   }
   
-  // ==== MessageInterface ==================================================================================
+  // ==== Message ==================================================================================
   // ==== Use cases related to the messages management =============================================
   
   /**
@@ -1241,7 +1246,67 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     // ==== purge contacts ===============================================================
     DatabaseModule::execute('DELETE FROM contacts WHERE active = FALSE');
     
+    // TODO delete chat tables
+    
     // ==== purge groups =================================================================
     DatabaseModule::execute('DELETE FROM `groups` WHERE active = FALSE');
+  }
+  
+  // ==== Public utility methods ===================================================================
+  // ==== Set of public methods used from other services ===========================================
+  
+  /**
+   * Validate a user, given its token
+   *
+   * @param string $token The token to check
+   * @return string|int   The username of the user, or the error code
+   */
+  public function instanceValidateUser(
+    string $token,
+  ): string|int {
+    // ==== Parameters validation ========================================================
+    $tokenValidation = Session::validateToken($token);
+    
+    if ($tokenValidation != Success::CODE) {
+      return $tokenValidation;
+    }
+    
+    // ==== Token authorization ==============
+    $tokenAuthorization = $this->authorizeToken($token);
+    
+    if ($tokenAuthorization != Success::CODE) {
+      return $tokenAuthorization;
+    }
+    
+    $userId = DatabaseModule::fetchOne(
+      'SELECT user
+             FROM sessions
+             WHERE session_token = :session_token',
+      [
+        ':session_token' => $token,
+      ]
+    )['user'];
+    
+    return DatabaseModule::fetchOne(
+      'SELECT username
+             FROM users
+             WHERE user_id = BINARY :user_id',
+      [
+        ':user_id' => $userId,
+      ]
+    )['username'];
+  }
+  
+  /**
+   * Validate a user, given its token
+   *
+   * @param string $token The token to check
+   * @return string|int   The username of the user, or the error code
+   */
+  public static function validateUser(
+    string $token,
+  ): string|int {
+    $service = DatabaseService::getInstance();
+    return $service->instanceValidateUser($token);
   }
 }

@@ -40,8 +40,4 @@ class LogModuleTest extends TestCase {
     
     self::assertTrue(true);
   }
-  
-  public static function tearDownAfterClass(): void {
-    unlink('filesystem');
-  }
 }

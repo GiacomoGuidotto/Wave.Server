@@ -2,7 +2,6 @@
 
 namespace Wave\Tests\Services\ZeroMQ;
 
-use Exception;
 use PHPUnit\Framework\TestCase;
 use React\EventLoop\Loop;
 use React\EventLoop\LoopInterface;
@@ -26,13 +25,10 @@ class ZeroMQModuleTest extends TestCase {
     self::assertInstanceOf(ZeroMQModule::class, $result);
   }
   
-  /**
-   * @throws Exception
-   */
   public function testSendingMessage() {
     echo PHP_EOL . 'Testing correct procedure for sending messages...' . PHP_EOL;
     
-    $result = ZeroMQModule::getInstance(self::$loop);
+    $result = ZeroMQModule::getInstance();
     
     $result->bindCallback([$this, 'simulatedCallback']);
     
@@ -42,7 +38,7 @@ class ZeroMQModuleTest extends TestCase {
   }
   
   public function simulatedCallback($packet) {
-    echo 'Result: ' . $packet . PHP_EOL;
+    echo 'ZeroMQ sent message: ' . $packet . PHP_EOL;
   }
   
   public static function tearDownAfterClass(): void {

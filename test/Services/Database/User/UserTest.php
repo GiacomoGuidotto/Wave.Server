@@ -335,15 +335,6 @@ class UserTest extends TestCase {
     return $result;
   }
   
-  public static function tearDownAfterClass(): void {
-    DatabaseModule::execute(
-      'DELETE FROM users
-            WHERE username=:username',
-      [
-        ':username' => self::$username,
-      ]
-    );
-  }
   
   // ==== deleteUser ===============================================================================
   // ===============================================================================================
@@ -401,5 +392,15 @@ class UserTest extends TestCase {
     );
     
     return $result;
+  }
+  
+  public static function tearDownAfterClass(): void {
+    DatabaseModule::execute(
+      'DELETE FROM users
+            WHERE username=:username',
+      [
+        ':username' => self::$username,
+      ]
+    );
   }
 }

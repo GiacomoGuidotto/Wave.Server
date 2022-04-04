@@ -2,7 +2,10 @@
 
 namespace Wave\Utilities;
 
+use FilesystemIterator;
 use JetBrains\PhpStorm\ArrayShape;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
 use Wave\Specifications\ErrorCases\ErrorCases;
 
 class Utilities {
@@ -74,5 +77,21 @@ class Utilities {
       mt_rand(0, 0xffff),
       mt_rand(0, 0xffff)
     );
+  }
+  
+  public static function deleteDirectory($path) {
+    $it = new RecursiveDirectoryIterator($path, FilesystemIterator::SKIP_DOTS);
+    $files = new RecursiveIteratorIterator(
+      $it,
+      RecursiveIteratorIterator::CHILD_FIRST
+    );
+    foreach ($files as $file) {
+      if ($file->isDir()) {
+        rmdir($file->getRealPath());
+      } else {
+        unlink($file->getRealPath());
+      }
+    }
+    rmdir($path);
   }
 }

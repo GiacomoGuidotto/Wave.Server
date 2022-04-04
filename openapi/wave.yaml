@@ -127,13 +127,13 @@ servers:
 tags:
   - name: Authentication
     description: Use cases related to the authentication process
-  - name: UserInterface
+  - name: User
     description: Use cases related to the user management
-  - name: ContactInterface
+  - name: Contact
     description: Use cases related to the contacts management
-  - name: GroupInterface
+  - name: Group
     description: Use cases related to the groups management
-  - name: MessageInterface
+  - name: Message
     description: Use cases related to the messages management
 paths:
   /auth:
@@ -219,13 +219,13 @@ paths:
           $ref: "#/components/responses/405"
 
   /user:
-    summary: UserInterface-related request
+    summary: User-related request
     description: The set of all the use cases related to the user management.
 
     post:
       operationId: createUser
       tags:
-        - UserInterface
+        - User
       summary: Create a new user
       description: Create a new user using the given parameters.
       parameters:
@@ -286,7 +286,7 @@ paths:
     get:
       operationId: getUserInformation
       tags:
-        - UserInterface
+        - User
       summary: Get the user's information
       description: Retrieve the user's information given the session token.
       parameters:
@@ -308,7 +308,7 @@ paths:
     put:
       operationId: changeUserInformation
       tags:
-        - UserInterface
+        - User
       summary: Change the user's information
       description: |
         Change the specific user's information with the specific new value.  
@@ -379,7 +379,7 @@ paths:
     delete:
       operationId: deleteUser
       tags:
-        - UserInterface
+        - User
       summary: Delete a specific user
       description: |
         Delete the user associated with a given token.  
@@ -399,13 +399,13 @@ paths:
           $ref: "#/components/responses/405"
 
   /contact:
-    summary: ContactInterface-related request
+    summary: Contact-related request
     description: The set of all the use cases related to the contacts management.
 
     post:
       operationId: contactRequest
       tags:
-        - ContactInterface
+        - Contact
       summary: Create a new contact request
       description: |
         Create a new pending relation (contact) request between the user identified from the token and a 
@@ -425,15 +425,19 @@ paths:
           $ref: "#/components/responses/400"
         401:
           $ref: "#/components/responses/401"
+        404:
+          $ref: "#/components/responses/404"
         405:
           $ref: "#/components/responses/405"
         406:
           $ref: "#/components/responses/406"
+        409:
+          $ref: "#/components/responses/409"
 
     delete:
       operationId: deleteContactRequest
       tags:
-        - ContactInterface
+        - Contact
       summary: Delete a pending contact request
       description: |
         Delete a pending relation (contact) request between the user identified from the token and a second 
@@ -455,7 +459,7 @@ paths:
     put:
       operationId: changeContactStatus
       tags:
-        - ContactInterface
+        - Contact
       summary: Change a contact status
       description: |
         Either respond to a first pending request or update an existing contact from a specific user, 
@@ -482,7 +486,7 @@ paths:
     get:
       operationId: getContactInformation
       tags:
-        - ContactInterface
+        - Contact
       summary: Get one or all contact's information
       description: |
         Retrieve the list of the user's contacts.  
@@ -516,13 +520,13 @@ paths:
           $ref: "#/components/responses/405"
 
   /group:
-    summary: GroupInterface-related request
+    summary: Group-related request
     description: The set of all the use cases related to the group management.
 
     post:
       operationId: createGroup
       tags:
-        - GroupInterface
+        - Group
       summary: Create a new group
       description: |
         Create a new group with the given parameters.  
@@ -578,7 +582,7 @@ paths:
     get:
       operationId: getGroupInformation
       tags:
-        - GroupInterface
+        - Group
       summary: Get one or all groups' information
       description: |
         Retrieve the list of the user's groups.  
@@ -614,7 +618,7 @@ paths:
     patch:
       operationId: changeGroupStatus
       tags:
-        - GroupInterface
+        - Group
       summary: Change a group's status for the user
       description: Change a group's status, either its place (archived, pinned) or its notifications mode (mute).
       parameters:
@@ -645,7 +649,7 @@ paths:
     put:
       operationId: changeGroupInformation
       tags:
-        - GroupInterface
+        - Group
       summary: Change a group's information
       description: |
         Change a specific group's information with the specific new value.  
@@ -696,7 +700,7 @@ paths:
     delete:
       operationId: exitGroup
       tags:
-        - GroupInterface
+        - Group
       summary: Exit from the group
       description: |
         Delete a group participation. If its the last one, delete the group itself.  
@@ -725,13 +729,13 @@ paths:
           $ref: "#/components/responses/405"
 
   /member:
-    summary: GroupInterface's member-related request
+    summary: Group's member-related request
     description: The set of all the use cases related to the group's member management.
 
     post:
       operationId: addMember
       tags:
-        - GroupInterface
+        - Group
       summary: Add a group's member
       description: |
         Add a specific user to a specific group.  
@@ -765,7 +769,7 @@ paths:
     get:
       operationId: getMembersList
       tags:
-        - GroupInterface
+        - Group
       summary: Get one or all group's members
       description: |
         Retrieve the list of the group's members.  
@@ -804,7 +808,7 @@ paths:
     put:
       operationId: changeMemberPermission
       tags:
-        - GroupInterface
+        - Group
       summary: Change a group's member permissions
       description: |
         Change a specific group's member with the given permission.  
@@ -840,7 +844,7 @@ paths:
     delete:
       operationId: removeMember
       tags:
-        - GroupInterface
+        - Group
       summary: Remove a group's member
       description: |
         Remove a specific user from a specific group.  
@@ -878,7 +882,7 @@ paths:
     get:
       operationId: getMessages
       tags:
-        - MessageInterface
+        - Message
       summary: Get the chat's messages in various ways
       description: |
         Retrieve the messages of either a specified group or a specified contact.  
@@ -945,7 +949,7 @@ paths:
     post:
       operationId: writeMessage
       tags:
-        - MessageInterface
+        - Message
       summary: Write a message
       description: |
         Write a message with the given data.  
@@ -1007,7 +1011,7 @@ paths:
     put:
       operationId: changeMessage
       tags:
-        - MessageInterface
+        - Message
       summary: Change a message's content
       description: |
         Change a specific message content.  
@@ -1074,7 +1078,7 @@ paths:
     delete:
       operationId: deleteMessage
       tags:
-        - MessageInterface
+        - Message
       summary: Delete a chat's message
       description: |
         Delete a specific message from a specific chat.  
@@ -1231,7 +1235,7 @@ components:
       maxLength: 36
       description: The device identifier used during session refresh.
 
-    # UserInterface
+    # User
     userUsername:
       type: string
       minLength: 5
@@ -1324,7 +1328,7 @@ components:
 
         Encoded in [2 letter language code](https://www.sitepoint.com/iso-2-letter-language-codes/)
 
-    # ContactInterface
+    # Contact
     contactStatus:
       type: string
       minLength: 1
@@ -1340,7 +1344,7 @@ components:
 
         P for Pending, A for Active, B for Blocked
 
-    # GroupInterface
+    # Group
     groupName:
       type: string
       minLength: 1

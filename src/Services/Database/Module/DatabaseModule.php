@@ -59,6 +59,16 @@ class DatabaseModule extends Singleton {
     return $this->database->beginTransaction();
   }
   
+  
+  /**
+   * Check if a transaction is in progress
+   *
+   * @return bool
+   */
+  public function instanceInTransaction(): bool {
+    return $this->database->inTransaction();
+  }
+  
   /**
    * Commit the transaction on the private db reference
    *
@@ -120,6 +130,16 @@ class DatabaseModule extends Singleton {
   public static function beginTransaction(): bool {
     $module = static::getInstance();
     return $module->instanceBeginTransaction();
+  }
+  
+  /**
+   * Check if a transaction is in progress
+   *
+   * @return bool
+   */
+  public static function inTransaction(): bool {
+    $module = static::getInstance();
+    return $module->instanceInTransaction();
   }
   
   /**

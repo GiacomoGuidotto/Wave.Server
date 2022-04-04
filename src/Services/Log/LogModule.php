@@ -21,13 +21,14 @@ class LogModule extends Singleton {
   private static array $errorLoggers = [];
   
   protected function __construct() {
+    $documentRoot = explode('/src', __DIR__)[0];
     // Create .log files streams
     self::$defaultStream = new StreamHandler(
-      $_SERVER['DOCUMENT_ROOT'] . 'filesystem/logs/wave.log',
+      $documentRoot . '/filesystem/logs/wave.log',
       Logger::DEBUG
     );
     self::$errorStream = new StreamHandler(
-      $_SERVER['DOCUMENT_ROOT'] . 'filesystem/logs/error.log',
+      $documentRoot . '/filesystem/logs/error.log',
       Logger::DEBUG
     );
     // Set .log files format
@@ -36,6 +37,7 @@ class LogModule extends Singleton {
     self::$errorStream->setFormatter($formatter);
   }
   
+  // TODO add context
   private static function writeLog(
     Logger    $logger,
     Intensity $intensity,

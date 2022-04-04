@@ -9,6 +9,7 @@ use Ratchet\Wamp\WampServerInterface;
 use SplObjectStorage;
 use Wave\Model\Singleton\Singleton;
 use Wave\Services\Log\LogModule;
+use Wave\Services\ZeroMQ\ZeroMQModule;
 
 /**
  * WebSocket service
@@ -28,10 +29,12 @@ class WebSocketService extends Singleton implements WampServerInterface, WebSock
     //    from existing entity from database
   }
   
-  // ==== API request handing ======================================================================
+  // ==== Utility method ===========================================================================
   
   /**
-   * Redirect the incoming packets from the API runtime to the specific use case
+   * Utility method used in other classes to send data to this service through the ZeroMQ channel.
+   *
+   * With packets of this schema:
    *
    * {
    *  origin: user's username,
@@ -39,20 +42,63 @@ class WebSocketService extends Singleton implements WampServerInterface, WebSock
    *  topic: resource/attribute,
    *  payload: {
    *    headers: [
-   *      header1: value1
    *      ...
    *    ],
    *    body: {
    *      ...
    *    }
-   *  },
+   *  }
    * }
+   *
+   * @param string     $origin
+   * @param string     $directive
+   * @param string     $topic
+   * @param array|null $headers
+   * @param array|null $body
+   * @return void
+   */
+  public static function sendToWebSocket(
+    string $origin,
+    string $directive,
+    string $topic,
+    array  $headers = null,
+    array  $body = null,
+  ) {
+    try {
+      $zeroMQ = ZeroMQModule::getInstance();
+    } catch (Exception $e) {
+      LogModule::log(
+        'WebSocket',
+        'sending message to server',
+        "failed to send, connection isn't initialized: " . $e->getMessage(),
+        true
+      );
+      // TODO replace with context
+      return;
+    }
+    $zeroMQ->sendData(
+      [
+        'origin'    => $origin,
+        'directive' => $directive,
+        'topic'     => $topic,
+        'payload'   => [
+          'headers' => $headers,
+          'body'    => $body,
+        ],
+      ]
+    );
+  }
+  
+  // ==== API request handing ======================================================================
+  
+  /**
+   * Redirect the incoming packets from the API runtime to the specific use case
    *
    * @param $packet
    * @return void
    */
   public function onAPIRequest($packet): void {
-    $packet = json_decode($packet);
+    $packet = json_decode($packet, JSON_OBJECT_AS_ARRAY);
     
     $origin = $packet['origin'] ?? null;
     $topic = $packet['topic'] ?? null;
@@ -109,7 +155,7 @@ class WebSocketService extends Singleton implements WampServerInterface, WebSock
       case 'DELETE message':
         $this->onMessageDelete($origin, $payload);
         break;
-      default:
+      default: // Error case
         LogModule::log(
           'WebSocket',
           'API request handling',
@@ -128,6 +174,7 @@ class WebSocketService extends Singleton implements WampServerInterface, WebSock
     string $origin,
     array  $payload,
   ): void {
+    echo 'On contact create: ' . json_encode($payload, JSON_PRETTY_PRINT) . PHP_EOL;
     // TODO: Implement onContactCreate() method.
   }
   

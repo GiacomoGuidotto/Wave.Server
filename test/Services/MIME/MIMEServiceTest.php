@@ -8,15 +8,19 @@ use Wave\Services\MIME\MIMEService;
 use Wave\Specifications\ErrorCases\Success\Success;
 
 class MIMEServiceTest extends TestCase {
+  private static string $documentRoot;
+  
   public static function setUpBeforeClass(): void {
     echo '==== MIME module =============================================' . PHP_EOL
       . '==============================================================' . PHP_EOL;
+    
+    self::$documentRoot = explode('/test', __DIR__)[0];
   }
   
   public function testCorrectMediaRetrieve(): string {
     echo PHP_EOL . 'Testing correct media retrieve...' . PHP_EOL;
     
-    $filepath = '../../../public/assets/icons/favicon.png';
+    $filepath = self::$documentRoot . '/public/assets/icons/favicon.png';
     
     $result = MIMEService::researchMedia($filepath);
     
@@ -35,7 +39,7 @@ class MIMEServiceTest extends TestCase {
   public function testCorrectMediaInsertion(string $media): string {
     echo PHP_EOL . 'Testing correct media insertion...' . PHP_EOL;
     
-    $newFilepath = '../../../filesystem/tests/test';
+    $newFilepath = self::$documentRoot . '/filesystem/tests/test';
     
     $result = MIMEService::createMedia($newFilepath, $media);
     

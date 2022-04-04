@@ -2,6 +2,7 @@
 
 namespace Wave\Specifications\ErrorCases;
 
+use Wave\Specifications\ErrorCases\Elaboration\BlockedByUser;
 use Wave\Specifications\ErrorCases\Generic\NullAttributes;
 use Wave\Specifications\ErrorCases\Mime\DecodingFailed;
 use Wave\Specifications\ErrorCases\Mime\IncorrectFileType;
@@ -54,6 +55,9 @@ use Wave\Specifications\ErrorCases\Type\IncorrectPattern;
  * 42 Forbidden
  * 43 Not found
  * 44 Already exist
+ *
+ * ==== elaboration-related ====
+ * 50 Blocked by user
  */
 interface ErrorCases {
   const CODES_ASSOCIATIONS = [
@@ -72,6 +76,7 @@ interface ErrorCases {
     Timeout::CODE            => 401,
     Forbidden::CODE          => 403,
     NotFound::CODE           => 404,
+    BlockedByUser::CODE      => 406,
     AlreadyExist::CODE       => 409,
   ];
   
@@ -91,6 +96,7 @@ interface ErrorCases {
     Timeout::CODE            => Timeout::MESSAGE,
     Forbidden::CODE          => Forbidden::MESSAGE,
     NotFound::CODE           => NotFound::MESSAGE,
+    BlockedByUser::CODE      => BlockedByUser::MESSAGE,
     AlreadyExist::CODE       => AlreadyExist::MESSAGE,
   ];
   
@@ -110,6 +116,7 @@ interface ErrorCases {
     Timeout::CODE            => Timeout::DETAILS,
     Forbidden::CODE          => Forbidden::DETAILS,
     NotFound::CODE           => NotFound::DETAILS,
+    BlockedByUser::CODE      => BlockedByUser::DETAILS,
     AlreadyExist::CODE       => AlreadyExist::DETAILS,
   ];
 }

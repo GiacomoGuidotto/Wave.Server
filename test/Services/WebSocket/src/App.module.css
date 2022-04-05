@@ -1,0 +1,250 @@
+.header {
+    width: 100%;
+    height: 5rem;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    background-color: #313131;
+    color: white;
+}
+
+.titleBox {
+    margin-left: 2rem;
+    height: 70%;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: space-around;
+}
+
+.title {
+    font-size: 1.5rem;
+}
+
+.connectionBox {
+    width: 100vw;
+    height: 5rem;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 2px 8px black;
+}
+
+.connectionStatusBox {
+    margin-left: 2rem;
+    height: 80%;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: space-evenly;
+}
+
+.connectionUp {
+    border: 1px solid #1c6906;
+    background: #94de8e;
+    padding: .3rem 1rem;
+    font-size: .8rem;
+}
+
+.connectionDown {
+    border: 1px solid #690606;
+    background: #de8e8e;
+    padding: .3rem 1rem;
+    font-size: .8rem;
+}
+
+.connectionButton {
+    margin-right: 2rem;
+    width: 6rem;
+    border: 1px solid #c4c4c4;
+    background: none;
+    padding: .8rem 0;
+    transition: background .2s ease, border .2s ease, box-shadow .2s ease, color .2s ease;
+}
+
+.connectionButton:hover {
+    margin-right: 2rem;
+    width: 6rem;
+    border: 1px solid #313131;
+    background: #000000;
+    color: white;
+    padding: .8rem 0;
+    box-shadow: 2px 2px 8px black;
+    transition: background .2s ease, border .2s ease, box-shadow .2s ease, color .2s ease;
+}
+
+.body {
+    width: 100vw;
+    height: calc(100vh - 10rem);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+}
+
+.conversationBox {
+    width: 90vw;
+    height: calc(100vh - 10rem - 5vw);
+    background: white;
+    box-shadow: 0 0 20px black;
+    display: flex;
+    flex-direction: row;
+    overflow-y: scroll;
+}
+
+.conversationBox::-webkit-scrollbar {
+    width: 0;
+}
+
+.conversationError {
+    position: absolute;
+    width: 90vw;
+    height: calc(100vh - 10rem - 5vw);
+    background: rgba(222, 142, 142, .7);
+    box-shadow: 0 0 20px #de8e8e;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.conversationError > div {
+    border: 1px solid #690606;
+    padding: 1rem 2rem;
+    background: #bf403f;
+    text-align: center;
+}
+
+.sendPacketBox {
+    width: 45vw;
+}
+
+.sendPacketHeader {
+    height: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 0 1rem;
+    box-shadow: -8px 2px 8px black;
+
+}
+
+.sendPacket {
+    box-shadow: 0 0 20px black;
+    margin: 1rem 1rem 0 1rem;
+    padding: .5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+}
+
+.sendPacket > textarea {
+    resize: vertical;
+    width: 100%;
+    height: 10rem;
+    margin: 0;
+    padding: 0;
+    border: none;
+    border-bottom: 1px solid black;
+}
+
+.sendPacket > textarea:focus {
+    resize: vertical;
+    outline: none;
+}
+
+.sendPacketCommands {
+    width: 100%;
+    margin: .5rem 0 0 0;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.sendPacketSubmit {
+    width: 4.2rem;
+    height: 1.6rem;
+    border: 1px solid black;
+    background: none;
+    transition: background .2s ease, border .2s ease, box-shadow .2s ease, color .2s ease;
+}
+
+.sendPacketSubmit:hover {
+    width: 4.2rem;
+    height: 1.6rem;
+    cursor: pointer;
+    border: 1px solid black;
+    background: black;
+    color: white;
+    box-shadow: 2px 2px 8px black;
+    transition: background .2s ease, border .2s ease, box-shadow .2s ease, color .2s ease;
+}
+
+.sendPacketSubmit:focus {
+    width: 4.2rem;
+    height: 1.6rem;
+    outline: 1px solid black;
+    background: black;
+    color: white;
+    box-shadow: 2px 2px 8px black;
+    transition: background .2s ease, border .2s ease, box-shadow .2s ease, color .2s ease;
+}
+
+.receivedPacketsBox {
+    width: 45vw;
+}
+
+.receivedPacketHeader {
+    height: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 0 1rem;
+    box-shadow: 8px 2px 8px black;
+}
+
+.sendPacketError {
+    border: 1px solid #690606;
+    background: #de8e8e;
+    padding: .3rem 1rem;
+    font-size: .8rem;
+    text-align: center;
+}
+
+.receivedPacket {
+    box-shadow: 0 0 20px black;
+    margin: 1rem 1rem 0 1rem;
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.packet {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    background: white;
+    padding-bottom: 1rem;
+    min-width: 100%;
+}
+
+.packetNumber {
+    height: 1.5rem;
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid black;
+    box-shadow: 0 2px 10px black;
+    width: 100%;
+}
+
+.packetNumber > div {
+    margin-left: 1rem;
+}
+
+.packetContent {
+    margin-top: .5rem;
+    word-wrap: break-word;
+}

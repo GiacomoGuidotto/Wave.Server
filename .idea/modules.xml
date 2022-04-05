@@ -3,6 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/Wave.iml" filepath="$PROJECT_DIR$/.idea/Wave.iml" />
+      <module fileurl="file://$PROJECT_DIR$/test/Services/WebSocket/WebSocket.iml" filepath="$PROJECT_DIR$/test/Services/WebSocket/WebSocket.iml" />
     </modules>
   </component>
 </project>

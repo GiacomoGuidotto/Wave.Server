@@ -12,6 +12,7 @@ use Wave\Services\Log\LogModule;
 use Wave\Services\WebSocket\Connection\UsersConnectionStorage;
 use Wave\Services\ZeroMQ\ZeroMQModule;
 use Wave\Specifications\ErrorCases\Generic\NullAttributes;
+use Wave\Specifications\ErrorCases\WebSocket\IncorrectPacketSchema;
 use Wave\Utilities\Utilities;
 
 /**
@@ -149,7 +150,7 @@ class WebSocketService extends Singleton implements MessageComponentInterface, W
       'Connection interface',
       'General error caught by the interface: ' . $e->getMessage(),
       true,
-    );
+    ); // TODO replace with context
     if ($this->users->contains($conn)) {
       $this->users->detach($conn);
     }
@@ -178,7 +179,12 @@ class WebSocketService extends Singleton implements MessageComponentInterface, W
         'Incorrect packet schema',
         true
       );
-      // TODO respond to origin with error
+      // respond to origin with error
+      $originUser = $this->users->getFromInfo($origin);
+      $originUser?->send(
+        json_encode(Utilities::generateErrorMessage(IncorrectPacketSchema::CODE))
+      );
+      
       return;
     }
     
@@ -240,7 +246,25 @@ class WebSocketService extends Singleton implements MessageComponentInterface, W
     string $origin,
     array  $payload,
   ): void {
-    // TODO: Implement onContactCreate() method.
+    echo json_encode($origin, JSON_PRETTY_PRINT);
+    echo json_encode($payload, JSON_PRETTY_PRINT);
+    $headers = $payload['headers'] ?? null;
+    $body = $payload['body'] ?? null;
+    $recipient = $headers['to'] ?? null;
+    
+    if (is_null($headers) || is_null($body) || is_null($recipient)) {
+      LogModule::log(
+        'WebSocket',
+        'API request decoding',
+        'Incorrect packet schema',
+        true
+      );
+      return;
+    }
+    
+    // TODO change body with factoring method
+    $recipientUser = $this->users->getFromInfo($recipient);
+    $recipientUser?->send(json_encode($body));
   }
   
   /**

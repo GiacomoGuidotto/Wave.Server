@@ -19,6 +19,7 @@ use Wave\Specifications\ErrorCases\Type\ExceedingMinimum;
 use Wave\Specifications\ErrorCases\Type\ExceedingMinLength;
 use Wave\Specifications\ErrorCases\Type\IncorrectParsing;
 use Wave\Specifications\ErrorCases\Type\IncorrectPattern;
+use Wave\Specifications\ErrorCases\WebSocket\IncorrectPacketSchema;
 
 /**
  * Error cases' set
@@ -58,6 +59,9 @@ use Wave\Specifications\ErrorCases\Type\IncorrectPattern;
  *
  * ==== elaboration-related ====
  * 50 Blocked by user
+ *
+ * ==== websocket-related ====
+ * 60 Incorrect packet schema
  */
 interface ErrorCases {
   const CODES_ASSOCIATIONS = [
@@ -81,42 +85,44 @@ interface ErrorCases {
   ];
   
   const ERROR_MESSAGES = [
-    Success::CODE            => Success::MESSAGE,
-    NullAttributes::CODE     => NullAttributes::MESSAGE,
-    ExceedingMaxLength::CODE => ExceedingMaxLength::MESSAGE,
-    ExceedingMinLength::CODE => ExceedingMinLength::MESSAGE,
-    IncorrectParsing::CODE   => IncorrectParsing::MESSAGE,
-    IncorrectPattern::CODE   => IncorrectPattern::MESSAGE,
-    ExceedingMaximum::CODE   => ExceedingMaximum::MESSAGE,
-    ExceedingMinimum::CODE   => ExceedingMinimum::MESSAGE,
-    IncorrectPayload::CODE   => IncorrectPayload::MESSAGE,
-    IncorrectFileType::CODE  => IncorrectFileType::MESSAGE,
-    DecodingFailed::CODE     => DecodingFailed::MESSAGE,
-    Unauthorized::CODE       => Unauthorized::MESSAGE,
-    Timeout::CODE            => Timeout::MESSAGE,
-    Forbidden::CODE          => Forbidden::MESSAGE,
-    NotFound::CODE           => NotFound::MESSAGE,
-    BlockedByUser::CODE      => BlockedByUser::MESSAGE,
-    AlreadyExist::CODE       => AlreadyExist::MESSAGE,
+    Success::CODE               => Success::MESSAGE,
+    NullAttributes::CODE        => NullAttributes::MESSAGE,
+    ExceedingMaxLength::CODE    => ExceedingMaxLength::MESSAGE,
+    ExceedingMinLength::CODE    => ExceedingMinLength::MESSAGE,
+    IncorrectParsing::CODE      => IncorrectParsing::MESSAGE,
+    IncorrectPattern::CODE      => IncorrectPattern::MESSAGE,
+    ExceedingMaximum::CODE      => ExceedingMaximum::MESSAGE,
+    ExceedingMinimum::CODE      => ExceedingMinimum::MESSAGE,
+    IncorrectPayload::CODE      => IncorrectPayload::MESSAGE,
+    IncorrectFileType::CODE     => IncorrectFileType::MESSAGE,
+    DecodingFailed::CODE        => DecodingFailed::MESSAGE,
+    Unauthorized::CODE          => Unauthorized::MESSAGE,
+    Timeout::CODE               => Timeout::MESSAGE,
+    Forbidden::CODE             => Forbidden::MESSAGE,
+    NotFound::CODE              => NotFound::MESSAGE,
+    BlockedByUser::CODE         => BlockedByUser::MESSAGE,
+    AlreadyExist::CODE          => AlreadyExist::MESSAGE,
+    IncorrectPacketSchema::CODE => IncorrectPacketSchema::MESSAGE,
   ];
   
   const ERROR_DETAILS = [
-    Success::CODE            => Success::DETAILS,
-    NullAttributes::CODE     => NullAttributes::DETAILS,
-    ExceedingMaxLength::CODE => ExceedingMaxLength::DETAILS,
-    ExceedingMinLength::CODE => ExceedingMinLength::DETAILS,
-    IncorrectParsing::CODE   => IncorrectParsing::DETAILS,
-    IncorrectPattern::CODE   => IncorrectPattern::DETAILS,
-    ExceedingMaximum::CODE   => ExceedingMaximum::DETAILS,
-    ExceedingMinimum::CODE   => ExceedingMinimum::DETAILS,
-    IncorrectPayload::CODE   => IncorrectPayload::DETAILS,
-    IncorrectFileType::CODE  => IncorrectFileType::DETAILS,
-    DecodingFailed::CODE     => DecodingFailed::DETAILS,
-    Unauthorized::CODE       => Unauthorized::DETAILS,
-    Timeout::CODE            => Timeout::DETAILS,
-    Forbidden::CODE          => Forbidden::DETAILS,
-    NotFound::CODE           => NotFound::DETAILS,
-    BlockedByUser::CODE      => BlockedByUser::DETAILS,
-    AlreadyExist::CODE       => AlreadyExist::DETAILS,
+    Success::CODE               => Success::DETAILS,
+    NullAttributes::CODE        => NullAttributes::DETAILS,
+    ExceedingMaxLength::CODE    => ExceedingMaxLength::DETAILS,
+    ExceedingMinLength::CODE    => ExceedingMinLength::DETAILS,
+    IncorrectParsing::CODE      => IncorrectParsing::DETAILS,
+    IncorrectPattern::CODE      => IncorrectPattern::DETAILS,
+    ExceedingMaximum::CODE      => ExceedingMaximum::DETAILS,
+    ExceedingMinimum::CODE      => ExceedingMinimum::DETAILS,
+    IncorrectPayload::CODE      => IncorrectPayload::DETAILS,
+    IncorrectFileType::CODE     => IncorrectFileType::DETAILS,
+    DecodingFailed::CODE        => DecodingFailed::DETAILS,
+    Unauthorized::CODE          => Unauthorized::DETAILS,
+    Timeout::CODE               => Timeout::DETAILS,
+    Forbidden::CODE             => Forbidden::DETAILS,
+    NotFound::CODE              => NotFound::DETAILS,
+    BlockedByUser::CODE         => BlockedByUser::DETAILS,
+    AlreadyExist::CODE          => AlreadyExist::DETAILS,
+    IncorrectPacketSchema::CODE => IncorrectPacketSchema::DETAILS,
   ];
 }

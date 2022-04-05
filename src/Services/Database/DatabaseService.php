@@ -910,8 +910,8 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
                 OR (first_user = :second_user
                AND second_user = :first_user)',
       [
-        ':first_user'  => $originUser['username'],
-        ':second_user' => $targetedUser['username'],
+        ':first_user'  => $originUser['user_id'],
+        ':second_user' => $targetedUser['user_id'],
       ]
     );
     
@@ -939,8 +939,8 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
                 OR (first_user = :second_user
                AND second_user = :first_user)',
         [
-          ':first_user'  => $originUser['username'],
-          ':second_user' => $targetedUser['username'],
+          ':first_user'  => $originUser['user_id'],
+          ':second_user' => $targetedUser['user_id'],
         ]
       );
     } else {
@@ -988,15 +988,18 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
       null;
     
     WebSocketService::sendToWebSocket(
-            $originUser['username'],
-            'CREATE',
-            'contact',
-      body: [
-              'username' => $originUser['username'],
-              'name'     => $originUser['name'],
-              'surname'  => $originUser['surname'],
-              'picture'  => $originUserPicture,
-            ]
+               $originUser['username'],
+               'CREATE',
+               'contact',
+      headers: [
+                 'to' => $targetedUser['username'],
+               ],
+      body   : [
+                 'username' => $originUser['username'],
+                 'name'     => $originUser['name'],
+                 'surname'  => $originUser['surname'],
+                 'picture'  => $originUserPicture,
+               ]
     );
     
     // ==== Return targeted user's data to origin user ===================================

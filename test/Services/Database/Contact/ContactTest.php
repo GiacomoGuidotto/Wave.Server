@@ -91,7 +91,6 @@ class ContactTest extends TestCase {
     
     echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
     
-    
     self::assertEquals(
       Success::CODE,
       User::validateUsername($result['username']),

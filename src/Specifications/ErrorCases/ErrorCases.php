@@ -3,6 +3,7 @@
 namespace Wave\Specifications\ErrorCases;
 
 use Wave\Specifications\ErrorCases\Elaboration\BlockedByUser;
+use Wave\Specifications\ErrorCases\Elaboration\WrongStatus;
 use Wave\Specifications\ErrorCases\Generic\NullAttributes;
 use Wave\Specifications\ErrorCases\Mime\DecodingFailed;
 use Wave\Specifications\ErrorCases\Mime\IncorrectFileType;
@@ -59,6 +60,7 @@ use Wave\Specifications\ErrorCases\WebSocket\IncorrectPacketSchema;
  *
  * ==== elaboration-related ====
  * 50 Blocked by user
+ * 51 Wrong status
  *
  * ==== websocket-related ====
  * 60 Incorrect packet schema
@@ -81,6 +83,7 @@ interface ErrorCases {
     Forbidden::CODE          => 403,
     NotFound::CODE           => 404,
     BlockedByUser::CODE      => 406,
+    WrongStatus::CODE        => 406,
     AlreadyExist::CODE       => 409,
   ];
   
@@ -101,6 +104,7 @@ interface ErrorCases {
     Forbidden::CODE             => Forbidden::MESSAGE,
     NotFound::CODE              => NotFound::MESSAGE,
     BlockedByUser::CODE         => BlockedByUser::MESSAGE,
+    WrongStatus::CODE           => WrongStatus::MESSAGE,
     AlreadyExist::CODE          => AlreadyExist::MESSAGE,
     IncorrectPacketSchema::CODE => IncorrectPacketSchema::MESSAGE,
   ];
@@ -122,6 +126,7 @@ interface ErrorCases {
     Forbidden::CODE             => Forbidden::DETAILS,
     NotFound::CODE              => NotFound::DETAILS,
     BlockedByUser::CODE         => BlockedByUser::DETAILS,
+    WrongStatus::CODE           => WrongStatus::DETAILS,
     AlreadyExist::CODE          => AlreadyExist::DETAILS,
     IncorrectPacketSchema::CODE => IncorrectPacketSchema::DETAILS,
   ];

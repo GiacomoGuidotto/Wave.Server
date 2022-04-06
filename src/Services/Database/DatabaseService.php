@@ -3,6 +3,7 @@
 namespace Wave\Services\Database;
 
 use DateInterval;
+use JetBrains\PhpStorm\ArrayShape;
 use Wave\Model\Session\Session;
 use Wave\Model\Singleton\Singleton;
 use Wave\Model\User\User;
@@ -10,6 +11,7 @@ use Wave\Services\Database\Module\DatabaseModule;
 use Wave\Services\MIME\MIMEService;
 use Wave\Services\WebSocket\WebSocketService;
 use Wave\Specifications\ErrorCases\Elaboration\BlockedByUser;
+use Wave\Specifications\ErrorCases\Elaboration\WrongStatus;
 use Wave\Specifications\ErrorCases\Generic\NullAttributes;
 use Wave\Specifications\ErrorCases\State\AlreadyExist;
 use Wave\Specifications\ErrorCases\State\NotFound;
@@ -27,7 +29,6 @@ use Wave\Utilities\Utilities;
 class DatabaseService extends Singleton implements DatabaseServiceInterface {
   
   // TODO refactor to static methods and made them return the error code or null
-  // TODO change WHERE to Case sensitive
   
   // ==== Utility methods ==========================================================================
   // ==== Set of private methods ===================================================================
@@ -175,7 +176,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
                    ON DELETE CASCADE
              )',
       [
-        ':name' => "chat_messages_" . $uuid,
+        ':name' => "chat_" . $uuid . "_messages",
       ]
     );
     
@@ -193,7 +194,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
                  ON DELETE CASCADE
              )',
       [
-        ':name' => "chat_members_" . $uuid,
+        ':name' => "chat_" . $uuid . '_members',
       ]
     );
     
@@ -201,7 +202,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
       $memberId = DatabaseModule::fetchOne(
         'SELECT user_id
                FROM users
-               WHERE username = :username',
+               WHERE username = BINARY :username',
         [
           ':username' => $member,
         ]
@@ -217,7 +218,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
                  :active
                )',
         [
-          ':name'              => "chat_members_" . $uuid,
+          ':name'              => "chat_" . $uuid . '_members',
           ':user'              => $memberId,
           ':last_seen_message' => null,
           ':permission'        => 127,
@@ -470,16 +471,16 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     // ==== Insert query =========================
     DatabaseModule::execute(
       'INSERT
-            INTO users (username, password, name, surname, picture, phone, active)
-            VALUES (
-                :username,
-                :password,
-                :name,
-                :surname,
-                :picture,
-                :phone,
-                :active
-            )',
+             INTO users (username, password, name, surname, picture, phone, active)
+             VALUES (
+               :username,
+               :password,
+               :name,
+               :surname,
+               :picture,
+               :phone,
+               :active
+             )',
       [
         ':username' => $username,
         ':password' => $hashedPassword,
@@ -537,7 +538,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     $user = DatabaseModule::fetchOne(
       'SELECT username, name, surname, picture, phone, theme, language
              FROM users
-             WHERE user_id = BINARY :user_id',
+             WHERE user_id = :user_id',
       [
         ':user_id' => $userId,
       ]
@@ -678,9 +679,9 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     if ($username !== null) {
       $user = DatabaseModule::fetchOne(
         'SELECT username
-              FROM users
-              WHERE username = BINARY :username
-                AND active = TRUE',
+               FROM users
+               WHERE username = BINARY :username
+                 AND active = TRUE',
         [
           ':username' => $username,
         ]
@@ -694,8 +695,9 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     
     $storedUsername = DatabaseModule::fetchOne(
       'SELECT username
-               FROM users
-               WHERE user_id = BINARY :user_id AND active = TRUE',
+             FROM users
+             WHERE user_id = :user_id
+               AND active = TRUE',
       [
         ':user_id' => $userId,
       ]
@@ -721,7 +723,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
         $variableUpdateQuery,
         0,
         strlen($variableUpdateQuery) - 2
-      ) . ' WHERE user_id = BINARY :user_id';
+      ) . ' WHERE user_id = :user_id';
     $variableAttributes[':user_id'] = $userId;
     
     DatabaseModule::execute(
@@ -732,7 +734,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     $user = DatabaseModule::fetchOne(
       'SELECT username, name, surname, picture, phone, theme, language
              FROM users
-             WHERE user_id = BINARY :user_id',
+             WHERE user_id = :user_id',
       [
         ':user_id' => $userId,
       ]
@@ -889,7 +891,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     $targetedUser = DatabaseModule::fetchOne(
       'SELECT user_id, username, name, surname, picture
              FROM users
-             WHERE username = :username',
+             WHERE username = BINARY :username',
       [
         ':username' => $user,
       ]
@@ -933,11 +935,11 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
       // ==== Reactivate existing entity =================================================
       DatabaseModule::execute(
         'UPDATE contacts
-             SET active = TRUE
-             WHERE (first_user = :first_user
-               AND second_user = :second_user)
-                OR (first_user = :second_user
-               AND second_user = :first_user)',
+               SET active = TRUE
+               WHERE (first_user = :first_user
+                 AND second_user = :second_user)
+                  OR (first_user = :second_user
+                 AND second_user = :first_user)',
         [
           ':first_user'  => $originUser['user_id'],
           ':second_user' => $targetedUser['user_id'],
@@ -947,18 +949,6 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
       $contactStatus = 'P';
       
       // ==== Creating new entity ========================================================
-      $chatUUID = DatabaseModule::fetchOne(
-        'SELECT UUID()'
-      )['UUID()'];
-      
-      $this->generateChatTable(
-        $chatUUID,
-        [
-          $originUser['username'],
-          $targetedUser['username'],
-        ],
-      );
-      
       DatabaseModule::execute(
         'INSERT
                INTO contacts (first_user, second_user, status, chat, active)
@@ -973,7 +963,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
           ':first_user'  => $originUser['user_id'],
           ':second_user' => $targetedUser['user_id'],
           ':status'      => $contactStatus,
-          ':chat'        => $chatUUID,
+          ':chat'        => null,
           ':active'      => true,
         ]
       );
@@ -1025,8 +1015,111 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     string $token,
     string $user,
   ): ?array {
-    // TODO: Implement deleteContactRequest() method.
-    return [];
+    // ==== Parameters validation ========================================================
+    $tokenValidation = Session::validateToken($token);
+    $usernameValidation = User::validateUsername($user);
+    
+    if ($tokenValidation != Success::CODE) {
+      return Utilities::generateErrorMessage($tokenValidation);
+    }
+    if ($usernameValidation != Success::CODE) {
+      return Utilities::generateErrorMessage($usernameValidation);
+    }
+    
+    // ==== Token authorization ==========================================================
+    $tokenAuthorization = $this->authorizeToken($token);
+    
+    if ($tokenAuthorization != Success::CODE) {
+      return Utilities::generateErrorMessage($tokenAuthorization);
+    }
+    
+    // ===================================================================================
+    DatabaseModule::beginTransaction();
+    
+    $originUserId = DatabaseModule::fetchOne(
+      'SELECT user
+             FROM sessions
+             WHERE session_token = :session_token',
+      [
+        ':session_token' => $token,
+      ]
+    )['user'];
+    
+    $originUser = DatabaseModule::fetchOne(
+      'SELECT user_id, username, name, surname, picture
+             FROM users
+             WHERE user_id = BINARY :user_id',
+      [
+        ':user_id' => $originUserId,
+      ]
+    );
+    
+    // ==== Target existence check =======================================================
+    $targetedUser = DatabaseModule::fetchOne(
+      'SELECT user_id, username, name, surname, picture
+             FROM users
+             WHERE username = BINARY :username',
+      [
+        ':username' => $user,
+      ]
+    );
+    
+    if ($targetedUser === false) {
+      DatabaseModule::commitTransaction();
+      return Utilities::generateErrorMessage(NotFound::CODE);
+    }
+    
+    // ==== Contact existence check ======================================================
+    
+    $contact = DatabaseModule::fetchOne(
+      'SELECT status, active
+             FROM contacts
+             WHERE (first_user = :first_user
+               AND second_user = :second_user)
+                OR (first_user = :second_user
+               AND second_user = :first_user)',
+      [
+        ':first_user'  => $originUser['user_id'],
+        ':second_user' => $targetedUser['user_id'],
+      ]
+    );
+    
+    if (!is_array($contact)) {
+      DatabaseModule::commitTransaction();
+      return Utilities::generateErrorMessage(NotFound::CODE);
+    }
+    
+    if ($contact['status'] !== 'P') {
+      DatabaseModule::commitTransaction();
+      return Utilities::generateErrorMessage(WrongStatus::CODE);
+    }
+    
+    DatabaseModule::execute(
+      'UPDATE contacts
+             SET active = FALSE
+             WHERE (first_user = :first_user
+               AND second_user = :second_user)
+                OR (first_user = :second_user
+               AND second_user = :first_user)',
+      [
+        ':first_user'  => $originUser['user_id'],
+        ':second_user' => $targetedUser['user_id'],
+      ]
+    );
+    DatabaseModule::commitTransaction();
+    
+    // ==== Send Channel packet with deletion directive to targeted user =================
+    
+    WebSocketService::sendToWebSocket(
+               $originUser['username'],
+               "DELETE",
+               "contact/status",
+      headers: [
+                 "to" => $targetedUser['username'],
+               ]
+    );
+    
+    return null;
   }
   
   /**
@@ -1246,16 +1339,32 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     // ==== purge tokens =================================================================
     DatabaseModule::execute('DELETE FROM sessions WHERE active = FALSE');
     
+    // ==== purge chat tables ============================================================
+    $contactChats = DatabaseModule::fetchAll('SELECT chat FROM contacts WHERE active = FALSE');
+    
+    foreach ($contactChats as $contactChat) {
+      DatabaseModule::execute(
+        'DROP TABLE `:name`',
+        [
+          ':name' => 'chat_' . $contactChat['chat'] . '_messages',
+        ]
+      );
+      DatabaseModule::execute(
+        'DROP TABLE `:name`',
+        [
+          ':name' => 'chat_' . $contactChat['chat'] . '_members',
+        ]
+      );
+    }
+    
     // ==== purge contacts ===============================================================
     DatabaseModule::execute('DELETE FROM contacts WHERE active = FALSE');
-    
-    // TODO delete chat tables
     
     // ==== purge groups =================================================================
     DatabaseModule::execute('DELETE FROM `groups` WHERE active = FALSE');
   }
   
-  // ==== Public utility methods ===================================================================
+  // ==== Service methods ==========================================================================
   // ==== Set of public methods used from other services ===========================================
   
   /**
@@ -1264,7 +1373,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
    * @param string $token The token to check
    * @return string|int   The username of the user, or the error code
    */
-  public function instanceValidateUser(
+  private function instanceValidateUser(
     string $token,
   ): string|int {
     // ==== Parameters validation ========================================================
@@ -1293,7 +1402,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     return DatabaseModule::fetchOne(
       'SELECT username
              FROM users
-             WHERE user_id = BINARY :user_id',
+             WHERE user_id = :user_id',
       [
         ':user_id' => $userId,
       ]
@@ -1311,5 +1420,67 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
   ): string|int {
     $service = DatabaseService::getInstance();
     return $service->instanceValidateUser($token);
+  }
+  
+  
+  /**
+   * Retrieve the relations references from the database
+   *
+   * @return array[] The two series of references
+   */
+  #[ArrayShape(['contacts' => "array", 'groups' => "array"])]
+  private function instanceRetrieveReference(): array {
+    // ==== Retrieve contacts ============================================================
+    $databaseContacts = DatabaseModule::fetchAll(
+      'SELECT first_user, second_user
+             FROM contacts
+             WHERE active = TRUE'
+    );
+    
+    $contacts = [];
+    foreach ($databaseContacts as $databaseContact) {
+      $firstUser = DatabaseModule::fetchOne(
+        'SELECT username
+               FROM users
+               WHERE user_id = :user_id
+                 AND active = TRUE',
+        [
+          ':user_id' => $databaseContact['first_user'],
+        ]
+      )['username'];
+      
+      
+      $secondUser = DatabaseModule::fetchOne(
+        'SELECT username
+               FROM users
+               WHERE user_id = :user_id
+                 AND active = TRUE',
+        [
+          ':user_id' => $databaseContact['second_user'],
+        ]
+      )['username'];
+      
+      $contacts[$firstUser][] = $secondUser;
+      $contacts[$secondUser][] = $firstUser;
+    }
+    
+    // ==== Retrieve groups ==============================================================
+    // TODO Retrieve groups
+    $groups = [];
+    
+    return [
+      'contacts' => $contacts,
+      'groups'   => $groups,
+    ];
+  }
+  
+  /**
+   * Retrieve the relations references from the database
+   *
+   * @return array[] The two series of references
+   */
+  public static function retrieveReferences(): array {
+    $service = DatabaseService::getInstance();
+    return $service->instanceRetrieveReference();
   }
 }

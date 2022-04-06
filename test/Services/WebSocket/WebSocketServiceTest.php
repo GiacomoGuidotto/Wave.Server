@@ -108,6 +108,20 @@ class WebSocketServiceTest extends TestCase {
     );
   }
   
+  public function testContactRequestDeletionToInsomniaAgent(): void {
+    echo PHP_EOL . 'Testing contact request deletion to Insomnia agent...' . PHP_EOL;
+    
+    $result = self::$service->deleteContactRequest(
+      self::$originUser['token'],
+      'insomnia_agent',
+    );
+    
+    echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    self::assertNull($result);
+  }
+  
+  
   public static function tearDownAfterClass(): void {
     $loop = Loop::get();
     $loop->addTimer(1, function () use ($loop) {

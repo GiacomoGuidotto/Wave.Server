@@ -3,7 +3,6 @@
 namespace Wave\Services\WebSocket;
 
 use Exception;
-use JetBrains\PhpStorm\Pure;
 use Ratchet\ConnectionInterface;
 use Ratchet\MessageComponentInterface;
 use Wave\Model\Singleton\Singleton;
@@ -25,20 +24,21 @@ class WebSocketService extends Singleton implements MessageComponentInterface, W
   
   protected UsersConnectionStorage $users;
   
-  private array $contacts = [];
-  private array $groups = [];
+  private array $contacts;
+  private array $groups;
   
-  #[Pure] public function __construct() {
+  public function __construct() {
     $this->users = new UsersConnectionStorage();
-    // TODO fill $contacts with "username" => "username" and $groups "group_UUID" => ["members"]
-    //    from existing entity from database
+    $references = DatabaseService::retrieveReferences();
+    $this->contacts = $references['contacts'];
+    $this->groups = $references['groups'];
   }
   
   // ==== Utility methods ===========================================================================
   
   /**
    * Utility method used in other classes to send data to this service through the ZeroMQ channel.
-   *
+   *  TODO change schema: add target
    * With packets of this schema:
    *
    * {
@@ -358,13 +358,24 @@ class WebSocketService extends Singleton implements MessageComponentInterface, W
       }
       
       // Check if the updated user has a contact
-      if (!in_array($oldUserUsername, $this->contacts)) {
+      if (!array_key_exists($oldUserUsername, $this->contacts)) {
         return;
       }
       
+      // if username has changed, change reference to user's contacts
+      // and change each user's contact's reference of the first user
       if ($oldUserUsername !== $newUserUsername) {
         $this->contacts[$newUserUsername] = $this->contacts[$oldUserUsername];
         unset($this->contacts[$oldUserUsername]);
+        
+        foreach ($this->contacts[$newUserUsername] as $contact) {
+          array_map(
+            function ($contactsContact) use ($oldUserUsername, $newUserUsername) {
+              return $contactsContact === $oldUserUsername ? $newUserUsername : $contactsContact;
+            },
+            $this->contacts[$contact],
+          );
+        }
       }
       
       // Retrieve user's contacts from new or not user reference
@@ -387,6 +398,7 @@ class WebSocketService extends Singleton implements MessageComponentInterface, W
         );
         return;
       }
+      
       // Send to each contact reference new user data
       foreach ($userContacts as $userContact) {
         $targetedUser = $this->users->getFromInfo($userContact);
@@ -398,9 +410,10 @@ class WebSocketService extends Singleton implements MessageComponentInterface, W
           )
         );
       }
-    } else {
-      // ==== "New contact status/reply" case ============================================
     }
+//    else {
+    // ==== "New contact status/reply" case ============================================
+//    }
   }
   
   /**
@@ -410,7 +423,48 @@ class WebSocketService extends Singleton implements MessageComponentInterface, W
     string $origin,
     array  $payload,
   ): void {
-    // TODO: Implement onContactDelete() method.
+    $headers = $payload['headers'] ?? null;
+    $target = $headers['to'] ?? null;
+    
+    if (is_null($headers) || is_null($target)) {
+      LogModule::log(
+        'WebSocket',
+        'API request decoding',
+        'Incorrect packet schema',
+        true
+      );
+      
+    }
+    
+    // Delete contact's reference from each other
+    // and delete the user's reference if it hasn't any contacts
+    $originContacts = &$this->contacts[$origin];
+    if (($targetKey = array_search($target, $originContacts)) !== false) {
+      unset($originContacts[$targetKey]);
+    }
+    if (count($originContacts) === 0) {
+      unset($originContacts);
+    }
+    
+    $targetContacts = &$this->contacts[$target];
+    if (($originKey = array_search($origin, $targetContacts)) !== false) {
+      unset($targetContacts[$originKey]);
+    }
+    if (count($targetContacts) === 0) {
+      unset($targetContacts);
+    }
+    
+    
+    $targetedUser = $this->users->getFromInfo($target);
+    $targetedUser?->send(
+      $this->generateChannelPacket(
+                 'DELETE',
+                 'contact/status',
+        headers: [
+                   'username' => $origin,
+                 ]
+      )
+    );
   }
   
   /**

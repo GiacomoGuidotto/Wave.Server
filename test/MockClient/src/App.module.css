@@ -218,8 +218,40 @@
     margin: 1rem 1rem 0 1rem;
     display: flex;
     flex-direction: column-reverse;
-    align-items: center;
+    align-items: flex-end;
     justify-content: flex-start;
+}
+
+.clearPackets {
+    width: 4.2rem;
+    height: 1.6rem;
+    border: 1px solid black;
+    margin: .5rem 1rem 0 0;
+    background: none;
+    transition: background .2s ease, border .2s ease, box-shadow .2s ease, color .2s ease;
+}
+
+.clearPackets:hover {
+    width: 4.2rem;
+    height: 1.6rem;
+    margin: .5rem 1rem 0 0;
+    outline: 1px solid black;
+    background: black;
+    color: white;
+    box-shadow: 2px 2px 8px black;
+    transition: background .2s ease, border .2s ease, box-shadow .2s ease, color .2s ease;
+
+}
+
+.clearPackets:focus {
+    width: 4.2rem;
+    height: 1.6rem;
+    margin: .5rem 1rem 0 0;
+    outline: 1px solid black;
+    background: black;
+    color: white;
+    box-shadow: 2px 2px 8px black;
+    transition: background .2s ease, border .2s ease, box-shadow .2s ease, color .2s ease;
 }
 
 .packet {
@@ -238,12 +270,39 @@
     height: 1.5rem;
     display: flex;
     align-items: center;
+    justify-content: space-between;
     width: 100%;
 }
 
 .packetNumber > div {
     margin-left: 1rem;
 }
+
+.removePacket {
+    margin-right: 1rem;
+    width: 1rem;
+    height: 1rem;
+    border: 1px solid black;
+    background: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background .2s ease, border .2s ease, box-shadow .2s ease, color .2s ease;
+}
+
+.removePacket:hover, .removePacket:focus {
+    width: 1rem;
+    height: 1rem;
+    outline: 1px solid black;
+    background: black;
+    color: white;
+    box-shadow: 2px 2px 8px black;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background .2s ease, border .2s ease, box-shadow .2s ease, color .2s ease;
+}
+
 
 .packetContent {
     margin: .5rem 0;

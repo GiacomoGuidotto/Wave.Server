@@ -158,6 +158,55 @@ class ContactTest extends TestCase {
   // ==== deleteContactRequest =====================================================================
   // ===============================================================================================
   
+  /**
+   * @group deleteContactRequest
+   */
+  public function testCorrectDeleteContactRequest(): void {
+    echo PHP_EOL . '==== contactRequest ==========================================' . PHP_EOL;
+    
+    echo PHP_EOL . 'Testing correct contact request deletion...' . PHP_EOL;
+    
+    $result = self::$service->deleteContactRequest(
+      self::$firstUser['token'],
+      self::$secondUser['username'],
+    );
+    
+    echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    self::assertNull($result);
+  }
+  
+  /**
+   * @group deleteContactRequest
+   */
+  public function testDeleteContactRequestWithUnknownUser(): array {
+    echo PHP_EOL . 'Testing contact request deletion with unknown user...' . PHP_EOL;
+    
+    $result = self::$service->deleteContactRequest(
+      self::$firstUser['token'],
+      'random_user',
+    );
+    
+    echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    self::assertEquals(
+      NotFound::CODE,
+      $result['error'],
+    );
+    
+    return $result;
+  }
+  
+  /**
+   * @group deleteContactRequest
+   */
+  public function testDeleteContactRequestWithActiveContact(): array {
+    // TODO when changeContactStatus is implemented
+    
+    self::assertTrue(true);
+    
+    return [];
+  }
   
   public static function tearDownAfterClass(): void {
     DatabaseModule::execute(

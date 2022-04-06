@@ -93,6 +93,14 @@ function MockClient() {
     // ==== Received packets functions =============================================================
     const [receivedPackets, setReceivedPackets] = useState([]);
 
+    function clearPackets() {
+        setReceivedPackets([]);
+    }
+
+    function removePacket(index) {
+        setReceivedPackets(receivedPackets => receivedPackets.filter(packet => packet !== receivedPackets[index]))
+    }
+
     // ==== DOM functions ==========================================================================
     useEffect(() => {
         connect();
@@ -159,6 +167,10 @@ function MockClient() {
                                     <div key={index} className={styles.packet}>
                                         <div className={styles.packetNumber}>
                                             <div>{index + 1}</div>
+                                            <button className={styles.removePacket} onClick={() => {
+                                                removePacket(index);
+                                            }}>-
+                                            </button>
                                         </div>
                                         <div className={styles.packetContent}>
                                             {packet.split('\n').map((line, index) => {
@@ -170,6 +182,7 @@ function MockClient() {
                                         </div>
                                     </div>
                                 )}
+                                <button className={styles.clearPackets} onClick={clearPackets}>Clear all</button>
                             </div> : null}
                         </div>
                     </div>

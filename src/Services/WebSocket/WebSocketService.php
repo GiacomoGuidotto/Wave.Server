@@ -12,6 +12,7 @@ use Wave\Services\Log\LogModule;
 use Wave\Services\WebSocket\Connection\UsersConnectionStorage;
 use Wave\Services\ZeroMQ\ZeroMQModule;
 use Wave\Specifications\ErrorCases\Generic\NullAttributes;
+use Wave\Specifications\ErrorCases\State\NotFound;
 use Wave\Specifications\ErrorCases\WebSocket\IncorrectPacketSchema;
 use Wave\Utilities\Utilities;
 
@@ -33,7 +34,7 @@ class WebSocketService extends Singleton implements MessageComponentInterface, W
     //    from existing entity from database
   }
   
-  // ==== Utility method ===========================================================================
+  // ==== Utility methods ===========================================================================
   
   /**
    * Utility method used in other classes to send data to this service through the ZeroMQ channel.
@@ -93,6 +94,29 @@ class WebSocketService extends Singleton implements MessageComponentInterface, W
     );
   }
   
+  public function generateChannelPacket(
+    string  $verb,
+    ?string $scope = null,
+    ?array  $headers = null,
+    ?array  $body = null
+  ): string {
+    $formattedHeaders = '';
+    if (!is_null($headers)) {
+      foreach ($headers as $key => $value) {
+        $formattedHeaders .= PHP_EOL . "$key: $value";
+      }
+    }
+    
+    $formattedBody = '';
+    if (!is_null($body)) {
+      $formattedBody .= PHP_EOL . PHP_EOL . json_encode($body, JSON_PRETTY_PRINT);
+    }
+    
+    return "$verb" . (" $scope" ?? '') .
+      $formattedHeaders .
+      $formattedBody;
+  }
+  
   // ==== Native WebSocket methods =================================================================
   
   /**
@@ -116,7 +140,10 @@ class WebSocketService extends Singleton implements MessageComponentInterface, W
     $token = $packet['token'] ?? null;
     if (is_null($token)) {
       $from->send(
-        json_encode(Utilities::generateErrorMessage(NullAttributes::CODE))
+        $this->generateChannelPacket(
+                'ERROR',
+          body: Utilities::generateErrorMessage(NullAttributes::CODE)
+        )
       );
       return;
     }
@@ -124,11 +151,20 @@ class WebSocketService extends Singleton implements MessageComponentInterface, W
     $username = DatabaseService::validateUser($token);
     if (!is_string($username)) {
       $from->send(
-        json_encode(Utilities::generateErrorMessage($username))
+        $this->generateChannelPacket(
+                'ERROR',
+          body: Utilities::generateErrorMessage($username)
+        )
       );
       return;
     }
     
+    $from->send(
+      $this->generateChannelPacket(
+                 'CONNECTED',
+        headers: ["for" => $username]
+      )
+    );
     $this->users->attach($from, $username);
   }
   
@@ -182,7 +218,10 @@ class WebSocketService extends Singleton implements MessageComponentInterface, W
       // respond to origin with error
       $originUser = $this->users->getFromInfo($origin);
       $originUser?->send(
-        json_encode(Utilities::generateErrorMessage(IncorrectPacketSchema::CODE))
+        $this->generateChannelPacket(
+                'ERROR',
+          body: Utilities::generateErrorMessage(IncorrectPacketSchema::CODE)
+        )
       );
       
       return;
@@ -246,8 +285,6 @@ class WebSocketService extends Singleton implements MessageComponentInterface, W
     string $origin,
     array  $payload,
   ): void {
-    echo json_encode($origin, JSON_PRETTY_PRINT);
-    echo json_encode($payload, JSON_PRETTY_PRINT);
     $headers = $payload['headers'] ?? null;
     $body = $payload['body'] ?? null;
     $recipient = $headers['to'] ?? null;
@@ -262,9 +299,28 @@ class WebSocketService extends Singleton implements MessageComponentInterface, W
       return;
     }
     
-    // TODO change body with factoring method
+    // add contact reference in user's contact array, from both sides
+    if (!in_array($origin, $this->contacts)) {
+      $this->contacts[$origin] = [];
+    }
+    if (!in_array($recipient, $this->contacts[$origin])) {
+      $this->contacts[$origin][] = $recipient;
+    }
+    if (!in_array($recipient, $this->contacts)) {
+      $this->contacts[$recipient] = [];
+    }
+    if (!in_array($origin, $this->contacts[$recipient])) {
+      $this->contacts[$recipient][] = $origin;
+    }
+    
     $recipientUser = $this->users->getFromInfo($recipient);
-    $recipientUser?->send(json_encode($body));
+    $recipientUser?->send(
+      $this->generateChannelPacket(
+              'CREATE',
+              'contact',
+        body: $body
+      )
+    );
   }
   
   /**
@@ -275,13 +331,75 @@ class WebSocketService extends Singleton implements MessageComponentInterface, W
     array  $payload,
   ): void {
     $headers = $payload['headers'] ?? null;
-    $body = $payload['headers'] ?? null;
+    $body = $payload['body'] ?? null;
     
     if (is_null($headers['directive'] ?? null)) {
-      // "New contact infos" case
-      // TODO parse through contacts reference with old_username in headers, then change reference
+      // ==== "New contact infos" case ===================================================
+      // Retrieve old user reference from the packet
+      $oldUserUsername = $headers['old_username'] ?? null;
+      $newUserUsername = $body['username'] ?? null;
+      
+      if (is_null($oldUserUsername) || is_null($newUserUsername)) {
+        LogModule::log(
+          'WebSocket',
+          'API request decoding',
+          'Incorrect packet schema',
+          true
+        );
+        // respond to origin with error
+        $originUser = $this->users->getFromInfo($origin);
+        $originUser?->send(
+          $this->generateChannelPacket(
+                  'ERROR',
+            body: Utilities::generateErrorMessage(IncorrectPacketSchema::CODE)
+          )
+        );
+        return;
+      }
+      
+      // Check if the updated user has a contact
+      if (!in_array($oldUserUsername, $this->contacts)) {
+        return;
+      }
+      
+      if ($oldUserUsername !== $newUserUsername) {
+        $this->contacts[$newUserUsername] = $this->contacts[$oldUserUsername];
+        unset($this->contacts[$oldUserUsername]);
+      }
+      
+      // Retrieve user's contacts from new or not user reference
+      $userContacts = $this->contacts[$newUserUsername] ?? null;
+      
+      if (is_null($userContacts)) {
+        LogModule::log(
+          'WebSocket',
+          'API request decoding',
+          'Incorrect packet schema',
+          true
+        );
+        // respond to origin with error
+        $originUser = $this->users->getFromInfo($origin);
+        $originUser?->send(
+          $this->generateChannelPacket(
+                  'ERROR',
+            body: Utilities::generateErrorMessage(NotFound::CODE)
+          )
+        );
+        return;
+      }
+      // Send to each contact reference new user data
+      foreach ($userContacts as $userContact) {
+        $targetedUser = $this->users->getFromInfo($userContact);
+        $targetedUser?->send(
+          $this->generateChannelPacket(
+                  'UPDATE',
+                  'contact/information',
+            body: $body
+          )
+        );
+      }
     } else {
-      // "New contact status/reply" case
+      // ==== "New contact status/reply" case ============================================
     }
   }
   

@@ -25,9 +25,8 @@ function MockClient() {
         }
 
         channel.current.onmessage = (packet) => {
-            packet = JSON.parse(packet.data);
-            console.log("New message:", JSON.stringify(packet, undefined, 2))
-            setReceivedPackets([...receivedPackets, packet])
+            packet = packet.data;
+            setReceivedPackets(receivedPackets => [...receivedPackets, packet])
         }
 
         channel.current.onerror = () => {
@@ -162,7 +161,12 @@ function MockClient() {
                                             <div>{index + 1}</div>
                                         </div>
                                         <div className={styles.packetContent}>
-                                            {JSON.stringify(packet, undefined, 2)}
+                                            {packet.split('\n').map((line, index) => {
+
+                                                return line.length !== 0 ? <div key={index}>
+                                                    {line.replaceAll(' ', '\u00A0')}
+                                                </div> : <br key={index}/>
+                                            })}
                                         </div>
                                     </div>
                                 )}

@@ -410,10 +410,33 @@ class WebSocketService extends Singleton implements MessageComponentInterface, W
           )
         );
       }
+    } else {
+      // ==== "New contact status/reply" case ============================================
+      $headers = $payload['headers'] ?? null;
+      $recipient = $headers['to'] ?? null;
+      $directive = $headers['directive'] ?? null;
+      
+      if (is_null($headers) || is_null($directive) || is_null($recipient)) {
+        LogModule::log(
+          'WebSocket',
+          'API request decoding',
+          'Incorrect packet schema',
+          true
+        );
+        return;
+      }
+      
+      $recipientUser = $this->users->getFromInfo($recipient);
+      $recipientUser?->send(
+        $this->generateChannelPacket(
+                   'CREATE',
+                   'contact',
+          headers: [
+                     'directive' => $directive,
+                   ]
+        )
+      );
     }
-//    else {
-    // ==== "New contact status/reply" case ============================================
-//    }
   }
   
   /**

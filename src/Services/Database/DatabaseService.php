@@ -11,6 +11,7 @@ use Wave\Services\Database\Module\DatabaseModule;
 use Wave\Services\MIME\MIMEService;
 use Wave\Services\WebSocket\WebSocketService;
 use Wave\Specifications\ErrorCases\Elaboration\BlockedByUser;
+use Wave\Specifications\ErrorCases\Elaboration\WrongDirective;
 use Wave\Specifications\ErrorCases\Elaboration\WrongStatus;
 use Wave\Specifications\ErrorCases\Generic\NullAttributes;
 use Wave\Specifications\ErrorCases\State\AlreadyExist;
@@ -1072,9 +1073,10 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     // ==== Contact existence check ======================================================
     
     $contact = DatabaseModule::fetchOne(
-      'SELECT status, active
+      'SELECT status
              FROM contacts
-             WHERE (first_user = :first_user
+             WHERE active = TRUE
+               AND (first_user = :first_user
                AND second_user = :second_user)
                 OR (first_user = :second_user
                AND second_user = :first_user)',
@@ -1088,6 +1090,8 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
       DatabaseModule::commitTransaction();
       return Utilities::generateErrorMessage(NotFound::CODE);
     }
+    
+    // ==== Safe zone ====================================================================
     
     if ($contact['status'] !== 'P') {
       DatabaseModule::commitTransaction();
@@ -1130,8 +1134,251 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     string $user,
     string $directive,
   ): array {
-    // TODO: Implement changeContactStatus() method.
-    return [];
+    // ==== Parameters validation ========================================================
+    $tokenValidation = Session::validateToken($token);
+    $usernameValidation = User::validateUsername($user);
+    
+    if ($tokenValidation != Success::CODE) {
+      return Utilities::generateErrorMessage($tokenValidation);
+    }
+    if ($usernameValidation != Success::CODE) {
+      return Utilities::generateErrorMessage($usernameValidation);
+    }
+    
+    // ==== Token authorization ==========================================================
+    $tokenAuthorization = $this->authorizeToken($token);
+    
+    if ($tokenAuthorization != Success::CODE) {
+      return Utilities::generateErrorMessage($tokenAuthorization);
+    }
+    
+    // ===================================================================================
+    DatabaseModule::beginTransaction();
+    
+    $originUserId = DatabaseModule::fetchOne(
+      'SELECT user
+             FROM sessions
+             WHERE session_token = :session_token',
+      [
+        ':session_token' => $token,
+      ]
+    )['user'];
+    
+    $originUser = DatabaseModule::fetchOne(
+      'SELECT user_id, username, name, surname, picture
+             FROM users
+             WHERE user_id = BINARY :user_id',
+      [
+        ':user_id' => $originUserId,
+      ]
+    );
+    
+    // ==== Target existence check =======================================================
+    $targetedUser = DatabaseModule::fetchOne(
+      'SELECT user_id, username, name, surname, picture
+             FROM users
+             WHERE username = BINARY :username',
+      [
+        ':username' => $user,
+      ]
+    );
+    
+    if ($targetedUser === false) {
+      DatabaseModule::commitTransaction();
+      return Utilities::generateErrorMessage(NotFound::CODE);
+    }
+    
+    // ==== Contact existence check ======================================================
+    
+    $contact = DatabaseModule::fetchOne(
+      'SELECT status, chat
+             FROM contacts
+             WHERE active = TRUE
+               AND (first_user = :first_user
+               AND second_user = :second_user)
+                OR (first_user = :second_user
+               AND second_user = :first_user)',
+      [
+        ':first_user'  => $originUser['user_id'],
+        ':second_user' => $targetedUser['user_id'],
+      ]
+    );
+    
+    if (!is_array($contact)) {
+      DatabaseModule::commitTransaction();
+      return Utilities::generateErrorMessage(NotFound::CODE);
+    }
+    
+    // ==== Safe zone ====================================================================
+    
+    $oldStatus = $contact['status'];
+    
+    switch ($directive) {
+      // Accept
+      case 'A':
+        if ($oldStatus !== 'P') {
+          DatabaseModule::commitTransaction();
+          return Utilities::generateErrorMessage(WrongStatus::CODE);
+        }
+        
+        $tablesUUID = DatabaseModule::fetchOne('SELECT UUID()')['UUID()'];
+        
+        $this->generateChatTable(
+          $tablesUUID,
+          [
+            $originUser['username'],
+            $targetedUser['username'],
+          ]
+        );
+        
+        $newStatus = 'A';
+        DatabaseModule::execute(
+          'UPDATE contacts
+                 SET status = :status,
+                     chat = :chat
+                 WHERE (first_user = :first_user
+                   AND second_user = :second_user)
+                    OR (first_user = :second_user
+                   AND second_user = :first_user)',
+          [
+            ':status'      => $newStatus,
+            ':chat'        => $tablesUUID,
+            ':first_user'  => $originUser['user_id'],
+            ':second_user' => $targetedUser['user_id'],
+          ]
+        );
+        break;
+      
+      // Decline
+      case 'D':
+        if ($oldStatus !== 'P') {
+          DatabaseModule::commitTransaction();
+          return Utilities::generateErrorMessage(WrongStatus::CODE);
+        }
+        
+        DatabaseModule::execute(
+          'UPDATE contacts
+                 SET active = FALSE
+                 WHERE (first_user = :first_user
+                   AND second_user = :second_user)
+                    OR (first_user = :second_user
+                   AND second_user = :first_user)',
+          [
+            ':first_user'  => $originUser['user_id'],
+            ':second_user' => $targetedUser['user_id'],
+          ]
+        );
+        break;
+      
+      // Block
+      case 'B':
+        if ($oldStatus === 'B') {
+          DatabaseModule::commitTransaction();
+          return Utilities::generateErrorMessage(WrongStatus::CODE);
+        }
+        
+        $newStatus = 'B';
+        DatabaseModule::execute(
+          'UPDATE contacts
+                 SET status = :status
+                 WHERE (first_user = :first_user
+                   AND second_user = :second_user)
+                    OR (first_user = :second_user
+                   AND second_user = :first_user)',
+          [
+            ':status'      => $newStatus,
+            ':first_user'  => $originUser['user_id'],
+            ':second_user' => $targetedUser['user_id'],
+          ]
+        );
+        break;
+      
+      // Remove
+      case 'R':
+        if ($oldStatus !== 'A') {
+          DatabaseModule::commitTransaction();
+          return Utilities::generateErrorMessage(WrongStatus::CODE);
+        }
+        
+        $newStatus = 'P';
+        DatabaseModule::execute(
+          'UPDATE contacts
+                 SET status = :status,
+                     active = :active,
+                     chat = :chat
+                 WHERE (first_user = :first_user
+                   AND second_user = :second_user)
+                    OR (first_user = :second_user
+                   AND second_user = :first_user)',
+          [
+            ':status'      => $newStatus,
+            ':active'      => false,
+            ':chat'        => null,
+            ':first_user'  => $originUser['user_id'],
+            ':second_user' => $targetedUser['user_id'],
+          ]
+        );
+        break;
+      
+      // Unblock
+      case 'U':
+        if ($oldStatus !== 'B') {
+          DatabaseModule::commitTransaction();
+          return Utilities::generateErrorMessage(WrongStatus::CODE);
+        }
+        
+        if (is_null($contact['chat'])) {
+          $newStatus = 'P';
+        } else {
+          $newStatus = 'A';
+        }
+        DatabaseModule::execute(
+          'UPDATE contacts
+               SET status = :status
+               WHERE (first_user = :first_user
+                 AND second_user = :second_user)
+                  OR (first_user = :second_user
+                 AND second_user = :first_user)',
+          [
+            ':status'      => $newStatus,
+            ':first_user'  => $originUser['user_id'],
+            ':second_user' => $targetedUser['user_id'],
+          ]
+        );
+        break;
+      
+      default:
+        DatabaseModule::commitTransaction();
+        return Utilities::generateErrorMessage(WrongDirective::CODE);
+    }
+    
+    DatabaseModule::commitTransaction();
+    // ==== Send Channel packet with deletion directive to targeted user =================
+    
+    WebSocketService::sendToWebSocket(
+               $originUser['username'],
+               "UPDATE",
+               "contact/status",
+      headers: [
+                 "to"        => $targetedUser['username'],
+                 "directive" => $directive,
+               ]
+    );
+    
+    // ==== Return targeted user's data to origin user ===================================
+    
+    $targetedUserFilepath = $targetedUser['picture'];
+    $targetedUserPicture = !is_null($targetedUserFilepath) ?
+      MIMEService::researchMedia($targetedUserFilepath) :
+      null;
+    
+    return [
+      'username' => $targetedUser['username'],
+      'name'     => $targetedUser['name'],
+      'surname'  => $targetedUser['surname'],
+      'picture'  => $targetedUserPicture,
+      'status'   => $newStatus ?? $targetedUser['status'],
+    ];
   }
   
   /**
@@ -1479,6 +1726,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
    *
    * @return array[] The two series of references
    */
+  #[ArrayShape(['contacts' => "array", 'groups' => "array"])]
   public static function retrieveReferences(): array {
     $service = DatabaseService::getInstance();
     return $service->instanceRetrieveReference();

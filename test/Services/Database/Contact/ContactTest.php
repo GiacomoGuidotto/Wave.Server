@@ -162,7 +162,7 @@ class ContactTest extends TestCase {
    * @group deleteContactRequest
    */
   public function testCorrectDeleteContactRequest(): void {
-    echo PHP_EOL . '==== contactRequest ==========================================' . PHP_EOL;
+    echo PHP_EOL . '==== deleteContactRequest ====================================' . PHP_EOL;
     
     echo PHP_EOL . 'Testing correct contact request deletion...' . PHP_EOL;
     
@@ -208,11 +208,52 @@ class ContactTest extends TestCase {
     return [];
   }
   
+  // ==== changeContactStatus ======================================================================
+  // ===============================================================================================
+  
+  /**
+   * @depends testCorrectContactRequest
+   * @group   changeContactStatus
+   */
+  public function testChangeContactStatusCorrectAcceptProcedure(): array {
+    echo PHP_EOL . '==== changeContactStatus =====================================' . PHP_EOL;
+    
+    echo PHP_EOL . 'Testing correct contact request accept procedure...' . PHP_EOL;
+    
+    $result = self::$service->changeContactStatus(
+      self::$secondUser['token'],
+      self::$firstUser['username'],
+      'A'
+    );
+    
+    echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    self::assertEquals(
+      Success::CODE,
+      User::validateUsername($result['username']),
+    );
+    self::assertEquals(
+      Success::CODE,
+      User::validateName($result['name']),
+    );
+    self::assertEquals(
+      Success::CODE,
+      User::validateSurname($result['surname']),
+    );
+    self::assertNull($result['picture']);
+    self::assertEquals(
+      Success::CODE,
+      Contact::validateStatus($result['status']),
+    );
+    
+    return $result;
+  }
+  
   public static function tearDownAfterClass(): void {
     DatabaseModule::execute(
       'DELETE FROM users
-            WHERE username = :first_username
-               OR username = :second_username',
+             WHERE username = :first_username
+                OR username = :second_username',
       [
         ':first_username' => self::$firstUser['username'],
         ':second_username' => self::$secondUser['username'],

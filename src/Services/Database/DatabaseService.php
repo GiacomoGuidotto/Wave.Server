@@ -11,6 +11,7 @@ use Wave\Services\Database\Module\DatabaseModule;
 use Wave\Services\MIME\MIMEService;
 use Wave\Services\WebSocket\WebSocketService;
 use Wave\Specifications\ErrorCases\Elaboration\BlockedByUser;
+use Wave\Specifications\ErrorCases\Elaboration\DirectiveNotAllowed;
 use Wave\Specifications\ErrorCases\Elaboration\WrongDirective;
 use Wave\Specifications\ErrorCases\Elaboration\WrongStatus;
 use Wave\Specifications\ErrorCases\Generic\NullAttributes;
@@ -199,6 +200,8 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
       ]
     );
     
+    if ($previouslyInTransaction) DatabaseModule::beginTransaction();
+    
     foreach ($members as $member) {
       $memberId = DatabaseModule::fetchOne(
         'SELECT user_id
@@ -210,14 +213,14 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
       )['user_id'];
       
       DatabaseModule::execute(
-        'INSERT
-               INTO `:name` (user, last_seen_message, permissions, active)
+        "INSERT
+               INTO `:name` (`user`, `last_seen_message`, `permissions`, `active`)
                VALUES (
                  :user,
                  :last_seen_message,
                  :permission,
                  :active
-               )',
+               )",
         [
           ':name'              => "chat_" . $uuid . '_members',
           ':user'              => $memberId,
@@ -227,8 +230,6 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
         ]
       );
     }
-    
-    if ($previouslyInTransaction) DatabaseModule::beginTransaction();
   }
   
   // ==== Authentication ===========================================================================
@@ -927,7 +928,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
         return Utilities::generateErrorMessage(BlockedByUser::CODE);
       }
       
-      // ==== Already active check ========================================================
+      // ==== Already active check =======================================================
       if ($contact['active']) {
         DatabaseModule::commitTransaction();
         return Utilities::generateErrorMessage(AlreadyExist::CODE);
@@ -1196,7 +1197,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     // ==== Contact existence check ======================================================
     
     $contact = DatabaseModule::fetchOne(
-      'SELECT status, chat, blocked_by
+      'SELECT second_user, status, chat, blocked_by
              FROM contacts
              WHERE active = TRUE
                AND (first_user = :first_user
@@ -1225,6 +1226,11 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
         if ($oldStatus !== 'P') {
           DatabaseModule::commitTransaction();
           return Utilities::generateErrorMessage(WrongStatus::CODE);
+        }
+        
+        if ($contact['second_user'] !== $originUser['user_id']) {
+          DatabaseModule::commitTransaction();
+          return Utilities::generateErrorMessage(DirectiveNotAllowed::CODE);
         }
         
         $tablesUUID = DatabaseModule::fetchOne('SELECT UUID()')['UUID()'];
@@ -1262,6 +1268,11 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
           return Utilities::generateErrorMessage(WrongStatus::CODE);
         }
         
+        if ($contact['second_user'] !== $originUser['user_id']) {
+          DatabaseModule::commitTransaction();
+          return Utilities::generateErrorMessage(DirectiveNotAllowed::CODE);
+        }
+        
         DatabaseModule::execute(
           'UPDATE contacts
                  SET active = FALSE
@@ -1282,6 +1293,11 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
         if ($oldStatus === 'B') {
           DatabaseModule::commitTransaction();
           return Utilities::generateErrorMessage(WrongStatus::CODE);
+        }
+        
+        if ($contact['second_user'] !== $originUser['user_id'] && is_null($contact['chat'])) {
+          DatabaseModule::commitTransaction();
+          return Utilities::generateErrorMessage(DirectiveNotAllowed::CODE);
         }
         
         $newStatus = 'B';
@@ -1404,8 +1420,146 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     string  $token,
     ?string $user = null,
   ): array {
-    // TODO: Implement getContactInformation() method.
-    return [];
+    // ==== Parameters validation ========================================================
+    $tokenValidation = Session::validateToken($token);
+    
+    if ($tokenValidation != Success::CODE) {
+      return Utilities::generateErrorMessage($tokenValidation);
+    }
+    
+    // ==== Token authorization ==========================================================
+    $tokenAuthorization = $this->authorizeToken($token);
+    
+    if ($tokenAuthorization != Success::CODE) {
+      return Utilities::generateErrorMessage($tokenAuthorization);
+    }
+    
+    // ===================================================================================
+    DatabaseModule::beginTransaction();
+    
+    $originUserId = DatabaseModule::fetchOne(
+      'SELECT user
+             FROM sessions
+             WHERE session_token = :session_token',
+      [
+        ':session_token' => $token,
+      ]
+    )['user'];
+    
+    $originUser = DatabaseModule::fetchOne(
+      'SELECT user_id, username, name, surname, picture
+             FROM users
+             WHERE user_id = BINARY :user_id',
+      [
+        ':user_id' => $originUserId,
+      ]
+    );
+    
+    if (is_null($user)) {
+      
+      // ==== Contact existence check ======================================================
+      
+      $contacts = DatabaseModule::fetchAll(
+        'SELECT first_user, second_user, status
+             FROM contacts
+             WHERE active = TRUE
+               AND (first_user = :first_user
+                OR second_user = :first_user)',
+        [
+          ':first_user' => $originUser['user_id'],
+        ]
+      );
+      
+      if (!is_array($contacts) || count($contacts) === 0) {
+        DatabaseModule::commitTransaction();
+        return Utilities::generateErrorMessage(NotFound::CODE);
+      }
+      
+      $refactoredContacts = [];
+      
+      foreach ($contacts as $contact) {
+        if ($contact['first_user'] === $originUser['user_id']) {
+          $databaseContact = DatabaseModule::fetchOne(
+            'SELECT username, name, surname, picture
+                   FROM users
+                   WHERE user_id = :user_id',
+            [
+              ':user_id' => $contact['second_user'],
+            ]
+          );
+          
+          $contactFilepath = $databaseContact['picture'];
+          $contactPicture = !is_null($contactFilepath) ?
+            MIMEService::researchMedia($contactFilepath) :
+            null;
+          
+          $refactoredContacts[] = [
+            'username' => $databaseContact['username'],
+            'name'     => $databaseContact['name'],
+            'surname'  => $databaseContact['surname'],
+            'picture'  => $contactPicture,
+            'status'   => $contact['status'],
+          ];
+        }
+      }
+      
+      DatabaseModule::commitTransaction();
+      return $refactoredContacts;
+    } else {
+      $usernameValidation = User::validateUsername($user);
+      
+      if ($usernameValidation != Success::CODE) {
+        return Utilities::generateErrorMessage($usernameValidation);
+      }
+      
+      // ==== Target existence check =====================================================
+      $targetedUser = DatabaseModule::fetchOne(
+        'SELECT user_id, username, name, surname, picture
+             FROM users
+             WHERE username = BINARY :username',
+        [
+          ':username' => $user,
+        ]
+      );
+      
+      if (!is_array($targetedUser)) {
+        DatabaseModule::commitTransaction();
+        return Utilities::generateErrorMessage(NotFound::CODE);
+      }
+      
+      // ==== Contact existence check ====================================================
+      $contact = DatabaseModule::fetchOne(
+        'SELECT status, chat, blocked_by
+             FROM contacts
+             WHERE active = TRUE
+               AND (first_user = :first_user
+               AND second_user = :second_user)
+                OR (first_user = :second_user
+               AND second_user = :first_user)',
+        [
+          ':first_user'  => $originUser['user_id'],
+          ':second_user' => $targetedUser['user_id'],
+        ]
+      );
+      
+      if (!is_array($contact)) {
+        DatabaseModule::commitTransaction();
+        return Utilities::generateErrorMessage(NotFound::CODE);
+      }
+      
+      $contactFilepath = $targetedUser['picture'];
+      $contactPicture = !is_null($contactFilepath) ?
+        MIMEService::researchMedia($contactFilepath) :
+        null;
+      
+      return [
+        'username' => $targetedUser['username'],
+        'name'     => $targetedUser['name'],
+        'surname'  => $targetedUser['surname'],
+        'picture'  => $contactPicture,
+        'status'   => $contact['status'],
+      ];
+    }
   }
   
   // ==== Group ====================================================================================

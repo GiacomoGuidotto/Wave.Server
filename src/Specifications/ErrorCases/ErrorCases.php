@@ -3,6 +3,7 @@
 namespace Wave\Specifications\ErrorCases;
 
 use Wave\Specifications\ErrorCases\Elaboration\BlockedByUser;
+use Wave\Specifications\ErrorCases\Elaboration\DirectiveNotAllowed;
 use Wave\Specifications\ErrorCases\Elaboration\WrongDirective;
 use Wave\Specifications\ErrorCases\Elaboration\WrongStatus;
 use Wave\Specifications\ErrorCases\Generic\NullAttributes;
@@ -63,31 +64,33 @@ use Wave\Specifications\ErrorCases\WebSocket\IncorrectPacketSchema;
  * 50 Blocked by user
  * 51 Wrong status
  * 52 Wrong directive
+ * 53 Directive not allowed
  *
  * ==== websocket-related ====
  * 60 Incorrect packet schema
  */
 interface ErrorCases {
   const CODES_ASSOCIATIONS = [
-    Success::CODE            => 200,
-    NullAttributes::CODE     => 400,
-    ExceedingMaxLength::CODE => 400,
-    ExceedingMinLength::CODE => 400,
-    IncorrectParsing::CODE   => 400,
-    IncorrectPattern::CODE   => 400,
-    ExceedingMaximum::CODE   => 400,
-    ExceedingMinimum::CODE   => 400,
-    IncorrectPayload::CODE   => 400,
-    IncorrectFileType::CODE  => 400,
-    DecodingFailed::CODE     => 400,
-    Unauthorized::CODE       => 401,
-    Timeout::CODE            => 401,
-    Forbidden::CODE          => 403,
-    NotFound::CODE           => 404,
-    BlockedByUser::CODE      => 406,
-    WrongStatus::CODE        => 406,
-    WrongDirective::CODE     => 406,
-    AlreadyExist::CODE       => 409,
+    Success::CODE             => 200,
+    NullAttributes::CODE      => 400,
+    ExceedingMaxLength::CODE  => 400,
+    ExceedingMinLength::CODE  => 400,
+    IncorrectParsing::CODE    => 400,
+    IncorrectPattern::CODE    => 400,
+    ExceedingMaximum::CODE    => 400,
+    ExceedingMinimum::CODE    => 400,
+    IncorrectPayload::CODE    => 400,
+    IncorrectFileType::CODE   => 400,
+    DecodingFailed::CODE      => 400,
+    Unauthorized::CODE        => 401,
+    Timeout::CODE             => 401,
+    Forbidden::CODE           => 403,
+    NotFound::CODE            => 404,
+    BlockedByUser::CODE       => 406,
+    WrongStatus::CODE         => 406,
+    WrongDirective::CODE      => 406,
+    DirectiveNotAllowed::CODE => 406,
+    AlreadyExist::CODE        => 409,
   ];
   
   const ERROR_MESSAGES = [
@@ -109,6 +112,7 @@ interface ErrorCases {
     BlockedByUser::CODE         => BlockedByUser::MESSAGE,
     WrongStatus::CODE           => WrongStatus::MESSAGE,
     WrongDirective::CODE        => WrongDirective::MESSAGE,
+    DirectiveNotAllowed::CODE   => DirectiveNotAllowed::MESSAGE,
     AlreadyExist::CODE          => AlreadyExist::MESSAGE,
     IncorrectPacketSchema::CODE => IncorrectPacketSchema::MESSAGE,
   ];
@@ -132,6 +136,7 @@ interface ErrorCases {
     BlockedByUser::CODE         => BlockedByUser::DETAILS,
     WrongStatus::CODE           => WrongStatus::DETAILS,
     WrongDirective::CODE        => WrongDirective::DETAILS,
+    DirectiveNotAllowed::CODE   => DirectiveNotAllowed::DETAILS,
     AlreadyExist::CODE          => AlreadyExist::DETAILS,
     IncorrectPacketSchema::CODE => IncorrectPacketSchema::DETAILS,
   ];

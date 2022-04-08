@@ -172,13 +172,14 @@ interface DatabaseServiceInterface {
    * @param string $token     The token used to authenticate the user, extracted from the request
    * @param string $user      The targeted user's username, extracted from the request
    * @param string $directive The command to apply to the request, extracted from the request
-   * @return array            The new public attributes of the contact, saved in an array as object
+   * @return array|null       The eventual new public attributes of the contact, saved in an array
+   *                          as object
    */
   public function changeContactStatus(
     string $token,
     string $user,
     string $directive,
-  ): array;
+  ): ?array;
   
   /**
    * Get one or all contact's information

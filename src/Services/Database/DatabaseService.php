@@ -919,12 +919,6 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     );
     
     if (is_array($contact)) {
-      // ==== Already active check ========================================================
-      if ($contact['active']) {
-        DatabaseModule::commitTransaction();
-        return Utilities::generateErrorMessage(AlreadyExist::CODE);
-      }
-      
       $contactStatus = $contact['status'];
       
       // ==== "Blocked by targeted user" case ============================================
@@ -933,15 +927,26 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
         return Utilities::generateErrorMessage(BlockedByUser::CODE);
       }
       
+      // ==== Already active check ========================================================
+      if ($contact['active']) {
+        DatabaseModule::commitTransaction();
+        return Utilities::generateErrorMessage(AlreadyExist::CODE);
+      }
+      
+      
       // ==== Reactivate existing entity =================================================
       DatabaseModule::execute(
         'UPDATE contacts
-               SET active = TRUE
+               SET status = :status,
+                   chat = :chat,
+                   active = TRUE
                WHERE (first_user = :first_user
                  AND second_user = :second_user)
                   OR (first_user = :second_user
                  AND second_user = :first_user)',
         [
+          ':status'      => 'P',
+          ':chat'        => null,
           ':first_user'  => $originUser['user_id'],
           ':second_user' => $targetedUser['user_id'],
         ]
@@ -1133,7 +1138,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     string $token,
     string $user,
     string $directive,
-  ): array {
+  ): ?array {
     // ==== Parameters validation ========================================================
     $tokenValidation = Session::validateToken($token);
     $usernameValidation = User::validateUsername($user);
@@ -1191,7 +1196,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     // ==== Contact existence check ======================================================
     
     $contact = DatabaseModule::fetchOne(
-      'SELECT status, chat
+      'SELECT status, chat, blocked_by
              FROM contacts
              WHERE active = TRUE
                AND (first_user = :first_user
@@ -1212,6 +1217,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     // ==== Safe zone ====================================================================
     
     $oldStatus = $contact['status'];
+    $returnContact = true;
     
     switch ($directive) {
       // Accept
@@ -1268,6 +1274,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
             ':second_user' => $targetedUser['user_id'],
           ]
         );
+        $returnContact = false;
         break;
       
       // Block
@@ -1280,13 +1287,15 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
         $newStatus = 'B';
         DatabaseModule::execute(
           'UPDATE contacts
-                 SET status = :status
+                 SET status = :status,
+                     blocked_by = :blocked_by
                  WHERE (first_user = :first_user
                    AND second_user = :second_user)
                     OR (first_user = :second_user
                    AND second_user = :first_user)',
           [
             ':status'      => $newStatus,
+            ':blocked_by'  => $originUser['user_id'],
             ':first_user'  => $originUser['user_id'],
             ':second_user' => $targetedUser['user_id'],
           ]
@@ -1304,20 +1313,18 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
         DatabaseModule::execute(
           'UPDATE contacts
                  SET status = :status,
-                     active = :active,
-                     chat = :chat
+                     active = FALSE
                  WHERE (first_user = :first_user
                    AND second_user = :second_user)
                     OR (first_user = :second_user
                    AND second_user = :first_user)',
           [
             ':status'      => $newStatus,
-            ':active'      => false,
-            ':chat'        => null,
             ':first_user'  => $originUser['user_id'],
             ':second_user' => $targetedUser['user_id'],
           ]
         );
+        $returnContact = false;
         break;
       
       // Unblock
@@ -1325,6 +1332,11 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
         if ($oldStatus !== 'B') {
           DatabaseModule::commitTransaction();
           return Utilities::generateErrorMessage(WrongStatus::CODE);
+        }
+        
+        if ($contact['blocked_by'] !== $originUser['user_id']) {
+          DatabaseModule::commitTransaction();
+          return Utilities::generateErrorMessage(BlockedByUser::CODE);
         }
         
         if (is_null($contact['chat'])) {
@@ -1367,18 +1379,22 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     
     // ==== Return targeted user's data to origin user ===================================
     
-    $targetedUserFilepath = $targetedUser['picture'];
-    $targetedUserPicture = !is_null($targetedUserFilepath) ?
-      MIMEService::researchMedia($targetedUserFilepath) :
-      null;
-    
-    return [
-      'username' => $targetedUser['username'],
-      'name'     => $targetedUser['name'],
-      'surname'  => $targetedUser['surname'],
-      'picture'  => $targetedUserPicture,
-      'status'   => $newStatus ?? $targetedUser['status'],
-    ];
+    if ($returnContact) {
+      $targetedUserFilepath = $targetedUser['picture'];
+      $targetedUserPicture = !is_null($targetedUserFilepath) ?
+        MIMEService::researchMedia($targetedUserFilepath) :
+        null;
+      
+      return [
+        'username' => $targetedUser['username'],
+        'name'     => $targetedUser['name'],
+        'surname'  => $targetedUser['surname'],
+        'picture'  => $targetedUserPicture,
+        'status'   => $newStatus ?? $oldStatus,
+      ];
+    } else {
+      return null;
+    }
   }
   
   /**

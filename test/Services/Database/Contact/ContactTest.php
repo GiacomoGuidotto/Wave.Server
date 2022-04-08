@@ -1,4 +1,4 @@
-<?php
+<?php /** @noinspection SqlResolve */
 
 namespace Wave\Tests\Services\Database\Contact;
 
@@ -7,6 +7,8 @@ use Wave\Model\Contact\Contact;
 use Wave\Model\User\User;
 use Wave\Services\Database\DatabaseService;
 use Wave\Services\Database\Module\DatabaseModule;
+use Wave\Specifications\ErrorCases\Elaboration\BlockedByUser;
+use Wave\Specifications\ErrorCases\Elaboration\WrongStatus;
 use Wave\Specifications\ErrorCases\State\NotFound;
 use Wave\Specifications\ErrorCases\Success\Success;
 use Wave\Utilities\Utilities;
@@ -32,15 +34,107 @@ class ContactTest extends TestCase {
     'token'    => null,
   ];
   
+  private static function retrieveDatabaseStatus(): string {
+    $firstUserId = DatabaseModule::fetchOne(
+      'SELECT user_id
+             FROM users
+             WHERE username = BINARY :username',
+      [
+        ':username' => self::$firstUser['username'],
+      ]
+    )['user_id'];
+    
+    $secondUserId = DatabaseModule::fetchOne(
+      'SELECT user_id
+             FROM users
+             WHERE username = BINARY :username',
+      [
+        ':username' => self::$secondUser['username'],
+      ]
+    )['user_id'];
+    
+    $databaseContact = DatabaseModule::fetchOne(
+      'SELECT status, blocked_by, chat, active
+             FROM contacts
+             WHERE (first_user = :first_user
+               AND second_user = :second_user)
+                OR (first_user = :second_user
+               AND second_user = :first_user)',
+      [
+        ':first_user'  => $firstUserId,
+        ':second_user' => $secondUserId,
+      ]
+    );
+    
+    return (is_array($databaseContact)) ? "| status: " . $databaseContact['status'] .
+      " | blocked_by: " . ($databaseContact['blocked_by'] ?? 'null') .
+      " | chat: " . ($databaseContact['chat'] ?? 'null') .
+      " | active: " . $databaseContact['active'] . ' |' : 'Not found';
+    
+  }
+  
+  // TODO move to test utilities and use it on WebSocketServiceTest.php
+  private static function deleteGeneratedTables() {
+    $firstUserId = DatabaseModule::fetchOne(
+      'SELECT user_id
+             FROM users
+             WHERE username = BINARY :username',
+      [
+        ':username' => self::$firstUser['username'],
+      ]
+    )['user_id'];
+    
+    $secondUserId = DatabaseModule::fetchOne(
+      'SELECT user_id
+             FROM users
+             WHERE username = BINARY :username',
+      [
+        ':username' => self::$secondUser['username'],
+      ]
+    )['user_id'];
+    
+    $contactChat = DatabaseModule::fetchOne(
+      'SELECT chat
+             FROM contacts
+             WHERE (first_user = :first_user
+               AND second_user = :second_user)
+                OR (first_user = :second_user
+               AND second_user = :first_user)',
+      [
+        ':first_user'  => $firstUserId,
+        ':second_user' => $secondUserId,
+      ]
+    );
+    
+    DatabaseModule::execute(
+      'DROP TABLE `:name`',
+      [
+        ':name' => 'chat_' . $contactChat['chat'] . '_messages',
+      ]
+    );
+    DatabaseModule::execute(
+      'DROP TABLE `:name`',
+      [
+        ':name' => 'chat_' . $contactChat['chat'] . '_members',
+      ]
+    );
+  }
+  
   public static function setUpBeforeClass(): void {
     echo PHP_EOL . '==== Contact =================================================' . PHP_EOL
       . '==============================================================' . PHP_EOL;
     
     self::$service = DatabaseService::getInstance();
     
-    // ==== generate first dummy user
+    // ==== generate second user dummy source
     self::$firstUser['source'] = Utilities::generateUuid();
     
+    // ==== generate first user dummy source
+    self::$secondUser['source'] = Utilities::generateUuid();
+  }
+  
+  protected function setUp(): void {
+    // ==== generate first dummy user
     self::$service->createUser(
       self::$firstUser['username'],
       self::$firstUser['password'],
@@ -56,8 +150,6 @@ class ContactTest extends TestCase {
     )['token'];
     
     // ==== generate second dummy user
-    self::$secondUser['source'] = Utilities::generateUuid();
-    
     self::$service->createUser(
       self::$secondUser['username'],
       self::$secondUser['password'],
@@ -90,6 +182,8 @@ class ContactTest extends TestCase {
     );
     
     echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    echo PHP_EOL . "Database status: " . PHP_EOL . self::retrieveDatabaseStatus();
     
     self::assertEquals(
       Success::CODE,
@@ -125,6 +219,8 @@ class ContactTest extends TestCase {
     
     echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
     
+    echo PHP_EOL . "Database status: " . PHP_EOL . self::retrieveDatabaseStatus();
+    
     self::assertEquals(
       NotFound::CODE,
       $result['error'],
@@ -137,60 +233,30 @@ class ContactTest extends TestCase {
    * @group contactRequest
    */
   public function testContactRequestWithBlockedUser(): array {
-    // TODO when changeContactStatus is implemented
+    echo PHP_EOL . 'Testing contact request with blocked user...' . PHP_EOL;
     
-    self::assertTrue(true);
+    self::$service->contactRequest(
+      self::$firstUser['token'],
+      self::$secondUser['username'],
+    );
     
-    return [];
-  }
-  
-  /**
-   * @group contactRequest
-   */
-  public function testContactRequestWithPreviouslyRemoved(): array {
-    // TODO when changeContactStatus is implemented
+    self::$service->changeContactStatus(
+      self::$secondUser['token'],
+      self::$firstUser['username'],
+      'B'
+    );
     
-    self::assertTrue(true);
-    
-    return [];
-  }
-  
-  // ==== deleteContactRequest =====================================================================
-  // ===============================================================================================
-  
-  /**
-   * @group deleteContactRequest
-   */
-  public function testCorrectDeleteContactRequest(): void {
-    echo PHP_EOL . '==== deleteContactRequest ====================================' . PHP_EOL;
-    
-    echo PHP_EOL . 'Testing correct contact request deletion...' . PHP_EOL;
-    
-    $result = self::$service->deleteContactRequest(
+    $result = self::$service->contactRequest(
       self::$firstUser['token'],
       self::$secondUser['username'],
     );
     
     echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
     
-    self::assertNull($result);
-  }
-  
-  /**
-   * @group deleteContactRequest
-   */
-  public function testDeleteContactRequestWithUnknownUser(): array {
-    echo PHP_EOL . 'Testing contact request deletion with unknown user...' . PHP_EOL;
-    
-    $result = self::$service->deleteContactRequest(
-      self::$firstUser['token'],
-      'random_user',
-    );
-    
-    echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    echo PHP_EOL . "Database status: " . PHP_EOL . self::retrieveDatabaseStatus();
     
     self::assertEquals(
-      NotFound::CODE,
+      BlockedByUser::CODE,
       $result['error'],
     );
     
@@ -198,35 +264,36 @@ class ContactTest extends TestCase {
   }
   
   /**
-   * @group deleteContactRequest
+   * @group contactRequest
    */
-  public function testDeleteContactRequestWithActiveContact(): array {
-    // TODO when changeContactStatus is implemented
+  public function testContactRequestWithPreviouslyRemoved(): array {
+    echo PHP_EOL . 'Testing contact request with blocked user...' . PHP_EOL;
     
-    self::assertTrue(true);
+    self::$service->contactRequest(
+      self::$firstUser['token'],
+      self::$secondUser['username'],
+    );
     
-    return [];
-  }
-  
-  // ==== changeContactStatus ======================================================================
-  // ===============================================================================================
-  
-  /**
-   * @depends testCorrectContactRequest
-   * @group   changeContactStatus
-   */
-  public function testChangeContactStatusCorrectAcceptProcedure(): array {
-    echo PHP_EOL . '==== changeContactStatus =====================================' . PHP_EOL;
-    
-    echo PHP_EOL . 'Testing correct contact request accept procedure...' . PHP_EOL;
-    
-    $result = self::$service->changeContactStatus(
+    self::$service->changeContactStatus(
       self::$secondUser['token'],
       self::$firstUser['username'],
       'A'
     );
     
+    self::$service->changeContactStatus(
+      self::$secondUser['token'],
+      self::$firstUser['username'],
+      'R'
+    );
+    
+    $result = self::$service->contactRequest(
+      self::$firstUser['token'],
+      self::$secondUser['username'],
+    );
+    
     echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    echo PHP_EOL . "Database status: " . PHP_EOL . self::retrieveDatabaseStatus();
     
     self::assertEquals(
       Success::CODE,
@@ -249,15 +316,420 @@ class ContactTest extends TestCase {
     return $result;
   }
   
-  public static function tearDownAfterClass(): void {
+  // ==== deleteContactRequest =====================================================================
+  // ===============================================================================================
+  
+  /**
+   * @group deleteContactRequest
+   */
+  public function testCorrectDeleteContactRequest(): void {
+    echo PHP_EOL . '==== deleteContactRequest ====================================' . PHP_EOL;
+    
+    echo PHP_EOL . 'Testing correct contact request deletion...' . PHP_EOL;
+    
+    self::$service->contactRequest(
+      self::$firstUser['token'],
+      self::$secondUser['username'],
+    );
+    
+    $result = self::$service->deleteContactRequest(
+      self::$firstUser['token'],
+      self::$secondUser['username'],
+    );
+    
+    echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    echo PHP_EOL . "Database status: " . PHP_EOL . self::retrieveDatabaseStatus();
+    
+    self::assertNull($result);
+  }
+  
+  /**
+   * @group deleteContactRequest
+   */
+  public function testDeleteContactRequestWithUnknownUser(): array {
+    echo PHP_EOL . 'Testing contact request deletion with unknown user...' . PHP_EOL;
+    
+    self::$service->contactRequest(
+      self::$firstUser['token'],
+      self::$secondUser['username'],
+    );
+    
+    $result = self::$service->deleteContactRequest(
+      self::$firstUser['token'],
+      'random_user',
+    );
+    
+    echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    echo PHP_EOL . "Database status: " . PHP_EOL . self::retrieveDatabaseStatus();
+    
+    self::assertEquals(
+      NotFound::CODE,
+      $result['error'],
+    );
+    
+    return $result;
+  }
+  
+  /**
+   * @group deleteContactRequest
+   */
+  public function testDeleteContactRequestWithActiveContact(): array {
+    echo PHP_EOL . 'Testing contact request deletion with active contact...' . PHP_EOL;
+    
+    self::$service->contactRequest(
+      self::$firstUser['token'],
+      self::$secondUser['username'],
+    );
+    
+    self::$service->changeContactStatus(
+      self::$secondUser['token'],
+      self::$firstUser['username'],
+      'A'
+    );
+    
+    $result = self::$service->deleteContactRequest(
+      self::$firstUser['token'],
+      self::$secondUser['username'],
+    );
+    
+    echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    echo PHP_EOL . "Database status: " . PHP_EOL . self::retrieveDatabaseStatus();
+    
+    self::assertEquals(
+      WrongStatus::CODE,
+      $result['error'],
+    );
+    
+    return $result;
+  }
+  
+  // ==== changeContactStatus ======================================================================
+  // ===============================================================================================
+  
+  // ==== decline ==================================================================================
+  
+  /**
+   * @group   changeContactStatus
+   */
+  public function testChangeContactStatusCorrectDeclineProcedure(): void {
+    echo PHP_EOL . '==== changeContactStatus =====================================' . PHP_EOL;
+    
+    echo PHP_EOL . 'Testing correct contact request decline procedure...' . PHP_EOL;
+    
+    self::$service->contactRequest(
+      self::$firstUser['token'],
+      self::$secondUser['username'],
+    );
+    
+    $result = self::$service->changeContactStatus(
+      self::$secondUser['token'],
+      self::$firstUser['username'],
+      'D'
+    );
+    
+    echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    echo PHP_EOL . "Database status: " . PHP_EOL . self::retrieveDatabaseStatus();
+    
+    self::assertNull($result);
+    
+  }
+  
+  // ==== accept ===================================================================================
+  
+  /**
+   * @group changeContactStatus
+   */
+  public function testChangeContactStatusCorrectAcceptProcedure(): array {
+    echo PHP_EOL . 'Testing correct contact request accept procedure...' . PHP_EOL;
+    
+    self::$service->contactRequest(
+      self::$firstUser['token'],
+      self::$secondUser['username'],
+    );
+    
+    $result = self::$service->changeContactStatus(
+      self::$secondUser['token'],
+      self::$firstUser['username'],
+      'A'
+    );
+    
+    echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    echo PHP_EOL . "Database status: " . PHP_EOL . self::retrieveDatabaseStatus();
+    
+    self::assertEquals(
+      Success::CODE,
+      User::validateUsername($result['username']),
+    );
+    self::assertEquals(
+      Success::CODE,
+      User::validateName($result['name']),
+    );
+    self::assertEquals(
+      Success::CODE,
+      User::validateSurname($result['surname']),
+    );
+    self::assertNull($result['picture']);
+    self::assertEquals(
+      Success::CODE,
+      Contact::validateStatus($result['status']),
+    );
+    
+    self::deleteGeneratedTables();
+    
+    return $result;
+  }
+  
+  // ==== block ====================================================================================
+  
+  /**
+   * @group changeContactStatus
+   */
+  public function testChangeContactStatusCorrectBlockBeforeAcceptProcedure(): array {
+    echo PHP_EOL . 'Testing correct block before accept contact request procedure...' . PHP_EOL;
+    
+    self::$service->contactRequest(
+      self::$firstUser['token'],
+      self::$secondUser['username'],
+    );
+    
+    $result = self::$service->changeContactStatus(
+      self::$secondUser['token'],
+      self::$firstUser['username'],
+      'B'
+    );
+    
+    echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    echo PHP_EOL . "Database status: " . PHP_EOL . self::retrieveDatabaseStatus();
+    
+    self::assertEquals(
+      Success::CODE,
+      User::validateUsername($result['username']),
+    );
+    self::assertEquals(
+      Success::CODE,
+      User::validateName($result['name']),
+    );
+    self::assertEquals(
+      Success::CODE,
+      User::validateSurname($result['surname']),
+    );
+    self::assertNull($result['picture']);
+    self::assertEquals(
+      Success::CODE,
+      Contact::validateStatus($result['status']),
+    );
+    
+    return $result;
+  }
+  
+  /**
+   * @group changeContactStatus
+   */
+  public function testChangeContactStatusCorrectBlockAfterAcceptProcedure(): array {
+    echo PHP_EOL . 'Testing correct block after accept contact request procedure...' . PHP_EOL;
+    
+    self::$service->contactRequest(
+      self::$firstUser['token'],
+      self::$secondUser['username'],
+    );
+    
+    self::$service->changeContactStatus(
+      self::$secondUser['token'],
+      self::$firstUser['username'],
+      'A'
+    );
+    
+    $result = self::$service->changeContactStatus(
+      self::$secondUser['token'],
+      self::$firstUser['username'],
+      'B'
+    );
+    
+    echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    echo PHP_EOL . "Database status: " . PHP_EOL . self::retrieveDatabaseStatus();
+    
+    self::assertEquals(
+      Success::CODE,
+      User::validateUsername($result['username']),
+    );
+    self::assertEquals(
+      Success::CODE,
+      User::validateName($result['name']),
+    );
+    self::assertEquals(
+      Success::CODE,
+      User::validateSurname($result['surname']),
+    );
+    self::assertNull($result['picture']);
+    self::assertEquals(
+      Success::CODE,
+      Contact::validateStatus($result['status']),
+    );
+    
+    self::deleteGeneratedTables();
+    
+    return $result;
+  }
+  
+  // ==== remove ====================================================================================
+  
+  /**
+   * @group changeContactStatus
+   */
+  public function testChangeContactStatusCorrectRemoveProcedure(): void {
+    echo PHP_EOL . 'Testing correct remove contact procedure...' . PHP_EOL;
+    
+    self::$service->contactRequest(
+      self::$firstUser['token'],
+      self::$secondUser['username'],
+    );
+    
+    self::$service->changeContactStatus(
+      self::$secondUser['token'],
+      self::$firstUser['username'],
+      'A'
+    );
+    
+    $result = self::$service->changeContactStatus(
+      self::$firstUser['token'],
+      self::$secondUser['username'],
+      'R'
+    );
+    
+    echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    echo PHP_EOL . "Database status: " . PHP_EOL . self::retrieveDatabaseStatus();
+    
+    self::deleteGeneratedTables();
+    
+    self::assertNull($result);
+  }
+  
+  // ==== unblock ==================================================================================
+  
+  /**
+   * @group changeContactStatus
+   */
+  public function testChangeContactStatusCorrectUnblockBeforeAcceptProcedure(): array {
+    echo PHP_EOL . 'Testing correct unblock before accept contact request procedure...' . PHP_EOL;
+    
+    self::$service->contactRequest(
+      self::$firstUser['token'],
+      self::$secondUser['username'],
+    );
+    
+    self::$service->changeContactStatus(
+      self::$secondUser['token'],
+      self::$firstUser['username'],
+      'B'
+    );
+    
+    $result = self::$service->changeContactStatus(
+      self::$secondUser['token'],
+      self::$firstUser['username'],
+      'U'
+    );
+    
+    echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    echo PHP_EOL . "Database status: " . PHP_EOL . self::retrieveDatabaseStatus();
+    
+    self::assertEquals(
+      Success::CODE,
+      User::validateUsername($result['username']),
+    );
+    self::assertEquals(
+      Success::CODE,
+      User::validateName($result['name']),
+    );
+    self::assertEquals(
+      Success::CODE,
+      User::validateSurname($result['surname']),
+    );
+    self::assertNull($result['picture']);
+    self::assertEquals(
+      Success::CODE,
+      Contact::validateStatus($result['status']),
+    );
+    
+    return $result;
+  }
+  
+  /**
+   * @group changeContactStatus
+   */
+  public function testChangeContactStatusCorrectUnblockAfterAcceptProcedure(): array {
+    echo PHP_EOL . 'Testing correct unblock after accept contact request procedure...' . PHP_EOL;
+    
+    self::$service->contactRequest(
+      self::$firstUser['token'],
+      self::$secondUser['username'],
+    );
+    
+    self::$service->changeContactStatus(
+      self::$secondUser['token'],
+      self::$firstUser['username'],
+      'A'
+    );
+    
+    self::$service->changeContactStatus(
+      self::$secondUser['token'],
+      self::$firstUser['username'],
+      'B'
+    );
+    
+    $result = self::$service->changeContactStatus(
+      self::$secondUser['token'],
+      self::$firstUser['username'],
+      'U'
+    );
+    
+    echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    echo PHP_EOL . "Database status: " . PHP_EOL . self::retrieveDatabaseStatus();
+    
+    self::assertEquals(
+      Success::CODE,
+      User::validateUsername($result['username']),
+    );
+    self::assertEquals(
+      Success::CODE,
+      User::validateName($result['name']),
+    );
+    self::assertEquals(
+      Success::CODE,
+      User::validateSurname($result['surname']),
+    );
+    self::assertNull($result['picture']);
+    self::assertEquals(
+      Success::CODE,
+      Contact::validateStatus($result['status']),
+    );
+    
+    self::deleteGeneratedTables();
+    
+    return $result;
+  }
+  
+  public function tearDown(): void {
     DatabaseModule::execute(
       'DELETE FROM users
              WHERE username = :first_username
                 OR username = :second_username',
       [
-        ':first_username' => self::$firstUser['username'],
+        ':first_username'  => self::$firstUser['username'],
         ':second_username' => self::$secondUser['username'],
       ]
     );
+    
+    self::$firstUser['token'] = null;
+    self::$secondUser['token'] = null;
   }
 }

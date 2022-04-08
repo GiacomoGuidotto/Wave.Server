@@ -429,8 +429,8 @@ class WebSocketService extends Singleton implements MessageComponentInterface, W
       $recipientUser = $this->users->getFromInfo($recipient);
       $recipientUser?->send(
         $this->generateChannelPacket(
-                   'CREATE',
-                   'contact',
+                   'UPDATE',
+                   'contact/status',
           headers: [
                      'directive' => $directive,
                    ]

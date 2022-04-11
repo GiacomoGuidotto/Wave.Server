@@ -12,6 +12,7 @@ use Wave\Services\MIME\MIMEService;
 use Wave\Services\WebSocket\WebSocketService;
 use Wave\Specifications\ErrorCases\Elaboration\BlockedByUser;
 use Wave\Specifications\ErrorCases\Elaboration\DirectiveNotAllowed;
+use Wave\Specifications\ErrorCases\Elaboration\SelfRequest;
 use Wave\Specifications\ErrorCases\Elaboration\WrongDirective;
 use Wave\Specifications\ErrorCases\Elaboration\WrongStatus;
 use Wave\Specifications\ErrorCases\Generic\NullAttributes;
@@ -888,6 +889,11 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
       ]
     );
     
+    if ($originUser['username'] === $user) {
+      DatabaseModule::commitTransaction();
+      return Utilities::generateErrorMessage(SelfRequest::CODE);
+    }
+    
     // ==== Target existence check =======================================================
     
     $targetedUser = DatabaseModule::fetchOne(
@@ -1061,6 +1067,11 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
       ]
     );
     
+    if ($originUser['username'] === $user) {
+      DatabaseModule::commitTransaction();
+      return Utilities::generateErrorMessage(SelfRequest::CODE);
+    }
+    
     // ==== Target existence check =======================================================
     $targetedUser = DatabaseModule::fetchOne(
       'SELECT user_id, username, name, surname, picture
@@ -1079,13 +1090,13 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     // ==== Contact existence check ======================================================
     
     $contact = DatabaseModule::fetchOne(
-      'SELECT status
+      'SELECT second_user, status
              FROM contacts
              WHERE active = TRUE
-               AND (first_user = :first_user
+               AND ((first_user = :first_user
                AND second_user = :second_user)
                 OR (first_user = :second_user
-               AND second_user = :first_user)',
+               AND second_user = :first_user))',
       [
         ':first_user'  => $originUser['user_id'],
         ':second_user' => $targetedUser['user_id'],
@@ -1102,6 +1113,11 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     if ($contact['status'] !== 'P') {
       DatabaseModule::commitTransaction();
       return Utilities::generateErrorMessage(WrongStatus::CODE);
+    }
+    
+    if ($contact['second_user'] !== $targetedUser['user_id']) {
+      DatabaseModule::commitTransaction();
+      return Utilities::generateErrorMessage(DirectiveNotAllowed::CODE);
     }
     
     DatabaseModule::execute(
@@ -1179,6 +1195,11 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
       ]
     );
     
+    if ($originUser['username'] === $user) {
+      DatabaseModule::commitTransaction();
+      return Utilities::generateErrorMessage(SelfRequest::CODE);
+    }
+    
     // ==== Target existence check =======================================================
     $targetedUser = DatabaseModule::fetchOne(
       'SELECT user_id, username, name, surname, picture
@@ -1200,10 +1221,10 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
       'SELECT second_user, status, chat, blocked_by
              FROM contacts
              WHERE active = TRUE
-               AND (first_user = :first_user
+               AND ((first_user = :first_user
                AND second_user = :second_user)
                 OR (first_user = :second_user
-               AND second_user = :first_user)',
+               AND second_user = :first_user))',
       [
         ':first_user'  => $originUser['user_id'],
         ':second_user' => $targetedUser['user_id'],
@@ -1228,6 +1249,8 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
           return Utilities::generateErrorMessage(WrongStatus::CODE);
         }
         
+        // check if the second user is the target, since at insertion the target has been
+        // positioned in the second_user column
         if ($contact['second_user'] !== $originUser['user_id']) {
           DatabaseModule::commitTransaction();
           return Utilities::generateErrorMessage(DirectiveNotAllowed::CODE);
@@ -1362,7 +1385,8 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
         }
         DatabaseModule::execute(
           'UPDATE contacts
-               SET status = :status
+               SET status = :status,
+                   blocked_by = null
                WHERE (first_user = :first_user
                  AND second_user = :second_user)
                   OR (first_user = :second_user
@@ -1532,10 +1556,10 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
         'SELECT status, chat, blocked_by
              FROM contacts
              WHERE active = TRUE
-               AND (first_user = :first_user
+               AND ((first_user = :first_user
                AND second_user = :second_user)
                 OR (first_user = :second_user
-               AND second_user = :first_user)',
+               AND second_user = :first_user))',
         [
           ':first_user'  => $originUser['user_id'],
           ':second_user' => $targetedUser['user_id'],

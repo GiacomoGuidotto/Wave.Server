@@ -365,6 +365,36 @@ class ContactTest extends TestCase {
     return $result;
   }
   
+  /**
+   * @group deleteContactRequest
+   */
+  public function testDeleteContactRequestFromTarget(): array {
+    echo PHP_EOL . '==== deleteContactRequest ====================================' . PHP_EOL;
+    
+    echo PHP_EOL . 'Testing correct contact request deletion...' . PHP_EOL;
+    
+    self::$service->contactRequest(
+      self::$firstUser['token'],
+      self::$secondUser['username'],
+    );
+    
+    $result = self::$service->deleteContactRequest(
+      self::$secondUser['token'],
+      self::$firstUser['username'],
+    );
+    
+    echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    echo PHP_EOL . "Database status: " . PHP_EOL . self::retrieveDatabaseStatus();
+    
+    self::assertEquals(
+      DirectiveNotAllowed::CODE,
+      $result['error'],
+    );
+    
+    return $result;
+  }
+  
   // ==== changeContactStatus ======================================================================
   // ===============================================================================================
   

@@ -4,6 +4,7 @@ namespace Wave\Specifications\ErrorCases;
 
 use Wave\Specifications\ErrorCases\Elaboration\BlockedByUser;
 use Wave\Specifications\ErrorCases\Elaboration\DirectiveNotAllowed;
+use Wave\Specifications\ErrorCases\Elaboration\SelfRequest;
 use Wave\Specifications\ErrorCases\Elaboration\WrongDirective;
 use Wave\Specifications\ErrorCases\Elaboration\WrongStatus;
 use Wave\Specifications\ErrorCases\Generic\NullAttributes;
@@ -61,10 +62,11 @@ use Wave\Specifications\ErrorCases\WebSocket\IncorrectPacketSchema;
  * 44 Already exist
  *
  * ==== elaboration-related ====
- * 50 Blocked by user
- * 51 Wrong status
- * 52 Wrong directive
- * 53 Directive not allowed
+ * 50 Self request
+ * 51 Blocked by user
+ * 52 Wrong status
+ * 53 Wrong directive
+ * 54 Directive not allowed
  *
  * ==== websocket-related ====
  * 60 Incorrect packet schema
@@ -86,6 +88,7 @@ interface ErrorCases {
     Timeout::CODE             => 401,
     Forbidden::CODE           => 403,
     NotFound::CODE            => 404,
+    SelfRequest::CODE         => 406,
     BlockedByUser::CODE       => 406,
     WrongStatus::CODE         => 406,
     WrongDirective::CODE      => 406,
@@ -109,6 +112,7 @@ interface ErrorCases {
     Timeout::CODE               => Timeout::MESSAGE,
     Forbidden::CODE             => Forbidden::MESSAGE,
     NotFound::CODE              => NotFound::MESSAGE,
+    SelfRequest::CODE           => SelfRequest::MESSAGE,
     BlockedByUser::CODE         => BlockedByUser::MESSAGE,
     WrongStatus::CODE           => WrongStatus::MESSAGE,
     WrongDirective::CODE        => WrongDirective::MESSAGE,
@@ -133,6 +137,7 @@ interface ErrorCases {
     Timeout::CODE               => Timeout::DETAILS,
     Forbidden::CODE             => Forbidden::DETAILS,
     NotFound::CODE              => NotFound::DETAILS,
+    SelfRequest::CODE           => SelfRequest::DETAILS,
     BlockedByUser::CODE         => BlockedByUser::DETAILS,
     WrongStatus::CODE           => WrongStatus::DETAILS,
     WrongDirective::CODE        => WrongDirective::DETAILS,

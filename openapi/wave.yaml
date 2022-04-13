@@ -653,6 +653,8 @@ paths:
           $ref: "#/components/responses/404"
         405:
           $ref: "#/components/responses/405"
+        406:
+          $ref: "#/components/responses/406"
 
     put:
       operationId: changeGroupInformation

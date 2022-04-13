@@ -17,6 +17,7 @@ use Wave\Specifications\ErrorCases\Elaboration\BlockedByUser;
 use Wave\Specifications\ErrorCases\Elaboration\DirectiveNotAllowed;
 use Wave\Specifications\ErrorCases\Elaboration\SelfRequest;
 use Wave\Specifications\ErrorCases\Elaboration\WrongDirective;
+use Wave\Specifications\ErrorCases\Elaboration\WrongState;
 use Wave\Specifications\ErrorCases\Elaboration\WrongStatus;
 use Wave\Specifications\ErrorCases\Generic\NullAttributes;
 use Wave\Specifications\ErrorCases\State\AlreadyExist;
@@ -1865,7 +1866,8 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
         $databaseGroup = DatabaseModule::fetchOne(
           "SELECT name, info, picture, chat
                  FROM `groups`
-                 WHERE group_id = :group_id",
+                 WHERE active = TRUE
+                   AND group_id = :group_id",
           [
             "group_id" => $group['group'],
           ]
@@ -1953,8 +1955,204 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     string $group,
     string $directive,
   ): array {
-    // TODO: Implement changeGroupStatus() method.
-    return [];
+    // ==== Parameters validation ========================================================
+    $tokenValidation = Session::validateToken($token);
+    $groupValidation = Group::validateGroup($group);
+    
+    if ($tokenValidation != Success::CODE) {
+      return Utilities::generateErrorMessage($tokenValidation);
+    }
+    if ($groupValidation != Success::CODE) {
+      return Utilities::generateErrorMessage($groupValidation);
+    }
+    
+    // ==== Token authorization ==========================================================
+    $tokenAuthorization = $this->authorizeToken($token);
+    
+    if ($tokenAuthorization != Success::CODE) {
+      return Utilities::generateErrorMessage($tokenAuthorization);
+    }
+    
+    // ===================================================================================
+    DatabaseModule::beginTransaction();
+    
+    // ==== Groups existence check ======================================================
+    $group = DatabaseModule::fetchOne(
+      'SELECT group_id, name, info, picture, chat
+             FROM `groups`
+             WHERE active = TRUE
+               AND chat = :chat',
+      [
+        ':chat' => $group,
+      ]
+    );
+    
+    if (!is_array($group)) {
+      DatabaseModule::commitTransaction();
+      return Utilities::generateErrorMessage(NotFound::CODE);
+    }
+    
+    // ==== Relation existence check ===================================================
+    $membership = DatabaseModule::fetchOne(
+      'SELECT state, muted
+             FROM groups_members
+             WHERE active = TRUE
+               AND `group` = :group',
+      [
+        ':group' => $group['group_id'],
+      ]
+    );
+    
+    if (!is_array($membership)) {
+      DatabaseModule::commitTransaction();
+      return Utilities::generateErrorMessage(NotFound::CODE);
+    }
+    
+    // ==== Safe zone ====================================================================
+    
+    $oldState = $membership['state'];
+    $oldMuted = !!$membership['muted'];
+    
+    switch ($directive) {
+      // Archive
+      case 'A':
+        if ($oldState === 'A') {
+          DatabaseModule::commitTransaction();
+          return Utilities::generateErrorMessage(WrongState::CODE);
+        }
+        
+        $newState = 'A';
+        DatabaseModule::execute(
+          'UPDATE groups_members
+                 SET state = :state
+                 WHERE active = TRUE
+                   AND `group` = :group',
+          [
+            ":state" => $newState,
+            ':group' => $group['group_id'],
+          ]
+        );
+        break;
+      
+      // Pin
+      case 'P':
+        if ($oldState === 'P') {
+          DatabaseModule::commitTransaction();
+          return Utilities::generateErrorMessage(WrongState::CODE);
+        }
+        
+        $newState = 'P';
+        DatabaseModule::execute(
+          'UPDATE groups_members
+                 SET state = :state
+                 WHERE active = TRUE
+                   AND `group` = :group',
+          [
+            ":state" => $newState,
+            ':group' => $group['group_id'],
+          ]
+        );
+        break;
+      
+      // Mute
+      case 'M':
+        if ($oldMuted) {
+          DatabaseModule::commitTransaction();
+          return Utilities::generateErrorMessage(WrongState::CODE);
+        }
+        
+        $newMuted = true;
+        DatabaseModule::execute(
+          'UPDATE groups_members
+                 SET muted = :muted
+                 WHERE active = TRUE
+                   AND `group` = :group',
+          [
+            ":muted" => $newMuted,
+            ':group' => $group['group_id'],
+          ]
+        );
+        break;
+      
+      // Unarchive
+      case 'Ua':
+        if ($oldState !== 'A') {
+          DatabaseModule::commitTransaction();
+          return Utilities::generateErrorMessage(WrongState::CODE);
+        }
+        
+        $newState = 'N';
+        DatabaseModule::execute(
+          'UPDATE groups_members
+                 SET state = :state
+                 WHERE active = TRUE
+                   AND `group` = :group',
+          [
+            ":state" => $newState,
+            ':group' => $group['group_id'],
+          ]
+        );
+        break;
+      
+      // Unpin
+      case 'Up':
+        if ($oldState !== 'P') {
+          DatabaseModule::commitTransaction();
+          return Utilities::generateErrorMessage(WrongState::CODE);
+        }
+        
+        $newState = 'N';
+        DatabaseModule::execute(
+          'UPDATE groups_members
+                 SET state = :state
+                 WHERE active = TRUE
+                   AND `group` = :group',
+          [
+            ":state" => $newState,
+            ':group' => $group['group_id'],
+          ]
+        );
+        break;
+      
+      // Unmute
+      case 'Um':
+        if (!$oldMuted) {
+          DatabaseModule::commitTransaction();
+          return Utilities::generateErrorMessage(WrongState::CODE);
+        }
+        
+        $newMuted = false;
+        DatabaseModule::execute(
+          'UPDATE groups_members
+                 SET muted = FALSE
+                 WHERE active = TRUE
+                   AND `group` = :group',
+          [
+            ':group' => $group['group_id'],
+          ]
+        );
+        break;
+      
+      default:
+        DatabaseModule::commitTransaction();
+        return Utilities::generateErrorMessage(WrongDirective::CODE);
+    }
+    
+    DatabaseModule::commitTransaction();
+    
+    $groupFilepath = $group['picture'];
+    $groupPicture = !is_null($groupFilepath) ?
+      MIMEService::researchMedia($groupFilepath) :
+      null;
+    
+    return [
+      'uuid'    => $group['chat'],
+      'name'    => $group['name'],
+      'info'    => $group['info'],
+      'picture' => $groupPicture,
+      'state'   => $newState ?? $oldState,
+      'muted'   => $newMuted ?? $oldMuted,
+    ];
   }
   
   /**

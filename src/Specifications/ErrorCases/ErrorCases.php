@@ -67,6 +67,7 @@ use Wave\Specifications\ErrorCases\WebSocket\IncorrectPacketSchema;
  * 52 Wrong status
  * 53 Wrong directive
  * 54 Directive not allowed
+ * 55 Wrong state
  *
  * ==== websocket-related ====
  * 60 Incorrect packet schema

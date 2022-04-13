@@ -6,6 +6,7 @@ use PHPUnit\Framework\TestCase;
 use Wave\Model\Group\Group;
 use Wave\Services\Database\DatabaseService;
 use Wave\Services\Database\Module\DatabaseModule;
+use Wave\Specifications\ErrorCases\Elaboration\WrongState;
 use Wave\Specifications\ErrorCases\State\NotFound;
 use Wave\Specifications\ErrorCases\Success\Success;
 use Wave\Tests\Utilities\TestUtilities;
@@ -283,7 +284,535 @@ class GroupTest extends TestCase {
     return $result;
   }
   
+  // ==== changeGroupStatus ======================================================================
+  // ===============================================================================================
+  
+  /**
+   * @group changeGroupStatus
+   */
+  public function testChangeGroupStatusCorrectArchiveProcedure(): array {
+    echo PHP_EOL . '==== changeGroupStatus =====================================' . PHP_EOL;
+    
+    echo PHP_EOL . 'Testing correct archive group procedure...' . PHP_EOL;
+    
+    $group = self::$service->createGroup(
+      self::$firstUser['token'],
+      self::$group['name'],
+      self::$group['info'],
+      null,
+      [
+        self::$secondUser['username'],
+      ]
+    )['uuid'];
+    
+    $result = self::$service->changeGroupStatus(
+      self::$secondUser['token'],
+      $group,
+      'A'
+    );
+    
+    echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    self::assertEquals(
+      Success::CODE,
+      Group::validateGroup($result['uuid']),
+    );
+    self::assertEquals(
+      Success::CODE,
+      Group::validateName($result['name']),
+    );
+    self::assertEquals(
+      Success::CODE,
+      Group::validateInfo($result['info']),
+    );
+    self::assertNull($result['picture']);
+    self::assertEquals(
+      Success::CODE,
+      Group::validateState($result['state']),
+    );
+    self::assertIsBool($result['muted']);
+    
+    TestUtilities::deleteGeneratedTables(self::$firstUser['username']);
+    
+    return $result;
+  }
+  
+  /**
+   * @group changeGroupStatus
+   */
+  public function testChangeGroupStatusArchiveWithWrongState(): array {
+    echo PHP_EOL . 'Testing correct archive group procedure...' . PHP_EOL;
+    
+    $group = self::$service->createGroup(
+      self::$firstUser['token'],
+      self::$group['name'],
+      self::$group['info'],
+      null,
+      [
+        self::$secondUser['username'],
+      ]
+    )['uuid'];
+    
+    self::$service->changeGroupStatus(
+      self::$secondUser['token'],
+      $group,
+      'A'
+    );
+    
+    $result = self::$service->changeGroupStatus(
+      self::$secondUser['token'],
+      $group,
+      'A'
+    );
+    
+    echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    self::assertEquals(
+      WrongState::CODE,
+      $result['error'],
+    );
+    
+    return $result;
+  }
+  
+  /**
+   * @group changeGroupStatus
+   */
+  public function testChangeGroupStatusCorrectPinnedProcedure(): array {
+    echo PHP_EOL . 'Testing correct archive group procedure...' . PHP_EOL;
+    
+    $group = self::$service->createGroup(
+      self::$firstUser['token'],
+      self::$group['name'],
+      self::$group['info'],
+      null,
+      [
+        self::$secondUser['username'],
+      ]
+    )['uuid'];
+    
+    $result = self::$service->changeGroupStatus(
+      self::$secondUser['token'],
+      $group,
+      'P'
+    );
+    
+    echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    self::assertEquals(
+      Success::CODE,
+      Group::validateGroup($result['uuid']),
+    );
+    self::assertEquals(
+      Success::CODE,
+      Group::validateName($result['name']),
+    );
+    self::assertEquals(
+      Success::CODE,
+      Group::validateInfo($result['info']),
+    );
+    self::assertNull($result['picture']);
+    self::assertEquals(
+      Success::CODE,
+      Group::validateState($result['state']),
+    );
+    self::assertIsBool($result['muted']);
+    
+    TestUtilities::deleteGeneratedTables(self::$firstUser['username']);
+    
+    return $result;
+  }
+  
+  /**
+   * @group changeGroupStatus
+   */
+  public function testChangeGroupStatusPinnedWithWrongState(): array {
+    echo PHP_EOL . 'Testing correct archive group procedure...' . PHP_EOL;
+    
+    $group = self::$service->createGroup(
+      self::$firstUser['token'],
+      self::$group['name'],
+      self::$group['info'],
+      null,
+      [
+        self::$secondUser['username'],
+      ]
+    )['uuid'];
+    
+    self::$service->changeGroupStatus(
+      self::$secondUser['token'],
+      $group,
+      'P'
+    );
+    
+    $result = self::$service->changeGroupStatus(
+      self::$secondUser['token'],
+      $group,
+      'P'
+    );
+    
+    echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    self::assertEquals(
+      WrongState::CODE,
+      $result['error'],
+    );
+    
+    return $result;
+  }
+  
+  /**
+   * @group changeGroupStatus
+   */
+  public function testChangeGroupStatusCorrectMuteProcedure(): array {
+    echo PHP_EOL . 'Testing correct archive group procedure...' . PHP_EOL;
+    
+    $group = self::$service->createGroup(
+      self::$firstUser['token'],
+      self::$group['name'],
+      self::$group['info'],
+      null,
+      [
+        self::$secondUser['username'],
+      ]
+    )['uuid'];
+    
+    $result = self::$service->changeGroupStatus(
+      self::$secondUser['token'],
+      $group,
+      'M'
+    );
+    
+    echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    self::assertEquals(
+      Success::CODE,
+      Group::validateGroup($result['uuid']),
+    );
+    self::assertEquals(
+      Success::CODE,
+      Group::validateName($result['name']),
+    );
+    self::assertEquals(
+      Success::CODE,
+      Group::validateInfo($result['info']),
+    );
+    self::assertNull($result['picture']);
+    self::assertEquals(
+      Success::CODE,
+      Group::validateState($result['state']),
+    );
+    self::assertIsBool($result['muted']);
+    
+    TestUtilities::deleteGeneratedTables(self::$firstUser['username']);
+    
+    return $result;
+  }
+  
+  /**
+   * @group changeGroupStatus
+   */
+  public function testChangeGroupStatusMuteWithWrongState(): array {
+    echo PHP_EOL . 'Testing correct archive group procedure...' . PHP_EOL;
+    
+    $group = self::$service->createGroup(
+      self::$firstUser['token'],
+      self::$group['name'],
+      self::$group['info'],
+      null,
+      [
+        self::$secondUser['username'],
+      ]
+    )['uuid'];
+    
+    self::$service->changeGroupStatus(
+      self::$secondUser['token'],
+      $group,
+      'M'
+    );
+    
+    $result = self::$service->changeGroupStatus(
+      self::$secondUser['token'],
+      $group,
+      'M'
+    );
+    
+    echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    self::assertEquals(
+      WrongState::CODE,
+      $result['error'],
+    );
+    
+    return $result;
+  }
+  
+  /**
+   * @group changeGroupStatus
+   */
+  public function testChangeGroupStatusCorrectUnarchiveProcedure(): array {
+    echo PHP_EOL . 'Testing correct archive group procedure...' . PHP_EOL;
+    
+    $group = self::$service->createGroup(
+      self::$firstUser['token'],
+      self::$group['name'],
+      self::$group['info'],
+      null,
+      [
+        self::$secondUser['username'],
+      ]
+    )['uuid'];
+    
+    self::$service->changeGroupStatus(
+      self::$secondUser['token'],
+      $group,
+      'A'
+    );
+    
+    $result = self::$service->changeGroupStatus(
+      self::$secondUser['token'],
+      $group,
+      'Ua'
+    );
+    
+    echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    self::assertEquals(
+      Success::CODE,
+      Group::validateGroup($result['uuid']),
+    );
+    self::assertEquals(
+      Success::CODE,
+      Group::validateName($result['name']),
+    );
+    self::assertEquals(
+      Success::CODE,
+      Group::validateInfo($result['info']),
+    );
+    self::assertNull($result['picture']);
+    self::assertEquals(
+      Success::CODE,
+      Group::validateState($result['state']),
+    );
+    self::assertIsBool($result['muted']);
+    
+    TestUtilities::deleteGeneratedTables(self::$firstUser['username']);
+    
+    return $result;
+  }
+  
+  /**
+   * @group changeGroupStatus
+   */
+  public function testChangeGroupStatusUnarchiveWithWrongState(): array {
+    echo PHP_EOL . 'Testing correct archive group procedure...' . PHP_EOL;
+    
+    $group = self::$service->createGroup(
+      self::$firstUser['token'],
+      self::$group['name'],
+      self::$group['info'],
+      null,
+      [
+        self::$secondUser['username'],
+      ]
+    )['uuid'];
+    
+    $result = self::$service->changeGroupStatus(
+      self::$secondUser['token'],
+      $group,
+      'Ua'
+    );
+    
+    echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    self::assertEquals(
+      WrongState::CODE,
+      $result['error'],
+    );
+    
+    return $result;
+  }
+  
+  /**
+   * @group changeGroupStatus
+   */
+  public function testChangeGroupStatusCorrectUnpinnedProcedure(): array {
+    echo PHP_EOL . 'Testing correct archive group procedure...' . PHP_EOL;
+    
+    $group = self::$service->createGroup(
+      self::$firstUser['token'],
+      self::$group['name'],
+      self::$group['info'],
+      null,
+      [
+        self::$secondUser['username'],
+      ]
+    )['uuid'];
+    
+    self::$service->changeGroupStatus(
+      self::$secondUser['token'],
+      $group,
+      'P'
+    );
+    
+    $result = self::$service->changeGroupStatus(
+      self::$secondUser['token'],
+      $group,
+      'Up'
+    );
+    
+    echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    self::assertEquals(
+      Success::CODE,
+      Group::validateGroup($result['uuid']),
+    );
+    self::assertEquals(
+      Success::CODE,
+      Group::validateName($result['name']),
+    );
+    self::assertEquals(
+      Success::CODE,
+      Group::validateInfo($result['info']),
+    );
+    self::assertNull($result['picture']);
+    self::assertEquals(
+      Success::CODE,
+      Group::validateState($result['state']),
+    );
+    self::assertIsBool($result['muted']);
+    
+    TestUtilities::deleteGeneratedTables(self::$firstUser['username']);
+    
+    return $result;
+  }
+  
+  /**
+   * @group changeGroupStatus
+   */
+  public function testChangeGroupStatusUnpinnedWithWrongState(): array {
+    echo PHP_EOL . 'Testing correct archive group procedure...' . PHP_EOL;
+    
+    $group = self::$service->createGroup(
+      self::$firstUser['token'],
+      self::$group['name'],
+      self::$group['info'],
+      null,
+      [
+        self::$secondUser['username'],
+      ]
+    )['uuid'];
+    
+    $result = self::$service->changeGroupStatus(
+      self::$secondUser['token'],
+      $group,
+      'Up'
+    );
+    
+    echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    self::assertEquals(
+      WrongState::CODE,
+      $result['error'],
+    );
+    
+    return $result;
+  }
+  
+  /**
+   * @group changeGroupStatus
+   */
+  public function testChangeGroupStatusCorrectUnmuteProcedure(): array {
+    echo PHP_EOL . 'Testing correct archive group procedure...' . PHP_EOL;
+    
+    $group = self::$service->createGroup(
+      self::$firstUser['token'],
+      self::$group['name'],
+      self::$group['info'],
+      null,
+      [
+        self::$secondUser['username'],
+      ]
+    )['uuid'];
+    
+    self::$service->changeGroupStatus(
+      self::$secondUser['token'],
+      $group,
+      'M'
+    );
+    
+    $result = self::$service->changeGroupStatus(
+      self::$secondUser['token'],
+      $group,
+      'Um'
+    );
+    
+    echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    self::assertEquals(
+      Success::CODE,
+      Group::validateGroup($result['uuid']),
+    );
+    self::assertEquals(
+      Success::CODE,
+      Group::validateName($result['name']),
+    );
+    self::assertEquals(
+      Success::CODE,
+      Group::validateInfo($result['info']),
+    );
+    self::assertNull($result['picture']);
+    self::assertEquals(
+      Success::CODE,
+      Group::validateState($result['state']),
+    );
+    self::assertIsBool($result['muted']);
+    
+    TestUtilities::deleteGeneratedTables(self::$firstUser['username']);
+    
+    return $result;
+  }
+  
+  /**
+   * @group changeGroupStatus
+   */
+  public function testChangeGroupStatusUnmuteWithWrongState(): array {
+    echo PHP_EOL . 'Testing correct archive group procedure...' . PHP_EOL;
+    
+    $group = self::$service->createGroup(
+      self::$firstUser['token'],
+      self::$group['name'],
+      self::$group['info'],
+      null,
+      [
+        self::$secondUser['username'],
+      ]
+    )['uuid'];
+    
+    $result = self::$service->changeGroupStatus(
+      self::$secondUser['token'],
+      $group,
+      'Um'
+    );
+    
+    echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    self::assertEquals(
+      WrongState::CODE,
+      $result['error'],
+    );
+    
+    return $result;
+  }
+  
   public function tearDown(): void {
+    DatabaseModule::execute(
+      'DELETE FROM `groups`
+             WHERE name = :group_name',
+      [
+        ':group_name' => self::$group['name'],
+      ]
+    );
     DatabaseModule::execute(
       'DELETE FROM users
              WHERE username = :first_username
@@ -293,8 +822,5 @@ class GroupTest extends TestCase {
         ':second_username' => self::$secondUser['username'],
       ]
     );
-    
-    self::$firstUser['token'] = null;
-    self::$secondUser['token'] = null;
   }
 }

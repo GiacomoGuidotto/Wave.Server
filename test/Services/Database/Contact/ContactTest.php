@@ -241,7 +241,7 @@ class ContactTest extends TestCase {
       'R'
     );
     
-    TestUtilities::deleteGeneratedTables(self::$firstUser['username']);
+    TestUtilities::deleteGeneratedTables(self::$firstUser['username'], true);
     
     $result = self::$service->contactRequest(
       self::$firstUser['token'],
@@ -360,7 +360,7 @@ class ContactTest extends TestCase {
       $result['error'],
     );
     
-    TestUtilities::deleteGeneratedTables(self::$firstUser['username']);
+    TestUtilities::deleteGeneratedTables(self::$firstUser['username'], true);
     
     return $result;
   }
@@ -468,7 +468,7 @@ class ContactTest extends TestCase {
       Contact::validateStatus($result['status']),
     );
     
-    TestUtilities::deleteGeneratedTables(self::$firstUser['username']);
+    TestUtilities::deleteGeneratedTables(self::$firstUser['username'], true);
     
     return $result;
   }
@@ -620,7 +620,7 @@ class ContactTest extends TestCase {
       Contact::validateStatus($result['status']),
     );
     
-    TestUtilities::deleteGeneratedTables(self::$firstUser['username']);
+    TestUtilities::deleteGeneratedTables(self::$firstUser['username'], true);
     
     
     return $result;
@@ -655,7 +655,7 @@ class ContactTest extends TestCase {
     
     echo PHP_EOL . "Database status: " . PHP_EOL . self::retrieveDatabaseStatus();
     
-    TestUtilities::deleteGeneratedTables(self::$firstUser['username']);
+    TestUtilities::deleteGeneratedTables(self::$firstUser['username'], true);
     
     
     self::assertNull($result);
@@ -762,7 +762,7 @@ class ContactTest extends TestCase {
       Contact::validateStatus($result['status']),
     );
     
-    TestUtilities::deleteGeneratedTables(self::$firstUser['username']);
+    TestUtilities::deleteGeneratedTables(self::$firstUser['username'], true);
     
     
     return $result;
@@ -832,8 +832,7 @@ class ContactTest extends TestCase {
     
     self::assertNotEmpty($result);
     
-    TestUtilities::deleteGeneratedTables(self::$firstUser['username']);
-    TestUtilities::deleteGeneratedTables($thirdUser['username']);
+    TestUtilities::deleteGeneratedTables(self::$firstUser['username'], true);
     
     DatabaseModule::execute(
       'DELETE FROM users
@@ -942,8 +941,7 @@ class ContactTest extends TestCase {
       Contact::validateStatus($result['status']),
     );
     
-    TestUtilities::deleteGeneratedTables(self::$firstUser['username']);
-    TestUtilities::deleteGeneratedTables($thirdUser['username']);
+    TestUtilities::deleteGeneratedTables(self::$firstUser['username'], true);
     
     DatabaseModule::execute(
       'DELETE FROM users
@@ -957,7 +955,7 @@ class ContactTest extends TestCase {
   }
   
   /**
-   * @group   getContactInformation
+   * @group getContactInformation
    */
   public function testContactInformationRetrieveWithUnknownUser(): array {
     echo PHP_EOL . 'Testing contact information retrieve with unknown user...' . PHP_EOL;
@@ -985,7 +983,7 @@ class ContactTest extends TestCase {
       $result['error'],
     );
     
-    TestUtilities::deleteGeneratedTables(self::$firstUser['username']);
+    TestUtilities::deleteGeneratedTables(self::$firstUser['username'], true);
     
     return $result;
   }

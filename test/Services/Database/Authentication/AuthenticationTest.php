@@ -20,7 +20,7 @@ class AuthenticationTest extends TestCase {
   private static string $source;
   
   public static function setUpBeforeClass(): void {
-    echo '==== Authentication ==========================================' . PHP_EOL
+    echo PHP_EOL . '==== Authentication ==========================================' . PHP_EOL
       . '==============================================================' . PHP_EOL;
     
     self::$service = DatabaseService::getInstance();

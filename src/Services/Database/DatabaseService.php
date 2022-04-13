@@ -1568,8 +1568,9 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
         ]
       );
       
+      DatabaseModule::commitTransaction();
+      
       if (!is_array($contact)) {
-        DatabaseModule::commitTransaction();
         return Utilities::generateErrorMessage(NotFound::CODE);
       }
       
@@ -1815,8 +1816,133 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     string  $token,
     ?string $group = null,
   ): array {
-    // TODO: Implement getGroupInformation() method.
-    return [];
+    // ==== Parameters validation ========================================================
+    $tokenValidation = Session::validateToken($token);
+    
+    if ($tokenValidation != Success::CODE) {
+      return Utilities::generateErrorMessage($tokenValidation);
+    }
+    
+    // ==== Token authorization ==========================================================
+    $tokenAuthorization = $this->authorizeToken($token);
+    
+    if ($tokenAuthorization != Success::CODE) {
+      return Utilities::generateErrorMessage($tokenAuthorization);
+    }
+    
+    // ===================================================================================
+    DatabaseModule::beginTransaction();
+    
+    $userId = DatabaseModule::fetchOne(
+      'SELECT user
+             FROM sessions
+             WHERE session_token = :session_token',
+      [
+        ':session_token' => $token,
+      ]
+    )['user'];
+    
+    if (is_null($group)) {
+      // ==== Groups existence check ======================================================
+      $groups = DatabaseModule::fetchAll(
+        'SELECT `group`, state, muted
+             FROM groups_members
+             WHERE active = TRUE
+               AND user = :user',
+        [
+          ':user' => $userId,
+        ]
+      );
+      
+      if (!is_array($groups) || count($groups) === 0) {
+        DatabaseModule::commitTransaction();
+        return Utilities::generateErrorMessage(NotFound::CODE);
+      }
+      
+      $refactoredGroups = [];
+      
+      foreach ($groups as $group) {
+        $databaseGroup = DatabaseModule::fetchOne(
+          "SELECT name, info, picture, chat
+                 FROM `groups`
+                 WHERE group_id = :group_id",
+          [
+            "group_id" => $group['group'],
+          ]
+        );
+        
+        $groupFilepath = $databaseGroup['picture'];
+        $groupPicture = !is_null($groupFilepath) ?
+          MIMEService::researchMedia($groupFilepath) :
+          null;
+        
+        $refactoredGroups[] = [
+          'uuid'    => $databaseGroup['chat'],
+          'name'    => $databaseGroup['name'],
+          'info'    => $databaseGroup['info'],
+          'picture' => $groupPicture,
+          'state'   => $group['state'],
+          'muted'   => $group['muted'],
+        ];
+        
+      }
+      
+      DatabaseModule::commitTransaction();
+      return $refactoredGroups;
+    } else {
+      $groupValidation = Group::validateGroup($group);
+      
+      if ($groupValidation != Success::CODE) {
+        return Utilities::generateErrorMessage($groupValidation);
+      }
+      
+      // ==== Groups existence check ======================================================
+      $group = DatabaseModule::fetchOne(
+        'SELECT group_id, name, info, picture, chat
+             FROM `groups`
+             WHERE active = TRUE
+               AND chat = :chat',
+        [
+          ':chat' => $group,
+        ]
+      );
+      
+      if (!is_array($group)) {
+        DatabaseModule::commitTransaction();
+        return Utilities::generateErrorMessage(NotFound::CODE);
+      }
+      
+      // ==== Relation existence check ===================================================
+      $membership = DatabaseModule::fetchOne(
+        'SELECT state, muted
+             FROM groups_members
+             WHERE active = TRUE
+               AND `group` = :group',
+        [
+          ':group' => $group['group_id'],
+        ]
+      );
+      
+      if (!is_array($membership)) {
+        DatabaseModule::commitTransaction();
+        return Utilities::generateErrorMessage(NotFound::CODE);
+      }
+      
+      // ==== Image retrieve and return ==================================================
+      $groupFilepath = $group['picture'];
+      $groupPicture = !is_null($groupFilepath) ?
+        MIMEService::researchMedia($groupFilepath) :
+        null;
+      
+      return [
+        'uuid'    => $group['chat'],
+        'name'    => $group['name'],
+        'info'    => $group['info'],
+        'picture' => $groupPicture,
+        'state'   => $membership['state'],
+        'muted'   => !!$membership['muted'],
+      ];
+    }
   }
   
   /**

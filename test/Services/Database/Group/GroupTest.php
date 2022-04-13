@@ -8,6 +8,7 @@ use Wave\Services\Database\DatabaseService;
 use Wave\Services\Database\Module\DatabaseModule;
 use Wave\Specifications\ErrorCases\State\NotFound;
 use Wave\Specifications\ErrorCases\Success\Success;
+use Wave\Tests\Utilities\TestUtilities;
 use Wave\Utilities\Utilities;
 
 class GroupTest extends TestCase {
@@ -29,6 +30,12 @@ class GroupTest extends TestCase {
     'surname'  => 'user',
     'source'   => null,
     'token'    => null,
+  ];
+  
+  private static array $group = [
+    'uuid' => null,
+    'name' => 'test_group',
+    'info' => 'Testing group',
   ];
   
   public static function setUpBeforeClass(): void {
@@ -121,6 +128,8 @@ class GroupTest extends TestCase {
     );
     self::assertIsBool($result['muted']);
     
+    TestUtilities::deleteGeneratedTables(self::$firstUser['username']);
+    
     DatabaseModule::execute(
       'DELETE FROM `groups`
              WHERE name = :group_name',
@@ -136,8 +145,6 @@ class GroupTest extends TestCase {
    * @group createGroup
    */
   public function testCreateGroupWithUnknownUser(): array {
-    echo PHP_EOL . '==== createGroup =============================================' . PHP_EOL;
-    
     echo PHP_EOL . 'Testing group correct creation...' . PHP_EOL;
     
     $randomGroupName = "test_group";
@@ -166,6 +173,115 @@ class GroupTest extends TestCase {
   
   // ==== getGroupInformation ======================================================================
   // ===============================================================================================
+  
+  /**
+   * @group getGroupInformation
+   */
+  public function testCorrectGroupsInformationRetrieve(): array {
+    echo PHP_EOL . '==== getGroupInformation =====================================' . PHP_EOL;
+    
+    echo PHP_EOL . 'Testing correct groups information retrieve...' . PHP_EOL;
+    
+    self::$service->createGroup(
+      self::$firstUser['token'],
+      self::$group['name'],
+      self::$group['info'],
+      null,
+      [
+        self::$secondUser['username'],
+      ]
+    );
+    
+    self::$service->createGroup(
+      self::$secondUser['token'],
+      self::$group['name'],
+      self::$group['info'],
+      null,
+      [
+        self::$firstUser['username'],
+      ]
+    );
+    
+    $result = self::$service->getGroupInformation(
+      self::$secondUser['token'],
+    );
+    
+    echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    self::assertNotEmpty($result);
+    
+    TestUtilities::deleteGeneratedTables(self::$firstUser['username']);
+    
+    return $result;
+  }
+  
+  /**
+   * @group getGroupInformation
+   */
+  public function testCorrectGroupInformationRetrieve(): array {
+    echo PHP_EOL . 'Testing correct group information retrieve...' . PHP_EOL;
+    
+    $group = self::$service->createGroup(
+      self::$firstUser['token'],
+      self::$group['name'],
+      self::$group['info'],
+      null,
+      [
+        self::$secondUser['username'],
+      ]
+    )['uuid'];
+    
+    $result = self::$service->getGroupInformation(
+      self::$secondUser['token'],
+      $group,
+    );
+    
+    echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    self::assertEquals(
+      Success::CODE,
+      Group::validateGroup($result['uuid']),
+    );
+    self::assertEquals(
+      Success::CODE,
+      Group::validateName($result['name']),
+    );
+    self::assertEquals(
+      Success::CODE,
+      Group::validateInfo($result['info']),
+    );
+    self::assertNull($result['picture']);
+    self::assertEquals(
+      Success::CODE,
+      Group::validateState($result['state']),
+    );
+    self::assertIsBool($result['muted']);
+    
+    TestUtilities::deleteGeneratedTables(self::$firstUser['username']);
+    
+    return $result;
+  }
+  
+  /**
+   * @group getGroupInformation
+   */
+  public function testGetGroupInformationWithUnknownGroupUUID(): array {
+    echo PHP_EOL . 'Testing retrieve group information with unknown group uuid...' . PHP_EOL;
+    
+    $result = self::$service->getGroupInformation(
+      self::$secondUser['token'],
+      Utilities::generateUuid(),
+    );
+    
+    echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    self::assertEquals(
+      NotFound::CODE,
+      $result['error'],
+    );
+    
+    return $result;
+  }
   
   public function tearDown(): void {
     DatabaseModule::execute(

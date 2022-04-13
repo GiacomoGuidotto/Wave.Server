@@ -10,9 +10,10 @@ class TestUtilities {
    * Delete the generated tables from the contacts of the given user
    *
    * @param string $username The user's username
+   * @param bool   $contact  If the chat were generated from a contact or a group
    * @return void
    */
-  public static function deleteGeneratedTables(string $username): void {
+  public static function deleteGeneratedTables(string $username, bool $contact = false): void {
     $userId = DatabaseModule::fetchOne(
       'SELECT user_id
              FROM users
@@ -22,27 +23,49 @@ class TestUtilities {
       ]
     )['user_id'];
     
-    $contactChat = DatabaseModule::fetchOne(
-      'SELECT chat
+    if ($contact) {
+      $chats = DatabaseModule::fetchAll(
+        'SELECT chat
              FROM contacts
              WHERE (first_user = :user_id
                 OR second_user = :user_id)',
-      [
-        ':user_id' => $userId,
-      ]
-    )['chat'];
+        [
+          ':user_id' => $userId,
+        ]
+      );
+    } else {
+      $groupId = DatabaseModule::fetchOne(
+        'SELECT `group`
+             FROM groups_members
+             WHERE user = :user',
+        [
+          ':user' => $userId,
+        ]
+      )['group'];
+      
+      $chats = DatabaseModule::fetchAll(
+        'SELECT chat
+             FROM `groups`
+             WHERE group_id = :group_id',
+        [
+          ':group_id' => $groupId,
+        ]
+      );
+    }
     
-    DatabaseModule::execute(
-      'DROP TABLE `:name`',
-      [
-        ':name' => 'chat_' . $contactChat . '_messages',
-      ]
-    );
-    DatabaseModule::execute(
-      'DROP TABLE `:name`',
-      [
-        ':name' => 'chat_' . $contactChat . '_members',
-      ]
-    );
+    foreach ($chats as $chat) {
+      DatabaseModule::execute(
+        'DROP TABLE `:name`',
+        [
+          ':name' => 'chat_' . $chat['chat'] . '_messages',
+        ]
+      );
+      DatabaseModule::execute(
+        'DROP TABLE `:name`',
+        [
+          ':name' => 'chat_' . $chat['chat'] . '_members',
+        ]
+      );
+    }
   }
 }

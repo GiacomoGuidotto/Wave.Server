@@ -1,9 +1,12 @@
-<?php /** @noinspection SqlResolve */
+<?php /** @noinspection PhpConditionAlreadyCheckedInspection */
+
+/** @noinspection SqlResolve */
 
 namespace Wave\Services\Database;
 
 use DateInterval;
 use JetBrains\PhpStorm\ArrayShape;
+use Wave\Model\Group\Group;
 use Wave\Model\Session\Session;
 use Wave\Model\Singleton\Singleton;
 use Wave\Model\User\User;
@@ -161,6 +164,9 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     $previouslyInTransaction = DatabaseModule::inTransaction();
     if ($previouslyInTransaction) DatabaseModule::commitTransaction();
     
+    $messagesTableName = "chat_" . $uuid . "_messages";
+    $membersTableName = "chat_" . $uuid . "_members";
+    
     // ==== Generate message table =======================================================
     DatabaseModule::execute(
       'CREATE TABLE `:name`
@@ -179,7 +185,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
                    ON DELETE CASCADE
              )',
       [
-        ':name' => "chat_" . $uuid . "_messages",
+        ':name' => $messagesTableName,
       ]
     );
     
@@ -197,7 +203,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
                  ON DELETE CASCADE
              )',
       [
-        ':name' => "chat_" . $uuid . '_members',
+        ':name' => $membersTableName,
       ]
     );
     
@@ -223,7 +229,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
                  :active
                )",
         [
-          ':name'              => "chat_" . $uuid . '_members',
+          ':name'              => $membersTableName,
           ':user'              => $memberId,
           ':last_seen_message' => null,
           ':permission'        => 127,
@@ -748,9 +754,9 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     // ==== Send channel packet to all contacts if some shared attribute has been changed
     if ($username !== null || $name !== null || $surname !== null || $picture !== null) {
       WebSocketService::sendToWebSocket(
-                 $user['username'],
                  'UPDATE',
                  'contact/information',
+                 $user['username'],
         headers: [
                    'old_username' => $storedUsername,
                  ],
@@ -991,12 +997,10 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
       null;
     
     WebSocketService::sendToWebSocket(
-               $originUser['username'],
                'CREATE',
                'contact',
-      headers: [
-                 'to' => $targetedUser['username'],
-               ],
+               $originUser['username'],
+      targets: $targetedUser['username'],
       body   : [
                  'username' => $originUser['username'],
                  'name'     => $originUser['name'],
@@ -1137,12 +1141,10 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     // ==== Send Channel packet with deletion directive to targeted user =================
     
     WebSocketService::sendToWebSocket(
-               $originUser['username'],
                "DELETE",
                "contact/status",
-      headers: [
-                 "to" => $targetedUser['username'],
-               ]
+               $originUser['username'],
+      targets: $targetedUser['username'],
     );
     
     return null;
@@ -1408,11 +1410,11 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     // ==== Send Channel packet with deletion directive to targeted user =================
     
     WebSocketService::sendToWebSocket(
-               $originUser['username'],
                "UPDATE",
                "contact/status",
+               $originUser['username'],
+      targets: $targetedUser['username'],
       headers: [
-                 "to"        => $targetedUser['username'],
                  "directive" => $directive,
                ]
     );
@@ -1599,8 +1601,211 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     ?string $picture = null,
     ?array  $users = null,
   ): array {
-    // TODO: Implement createGroup() method.
-    return [];
+    // ==== Parameters validation ========================================================
+    $tokenValidation = Session::validateToken($token);
+    if ($tokenValidation != Success::CODE) {
+      return Utilities::generateErrorMessage($tokenValidation);
+    }
+    
+    $nameValidation = Group::validateName($name);
+    if ($nameValidation != Success::CODE) {
+      return Utilities::generateErrorMessage($nameValidation);
+    }
+    
+    if ($info != null) {
+      $infoValidation = Group::validateInfo($info);
+      
+      if ($infoValidation != Success::CODE) {
+        return Utilities::generateErrorMessage($infoValidation);
+      }
+    }
+    
+    // ==== Token authorization ==========================================================
+    $tokenAuthorization = $this->authorizeToken($token);
+    
+    if ($tokenAuthorization != Success::CODE) {
+      return Utilities::generateErrorMessage($tokenAuthorization);
+    }
+    
+    // ===================================================================================
+    DatabaseModule::beginTransaction();
+    
+    $creatorId = DatabaseModule::fetchOne(
+      'SELECT user
+             FROM sessions
+             WHERE session_token = :session_token',
+      [
+        ':session_token' => $token,
+      ]
+    )['user'];
+    
+    $creator = DatabaseModule::fetchOne(
+      'SELECT username, name, surname, picture
+             FROM users
+             WHERE user_id = BINARY :user_id',
+      [
+        ':user_id' => $creatorId,
+      ]
+    );
+    
+    // Retrieve creator picture
+    $creatorFilepath = $creator['picture'];
+    $creatorPicture = !is_null($creatorFilepath) ?
+      MIMEService::researchMedia($creatorFilepath) : null;
+    
+    $membersId = [$creatorId];
+    $members = [
+      $creator['username'] => [
+        $creator['name'],
+        $creator['surname'],
+        $creatorPicture,
+      ],
+    ];
+    if (!is_null($users)) {
+      foreach ($users as $user) {
+        // ==== Parameter validation =====================================================
+        $userValidation = User::validateUsername($user);
+        
+        if ($userValidation != Success::CODE) {
+          return Utilities::generateErrorMessage($userValidation);
+        }
+        
+        // ==== Existence check ==========================================================
+        $member = DatabaseModule::fetchOne(
+          'SELECT user_id, username, name, surname, picture
+                 FROM users
+                 WHERE username = BINARY :username',
+          [
+            ':username' => $user,
+          ]
+        );
+        
+        if (!is_array($member)) {
+          DatabaseModule::commitTransaction();
+          return Utilities::generateErrorMessage(NotFound::CODE);
+        }
+        
+        // ==== Retrieve member picture ==================================================
+        $memberFilepath = $member['picture'];
+        $memberPicture = !is_null($memberFilepath) ? MIMEService::researchMedia(
+          $memberFilepath
+        ) : null;
+        
+        $membersId[] = $member['user_id'];
+        $members[$member['username']] = [
+          $member['name'],
+          $member['surname'],
+          $memberPicture,
+        ];
+      }
+    }
+    
+    // ==== Unique identifier creation ===================================================
+    $groupUUID = DatabaseModule::fetchOne("SELECT UUID()")['UUID()'];
+    
+    // ==== Save image into the fs =======================================================
+    $filepath = null;
+    
+    if (!is_null($picture)) {
+      $filepath = $_SERVER['DOCUMENT_ROOT'] . "filesystem/images/group/$groupUUID";
+      $filepath = MIMEService::createMedia($filepath, $picture);
+      
+      if (!is_string($filepath)) {
+        DatabaseModule::commitTransaction();
+        return Utilities::generateErrorMessage($filepath);
+      }
+    }
+    
+    // ==== Generate chat table and insert creator and users =============================
+    
+    $this->generateChatTable(
+      $groupUUID,
+      array_keys($members)
+    );
+    
+    // ==== Create a new group entity ====================================================
+    
+    DatabaseModule::execute(
+      "INSERT
+             INTO `groups` (name, info, picture, chat, active)
+             VALUES (
+               :name,
+               :info,
+               :picture,
+               :chat,
+               :active
+             )",
+      [
+        ":name"    => $name,
+        ":info"    => $info,
+        ":picture" => $filepath,
+        ":chat"    => $groupUUID,
+        ":active"  => true,
+      ]
+    );
+    
+    // ==== Create new user/group relations ==============================================
+    
+    $defaultState = 'N';
+    $defaultMuted = false;
+    
+    $groupId = DatabaseModule::fetchOne(
+      "SELECT group_id
+               FROM `groups`
+               WHERE chat = :group",
+      [
+        ":group" => $groupUUID,
+      ]
+    )['group_id'];
+    
+    foreach ($membersId as $member) {
+      DatabaseModule::execute(
+        "INSERT
+               INTO groups_members (user, `group`, state, muted, active)
+               VALUES (
+                 :user,
+                 :group,
+                 :state,
+                 FALSE,
+                 :active
+               )",
+        [
+          ":user"   => $member,
+          ":group"  => $groupId,
+          ":state"  => $defaultState,
+          //          ":muted"  => false,
+          ":active" => true,
+        ]
+      );
+    }
+    
+    DatabaseModule::commitTransaction();
+    
+    // ==== Send channel packet to all targeted members ==================================
+    if (!is_null($users)) {
+      WebSocketService::sendToWebSocket(
+                 "CREATE",
+                 "group",
+                 $creator['username'],
+        targets: $users,
+        body   : [
+                   "uuid"    => $groupUUID,
+                   "name"    => $name,
+                   "info"    => $info,
+                   "picture" => $picture,
+                   "members" => $members,
+                 ]
+      );
+    }
+    
+    return [
+      "uuid"    => $groupUUID,
+      "name"    => $name,
+      "info"    => $info,
+      "picture" => $picture,
+      "state"   => $defaultState,
+      "muted"   => $defaultMuted,
+    ];
   }
   
   /**

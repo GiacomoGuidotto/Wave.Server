@@ -7,39 +7,44 @@ interface WebSocketInterface {
    * Manage "New contact request" case by creating a new contact reference and sending the packet to
    * the targeted contact
    *
-   * @param string $origin  The user who made the API request
-   * @param array  $payload The payload from the ZeroMQ packet
-   * @return void
+   * @param string      $origin  The user who made the API request
+   * @param string|null $target  The user targeted from the request
+   * @param array       $payload The payload from the ZeroMQ packet
    */
   function onContactCreate(
-    string $origin,
-    array  $payload,
+    string  $origin,
+    ?string $target,
+    array   $payload,
   ): void;
   
   /**
    * Manage "New contact reply", "New contact status" and "New contact information" case by
    * retrieving the contact reference and sending the packet to the targeted contact
    *
-   * @param string $origin  The user who request a deletion
-   * @param array  $payload The payload from the ZeroMQ packet
+   * @param string      $origin  The user who made the API request
+   * @param string|null $target  The user targeted from the request, is null is a broadcast case
+   * @param array       $payload The payload from the ZeroMQ packet
    * @return void The references to the packet recipients
    */
   function onContactUpdate(
-    string $origin,
-    array  $payload,
+    string  $origin,
+    ?string $target,
+    array   $payload,
   ): void;
   
   /**
    * Manage "Delete contact request" case by deleting a specific contact reference and sending the
    * packet to the targeted contact
    *
-   * @param string $origin  The user who request a deletion
-   * @param array  $payload The payload from the ZeroMQ packet
+   * @param string      $origin  The user who request a deletion
+   * @param string|null $target  The user targeted from the request
+   * @param array       $payload The payload from the ZeroMQ packet
    * @return void The references to the packet recipients
    */
   function onContactDelete(
-    string $origin,
-    array  $payload,
+    string  $origin,
+    ?string $target,
+    array   $payload,
   ): void;
   
   /**
@@ -47,11 +52,13 @@ interface WebSocketInterface {
    * packet to the targeted list of members
    *
    * @param string $origin  The user who request a group
+   * @param array  $targets The list of users targeted from the request
    * @param array  $payload The payload from the ZeroMQ packet
    * @return void The references to the packet recipients
    */
   function onGroupCreate(
     string $origin,
+    array  $targets,
     array  $payload,
   ): void;
   
@@ -60,11 +67,13 @@ interface WebSocketInterface {
    * packet to the targeted list of members
    *
    * @param string $origin  The user who request a deletion
+   * @param array  $targets The list of users targeted from the request
    * @param array  $payload The payload from the ZeroMQ packet
    * @return void The references to the packet recipients
    */
   function onGroupUpdate(
     string $origin,
+    array  $targets,
     array  $payload,
   ): void;
   
@@ -73,11 +82,13 @@ interface WebSocketInterface {
    * packet to the targeted list of members
    *
    * @param string $origin  The user who request a deletion
+   * @param array  $targets The list of users targeted from the request
    * @param array  $payload The payload from the ZeroMQ packet
    * @return void The references to the packet recipients
    */
   function onGroupDelete(
     string $origin,
+    array  $targets,
     array  $payload,
   ): void;
   
@@ -86,11 +97,13 @@ interface WebSocketInterface {
    * packet to the targeted list of other members
    *
    * @param string $origin  The user who request a member addition
+   * @param array  $targets The list of users targeted from the request
    * @param array  $payload The payload from the ZeroMQ packet
    * @return void The references to the packet recipients
    */
   function onMemberCreate(
     string $origin,
+    array  $targets,
     array  $payload,
   ): void;
   
@@ -99,11 +112,13 @@ interface WebSocketInterface {
    * packet to the targeted list of members
    *
    * @param string $origin  The user who request a member deletion
+   * @param array  $targets The list of users targeted from the request
    * @param array  $payload The payload from the ZeroMQ packet
    * @return void The references to the packet recipients
    */
   function onMemberUpdate(
     string $origin,
+    array  $targets,
     array  $payload,
   ): void;
   
@@ -112,11 +127,13 @@ interface WebSocketInterface {
    * packet to the targeted list of other members
    *
    * @param string $origin  The user who request a member deletion
+   * @param array  $targets The list of users targeted from the request
    * @param array  $payload The payload from the ZeroMQ packet
    * @return void The references to the packet recipients
    */
   function onMemberDelete(
     string $origin,
+    array  $targets,
     array  $payload,
   ): void;
   
@@ -125,11 +142,13 @@ interface WebSocketInterface {
    * sending the packet to the targeted list of chat members
    *
    * @param string $origin  The user who request a member addition
+   * @param array  $targets The list of users targeted from the request
    * @param array  $payload The payload from the ZeroMQ packet
    * @return void The references to the packet recipients
    */
   function onMessageCreate(
     string $origin,
+    array  $targets,
     array  $payload,
   ): void;
   
@@ -138,11 +157,13 @@ interface WebSocketInterface {
    * sending the packet to the targeted list of chat members
    *
    * @param string $origin  The user who request a member deletion
+   * @param array  $targets The list of users targeted from the request
    * @param array  $payload The payload from the ZeroMQ packet
    * @return void The references to the packet recipients
    */
   function onMessageUpdate(
     string $origin,
+    array  $targets,
     array  $payload,
   ): void;
   
@@ -151,11 +172,13 @@ interface WebSocketInterface {
    * sending the packet to the targeted list of chat members
    *
    * @param string $origin  The user who request a member deletion
+   * @param array  $targets The list of users targeted from the request
    * @param array  $payload The payload from the ZeroMQ packet
    * @return void The references to the packet recipients
    */
   function onMessageDelete(
     string $origin,
+    array  $targets,
     array  $payload,
   ): void;
 }

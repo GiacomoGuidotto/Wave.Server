@@ -6,6 +6,7 @@ use Wave\Specifications\ErrorCases\Elaboration\BlockedByUser;
 use Wave\Specifications\ErrorCases\Elaboration\DirectiveNotAllowed;
 use Wave\Specifications\ErrorCases\Elaboration\SelfRequest;
 use Wave\Specifications\ErrorCases\Elaboration\WrongDirective;
+use Wave\Specifications\ErrorCases\Elaboration\WrongState;
 use Wave\Specifications\ErrorCases\Elaboration\WrongStatus;
 use Wave\Specifications\ErrorCases\Generic\NullAttributes;
 use Wave\Specifications\ErrorCases\Mime\DecodingFailed;
@@ -94,6 +95,7 @@ interface ErrorCases {
     WrongStatus::CODE         => 406,
     WrongDirective::CODE      => 406,
     DirectiveNotAllowed::CODE => 406,
+    WrongState::CODE          => 406,
     AlreadyExist::CODE        => 409,
   ];
   
@@ -118,6 +120,7 @@ interface ErrorCases {
     WrongStatus::CODE           => WrongStatus::MESSAGE,
     WrongDirective::CODE        => WrongDirective::MESSAGE,
     DirectiveNotAllowed::CODE   => DirectiveNotAllowed::MESSAGE,
+    WrongState::CODE            => WrongState::MESSAGE,
     AlreadyExist::CODE          => AlreadyExist::MESSAGE,
     IncorrectPacketSchema::CODE => IncorrectPacketSchema::MESSAGE,
   ];
@@ -143,6 +146,7 @@ interface ErrorCases {
     WrongStatus::CODE           => WrongStatus::DETAILS,
     WrongDirective::CODE        => WrongDirective::DETAILS,
     DirectiveNotAllowed::CODE   => DirectiveNotAllowed::DETAILS,
+    WrongState::CODE            => WrongState::DETAILS,
     AlreadyExist::CODE          => AlreadyExist::DETAILS,
     IncorrectPacketSchema::CODE => IncorrectPacketSchema::DETAILS,
   ];

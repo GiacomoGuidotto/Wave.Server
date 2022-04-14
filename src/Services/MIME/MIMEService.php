@@ -25,7 +25,7 @@ class MIMEService extends Singleton implements MIMEServiceInterface {
   ): int|string {
     // ==== Validate media =======================
     if (preg_match('/^data:image\/(\w+);base64,/', $media, $type) !== false) {
-      $type = strtolower($type[1]);
+      $type = strtolower($type[1] ?? '');
       if (!in_array($type, MIME::SUPPORTED_MIME)) {
         return IncorrectFileType::CODE;
       }

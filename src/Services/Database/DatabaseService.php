@@ -1687,6 +1687,9 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
       ],
     ];
     if (!is_null($users)) {
+      // ==== Clear from duplicates ======================================================
+      $users = array_unique($users, SORT_STRING);
+      
       foreach ($users as $user) {
         // ==== Parameter validation =====================================================
         $userValidation = User::validateUsername($user);
@@ -2473,7 +2476,8 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
       "SELECT user_id, username
              FROM users
                INNER JOIN groups_members on users.user_id = groups_members.user
-             WHERE groups_members.`group` = :group",
+             WHERE groups_members.active = TRUE
+               AND groups_members.`group` = :group",
       [
         ":group" => $group['group_id'],
       ]
@@ -2671,7 +2675,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     // ==== purge tokens =================================================================
     DatabaseModule::execute('DELETE FROM sessions WHERE active = FALSE');
     
-    // ==== purge chat tables ============================================================
+    // ==== purge contact chat tables ====================================================
     $contactChats = DatabaseModule::fetchAll('SELECT chat FROM contacts WHERE active = FALSE');
     
     foreach ($contactChats as $contactChat) {
@@ -2691,6 +2695,24 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     
     // ==== purge contacts ===============================================================
     DatabaseModule::execute('DELETE FROM contacts WHERE active = FALSE');
+    
+    // ==== purge contact chat tables ====================================================
+    $groupChats = DatabaseModule::fetchAll('SELECT chat FROM `groups` WHERE active = FALSE');
+    
+    foreach ($groupChats as $groupChat) {
+      DatabaseModule::execute(
+        'DROP TABLE `:name`',
+        [
+          ':name' => 'chat_' . $groupChat['chat'] . '_messages',
+        ]
+      );
+      DatabaseModule::execute(
+        'DROP TABLE `:name`',
+        [
+          ':name' => 'chat_' . $groupChat['chat'] . '_members',
+        ]
+      );
+    }
     
     // ==== purge groups =================================================================
     DatabaseModule::execute('DELETE FROM `groups` WHERE active = FALSE');

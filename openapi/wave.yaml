@@ -553,6 +553,12 @@ paths:
           required: false
           schema:
             $ref: "#/components/schemas/groupInfo"
+        - name: picture
+          in: header
+          description: The eventual group's picture.
+          required: false
+          schema:
+            $ref: "#/components/schemas/groupPicture"
         - name: users
           in: header
           description: The eventual list of group's new members.
@@ -679,6 +685,12 @@ paths:
           required: false
           schema:
             $ref: "#/components/schemas/groupInfo"
+        - name: picture
+          in: header
+          description: The eventual new group's picture.
+          required: false
+          schema:
+            $ref: "#/components/schemas/groupPicture"
       requestBody:
         required: false
         description: The eventual group's picture.

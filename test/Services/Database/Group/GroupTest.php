@@ -905,6 +905,90 @@ class GroupTest extends TestCase {
     return $result;
   }
   
+  // ==== exitGroup ================================================================================
+  // ===============================================================================================
+  
+  /**
+   * @group exitGroup
+   */
+  public function testCorrectExitGroupProcedure(): array {
+    echo PHP_EOL . '==== changeGroupInformation ==================================' . PHP_EOL;
+    
+    echo PHP_EOL . "Testing correct group exit procedure..." . PHP_EOL;
+    
+    $group = self::$service->createGroup(
+      self::$firstUser['token'],
+      self::$group['name'],
+      self::$group['info'],
+      null,
+      [
+        self::$secondUser['username'],
+        "insomnia_agent",
+      ]
+    )['uuid'];
+    
+    $result = self::$service->exitGroup(
+      self::$secondUser['token'],
+      $group,
+    );
+    
+    echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    self::assertIsArray($result);
+    
+    TestUtilities::deleteGeneratedTables(self::$firstUser['username']);
+    
+    return $result;
+  }
+  
+  /**
+   * @group exitGroup
+   */
+  public function testCorrectGroupDeletionProcedure(): array {
+    echo PHP_EOL . "Testing correct group deletion procedure..." . PHP_EOL;
+    
+    $group = self::$service->createGroup(
+      self::$firstUser['token'],
+      self::$group['name'],
+      self::$group['info'],
+      null,
+    )['uuid'];
+    
+    $result = self::$service->exitGroup(
+      self::$firstUser['token'],
+      $group,
+    );
+    
+    echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    self::assertIsArray($result);
+    
+    TestUtilities::deleteGeneratedTables(self::$firstUser['username']);
+    
+    return $result;
+  }
+  
+  /**
+   * @group exitGroup
+   */
+  public function testExitGroupWithUnknownGroup(): array {
+    echo PHP_EOL . "Testing group exit with unknown group..." . PHP_EOL;
+    
+    $result = self::$service->exitGroup(
+      self::$secondUser['token'],
+      Utilities::generateUuid(),
+    );
+    
+    echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    self::assertEquals(
+      NotFound::CODE,
+      $result['error'],
+    );
+    
+    return $result;
+  }
+  
   public function tearDown(): void {
     DatabaseModule::execute(
       'DELETE FROM `groups`

@@ -1879,7 +1879,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
         ]
       );
       
-      if (!is_array($groups) || count($groups) === 0) {
+      if (!is_array($groups)) {
         DatabaseModule::commitTransaction();
         return Utilities::generateErrorMessage(NotFound::CODE);
       }
@@ -2403,8 +2403,143 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     string $token,
     string $group,
   ): array {
-    // TODO: Implement exitGroup() method.
-    return [];
+    // ==== Parameters validation ========================================================
+    $tokenValidation = Session::validateToken($token);
+    if ($tokenValidation != Success::CODE) {
+      return Utilities::generateErrorMessage($tokenValidation);
+    }
+    
+    $groupValidation = Group::validateGroup($group);
+    if ($groupValidation != Success::CODE) {
+      return Utilities::generateErrorMessage($groupValidation);
+    }
+    
+    // ==== Token authorization ==========================================================
+    $tokenAuthorization = $this->authorizeToken($token);
+    
+    if ($tokenAuthorization != Success::CODE) {
+      return Utilities::generateErrorMessage($tokenAuthorization);
+    }
+    
+    // ===================================================================================
+    DatabaseModule::beginTransaction();
+    
+    // ==== Groups existence check ======================================================
+    $group = DatabaseModule::fetchOne(
+      'SELECT group_id, name, info, picture, chat
+             FROM `groups`
+             WHERE active = TRUE
+               AND chat = :chat',
+      [
+        ':chat' => $group,
+      ]
+    );
+    
+    if (!is_array($group)) {
+      DatabaseModule::commitTransaction();
+      return Utilities::generateErrorMessage(NotFound::CODE);
+    }
+    
+    // ==== Relation existence check ===================================================
+    $userId = DatabaseModule::fetchOne(
+      'SELECT user
+             FROM sessions
+             WHERE session_token = :session_token',
+      [
+        ':session_token' => $token,
+      ]
+    )['user'];
+    
+    $membership = DatabaseModule::fetchOne(
+      'SELECT state, muted
+             FROM groups_members
+             WHERE active = TRUE
+               AND `group` = :group
+               AND user = :user',
+      [
+        ':group' => $group['group_id'],
+        ':user'  => $userId,
+      ]
+    );
+    
+    if (!is_array($membership)) {
+      DatabaseModule::commitTransaction();
+      return Utilities::generateErrorMessage(NotFound::CODE);
+    }
+    
+    // ==== Safe zone ====================================================================
+    
+    $members = DatabaseModule::fetchAll(
+      "SELECT user_id, username
+             FROM users
+               INNER JOIN groups_members on users.user_id = groups_members.user
+             WHERE groups_members.`group` = :group",
+      [
+        ":group" => $group['group_id'],
+      ]
+    );
+    
+    // If origin is the last one
+    if (count($members) === 1) {
+      // ==== Delete group =====================================================
+      DatabaseModule::execute(
+        "UPDATE `groups`
+               SET active = FALSE
+               WHERE chat = :chat",
+        [
+          ":chat" => $group['chat'],
+        ]
+      );
+    } else {
+      // ==== Remove member ====================================================
+      DatabaseModule::execute(
+        "UPDATE `:name`
+               SET active = FALSE
+               WHERE user = :user",
+        [
+          ":name" => "chat_" . $group['chat'] . "_members",
+          ":user" => $userId,
+        ]
+      );
+      
+      // ==== Send channel packet to remaining members =========================
+      $origin = DatabaseModule::fetchOne(
+        "SELECT username
+             FROM users
+             WHERE user_id = :user_id",
+        [
+          ":user_id" => $userId,
+        ]
+      )['username'];
+      
+      $members = array_map(fn($member): string => $member['username'], $members);
+      $members = array_filter($members, fn($member): bool => $member !== $origin);
+      
+      WebSocketService::sendToWebSocket(
+                 "DELETE",
+                 "group/member",
+                 $origin,
+        targets: $members,
+        body   : [
+                   "uuid"     => $group['chat'],
+                   "username" => $origin,
+                 ]
+      );
+    }
+    
+    DatabaseModule::execute(
+      "UPDATE groups_members
+             SET active = FALSE
+             WHERE user = :user
+               AND `group` = :group",
+      [
+        ":user"  => $userId,
+        ":group" => $group['group_id'],
+      ]
+    );
+    
+    DatabaseModule::commitTransaction();
+    return $this->getGroupInformation($token);
   }
   
   // ==== Member ===================================================================================

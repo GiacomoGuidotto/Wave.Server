@@ -39,6 +39,8 @@ class WebSocketService extends Singleton implements MessageComponentInterface, W
    * Utility method used in other classes to send data to this service through the ZeroMQ channel.
    * With packets of this schema:
    *
+   *
+   * // TODO simplify MQ packets [headers useless]
    * ---------------------------------------
    * {
    *  origin: user's username,
@@ -619,7 +621,28 @@ class WebSocketService extends Singleton implements MessageComponentInterface, W
     array  $targets,
     array  $payload,
   ): void {
-    // TODO: Implement onMemberDelete() method.
+    $body = $payload['body'] ?? null;
+    
+    if (is_null($body)) {
+      LogModule::log(
+        'WebSocket',
+        'API request decoding',
+        'Incorrect packet schema',
+        true
+      );
+      return;
+    }
+    
+    foreach ($targets as $target) {
+      $targetUser = $this->users->getFromInfo($target);
+      $targetUser?->send(
+        $this->generateChannelPacket(
+                'DELETE',
+                'group/member',
+          body: $body
+        )
+      );
+    }
   }
   
   /**

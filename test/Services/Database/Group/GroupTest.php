@@ -372,6 +372,8 @@ class GroupTest extends TestCase {
       $result['error'],
     );
     
+    TestUtilities::deleteGeneratedTables(self::$firstUser['username']);
+    
     return $result;
   }
   
@@ -457,6 +459,8 @@ class GroupTest extends TestCase {
       WrongState::CODE,
       $result['error'],
     );
+    
+    TestUtilities::deleteGeneratedTables(self::$firstUser['username']);
     
     return $result;
   }
@@ -544,6 +548,8 @@ class GroupTest extends TestCase {
       $result['error'],
     );
     
+    TestUtilities::deleteGeneratedTables(self::$firstUser['username']);
+    
     return $result;
   }
   
@@ -629,6 +635,8 @@ class GroupTest extends TestCase {
       WrongState::CODE,
       $result['error'],
     );
+    
+    TestUtilities::deleteGeneratedTables(self::$firstUser['username']);
     
     return $result;
   }
@@ -716,6 +724,8 @@ class GroupTest extends TestCase {
       $result['error'],
     );
     
+    TestUtilities::deleteGeneratedTables(self::$firstUser['username']);
+    
     return $result;
   }
   
@@ -799,6 +809,96 @@ class GroupTest extends TestCase {
     
     self::assertEquals(
       WrongState::CODE,
+      $result['error'],
+    );
+    
+    TestUtilities::deleteGeneratedTables(self::$firstUser['username']);
+    
+    return $result;
+  }
+  
+  // ==== changeGroupInformation ===================================================================
+  // ===============================================================================================
+  
+  /**
+   * @group changeGroupInformation
+   */
+  public function testCorrectGroupInformationChange(): array {
+    echo PHP_EOL . '==== changeGroupInformation ==================================' . PHP_EOL;
+    
+    echo PHP_EOL . "Testing correct group's information change..." . PHP_EOL;
+    
+    $group = self::$service->createGroup(
+      self::$firstUser['token'],
+      self::$group['name'],
+      self::$group['info'],
+      null,
+      [
+        self::$secondUser['username'],
+        "insomnia_agent",
+      ]
+    )['uuid'];
+    
+    $newGroupName = 'new Group name';
+    
+    $result = self::$service->changeGroupInformation(
+      self::$secondUser['token'],
+      $group,
+      $newGroupName
+    );
+    
+    echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    self::assertEquals(
+      Success::CODE,
+      Group::validateGroup($result['uuid']),
+    );
+    self::assertEquals(
+      Success::CODE,
+      Group::validateName($result['name']),
+    );
+    self::assertEquals(
+      Success::CODE,
+      Group::validateInfo($result['info']),
+    );
+    self::assertNull($result['picture']);
+    self::assertEquals(
+      Success::CODE,
+      Group::validateState($result['state']),
+    );
+    self::assertIsBool($result['muted']);
+    
+    TestUtilities::deleteGeneratedTables(self::$firstUser['username']);
+    
+    DatabaseModule::execute(
+      'DELETE FROM `groups`
+             WHERE name = :group_name',
+      [
+        ':group_name' => $newGroupName,
+      ]
+    );
+    
+    return $result;
+  }
+  
+  /**
+   * @group changeGroupInformation
+   */
+  public function testChangeGroupInformationWithUnknownGroup(): array {
+    echo PHP_EOL . "Testing group's information change with unknown group..." . PHP_EOL;
+    
+    $newGroupName = 'new Group name';
+    
+    $result = self::$service->changeGroupInformation(
+      self::$secondUser['token'],
+      Utilities::generateUuid(),
+      $newGroupName
+    );
+    
+    echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    self::assertEquals(
+      NotFound::CODE,
       $result['error'],
     );
     

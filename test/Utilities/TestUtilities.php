@@ -34,21 +34,13 @@ class TestUtilities {
         ]
       );
     } else {
-      $groupId = DatabaseModule::fetchOne(
-        'SELECT `group`
-             FROM groups_members
-             WHERE user = :user',
-        [
-          ':user' => $userId,
-        ]
-      )['group'];
-      
       $chats = DatabaseModule::fetchAll(
         'SELECT chat
              FROM `groups`
-             WHERE group_id = :group_id',
+              INNER JOIN groups_members on `groups`.group_id = groups_members.`group`
+             WHERE groups_members.user = :user',
         [
-          ':group_id' => $groupId,
+          ':user' => $userId,
         ]
       );
     }

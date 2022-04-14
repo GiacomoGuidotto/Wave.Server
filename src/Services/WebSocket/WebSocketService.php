@@ -24,14 +24,13 @@ class WebSocketService extends Singleton implements MessageComponentInterface, W
   
   protected UsersConnectionStorage $users;
   
+  // TODO delete, this structure is useless
   private array $contacts;
-  private array $groups;
   
   public function __construct() {
     $this->users = new UsersConnectionStorage();
     $references = DatabaseService::retrieveReferences();
     $this->contacts = $references['contacts'];
-    $this->groups = $references['groups'];
   }
   
   // ==== Utility methods ===========================================================================
@@ -535,11 +534,6 @@ class WebSocketService extends Singleton implements MessageComponentInterface, W
       return;
     }
     
-    // add contact reference in user's contact array, from both sides
-    if (!in_array($groupUUID, $this->groups)) {
-      $this->groups[$groupUUID] = array_keys($members);
-    }
-    
     foreach ($targets as $target) {
       $targetUser = $this->users->getFromInfo($target);
       $targetUser?->send(
@@ -560,7 +554,28 @@ class WebSocketService extends Singleton implements MessageComponentInterface, W
     array  $targets,
     array  $payload,
   ): void {
-    // TODO: Implement onGroupUpdate() method.
+    $body = $payload['body'] ?? null;
+    
+    if (is_null($body)) {
+      LogModule::log(
+        'WebSocket',
+        'API request decoding',
+        'Incorrect packet schema',
+        true
+      );
+      return;
+    }
+    
+    foreach ($targets as $target) {
+      $targetUser = $this->users->getFromInfo($target);
+      $targetUser?->send(
+        $this->generateChannelPacket(
+                'UPDATE',
+                'group/information',
+          body: $body
+        )
+      );
+    }
   }
   
   /**

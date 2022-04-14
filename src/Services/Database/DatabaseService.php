@@ -21,6 +21,7 @@ use Wave\Specifications\ErrorCases\Elaboration\WrongState;
 use Wave\Specifications\ErrorCases\Elaboration\WrongStatus;
 use Wave\Specifications\ErrorCases\Generic\NullAttributes;
 use Wave\Specifications\ErrorCases\State\AlreadyExist;
+use Wave\Specifications\ErrorCases\State\Forbidden;
 use Wave\Specifications\ErrorCases\State\NotFound;
 use Wave\Specifications\ErrorCases\State\Timeout;
 use Wave\Specifications\ErrorCases\State\Unauthorized;
@@ -238,6 +239,22 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
         ]
       );
     }
+  }
+  
+  private function authorizeChatMember(string $uuid, int $userId): bool {
+    $permission = DatabaseModule::fetchOne(
+      "SELECT permissions
+             FROM `:name`
+             WHERE active = TRUE
+               AND user = :user",
+      [
+        ":name" => "chat_" . $uuid . "_members",
+        ":user" => $userId,
+      ]
+    )['permissions'];
+    
+    // TODO revise permission logic
+    return $permission !== 127;
   }
   
   // ==== Authentication ===========================================================================
@@ -662,10 +679,6 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
       $variableAttributes[':language'] = $language;
     }
     
-    if (count($variableAttributes) == 0) {
-      return Utilities::generateErrorMessage(NullAttributes::CODE);
-    }
-    
     // ==== Token authorization ==================
     $tokenAuthorization = $this->authorizeToken($token);
     
@@ -727,6 +740,11 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
       $variableAttributes[':picture'] = $filepath;
     }
     
+    if (count($variableAttributes) == 0) {
+      DatabaseModule::commitTransaction();
+      return Utilities::generateErrorMessage(NullAttributes::CODE);
+    }
+    
     // ==== Update user ==========================
     
     $variableUpdateQuery = substr(
@@ -769,6 +787,10 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
                  ],
       );
     }
+    
+    // ==== Retrieve picture and return ==================================================
+    $filepath = $user['picture'];
+    $picture ??= !is_null($filepath) ? MIMEService::researchMedia($filepath) : null;
     
     return [
       'username' => $user['username'],
@@ -1536,6 +1558,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
       $usernameValidation = User::validateUsername($user);
       
       if ($usernameValidation != Success::CODE) {
+        DatabaseModule::commitTransaction();
         return Utilities::generateErrorMessage($usernameValidation);
       }
       
@@ -1669,6 +1692,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
         $userValidation = User::validateUsername($user);
         
         if ($userValidation != Success::CODE) {
+          DatabaseModule::commitTransaction();
           return Utilities::generateErrorMessage($userValidation);
         }
         
@@ -1874,9 +1898,9 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
         );
         
         $groupFilepath = $databaseGroup['picture'];
-        $groupPicture = !is_null($groupFilepath) ?
-          MIMEService::researchMedia($groupFilepath) :
-          null;
+        $groupPicture = !is_null($groupFilepath) ? MIMEService::researchMedia(
+          $groupFilepath
+        ) : null;
         
         $refactoredGroups[] = [
           'uuid'    => $databaseGroup['chat'],
@@ -1895,6 +1919,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
       $groupValidation = Group::validateGroup($group);
       
       if ($groupValidation != Success::CODE) {
+        DatabaseModule::commitTransaction();
         return Utilities::generateErrorMessage($groupValidation);
       }
       
@@ -1925,16 +1950,17 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
         ]
       );
       
+      DatabaseModule::commitTransaction();
+      
       if (!is_array($membership)) {
-        DatabaseModule::commitTransaction();
         return Utilities::generateErrorMessage(NotFound::CODE);
       }
       
       // ==== Image retrieve and return ==================================================
       $groupFilepath = $group['picture'];
-      $groupPicture = !is_null($groupFilepath) ?
-        MIMEService::researchMedia($groupFilepath) :
-        null;
+      $groupPicture ??= !is_null($groupFilepath) ? MIMEService::researchMedia(
+        $groupFilepath
+      ) : null;
       
       return [
         'uuid'    => $group['chat'],
@@ -1993,13 +2019,24 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     }
     
     // ==== Relation existence check ===================================================
+    $userId = DatabaseModule::fetchOne(
+      'SELECT user
+             FROM sessions
+             WHERE session_token = :session_token',
+      [
+        ':session_token' => $token,
+      ]
+    )['user'];
+    
     $membership = DatabaseModule::fetchOne(
       'SELECT state, muted
              FROM groups_members
              WHERE active = TRUE
-               AND `group` = :group',
+               AND `group` = :group
+               AND user = :user',
       [
         ':group' => $group['group_id'],
+        ':user'  => $userId,
       ]
     );
     
@@ -2141,9 +2178,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     DatabaseModule::commitTransaction();
     
     $groupFilepath = $group['picture'];
-    $groupPicture = !is_null($groupFilepath) ?
-      MIMEService::researchMedia($groupFilepath) :
-      null;
+    $groupPicture = !is_null($groupFilepath) ? MIMEService::researchMedia($groupFilepath) : null;
     
     return [
       'uuid'    => $group['chat'],
@@ -2165,8 +2200,200 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     ?string $info = null,
     ?string $picture = null,
   ): array {
-    // TODO: Implement changeGroupInformation() method.
-    return [];
+    // ==== Parameters validation ========================================================
+    $tokenValidation = Session::validateToken($token);
+    if ($tokenValidation != Success::CODE) {
+      return Utilities::generateErrorMessage($tokenValidation);
+    }
+    
+    $groupValidation = Group::validateGroup($group);
+    if ($groupValidation != Success::CODE) {
+      return Utilities::generateErrorMessage($groupValidation);
+    }
+    
+    // ==== Modular parameters validation and query preparation ==========================
+    $variableUpdateQuery =
+      '# noinspection
+      UPDATE `groups` SET ';
+    $variableAttributes = [];
+    
+    if ($name !== null) {
+      $nameValidation = Group::validateName($name);
+      
+      if ($nameValidation != Success::CODE) {
+        return Utilities::generateErrorMessage($nameValidation);
+      }
+      
+      $variableUpdateQuery .= 'name = :name, ';
+      $variableAttributes[':name'] = $name;
+    }
+    
+    if ($info !== null) {
+      $infoValidation = Group::validateInfo($info);
+      
+      if ($infoValidation != Success::CODE) {
+        return Utilities::generateErrorMessage($infoValidation);
+      }
+      
+      $variableUpdateQuery .= 'info = :info, ';
+      $variableAttributes[':info'] = $info;
+    }
+    
+    // ==== Token authorization ==========================================================
+    $tokenAuthorization = $this->authorizeToken($token);
+    
+    if ($tokenAuthorization != Success::CODE) {
+      return Utilities::generateErrorMessage($tokenAuthorization);
+    }
+    
+    // ===================================================================================
+    DatabaseModule::beginTransaction();
+    
+    // ==== Groups existence check ======================================================
+    $group = DatabaseModule::fetchOne(
+      'SELECT group_id, name, info, picture, chat
+             FROM `groups`
+             WHERE active = TRUE
+               AND chat = :chat',
+      [
+        ':chat' => $group,
+      ]
+    );
+    
+    if (!is_array($group)) {
+      DatabaseModule::commitTransaction();
+      return Utilities::generateErrorMessage(NotFound::CODE);
+    }
+    
+    // ==== Relation existence check ===================================================
+    $userId = DatabaseModule::fetchOne(
+      'SELECT user
+             FROM sessions
+             WHERE session_token = :session_token',
+      [
+        ':session_token' => $token,
+      ]
+    )['user'];
+    
+    $membership = DatabaseModule::fetchOne(
+      'SELECT state, muted
+             FROM groups_members
+             WHERE active = TRUE
+               AND `group` = :group
+               AND user = :user',
+      [
+        ':group' => $group['group_id'],
+        ':user'  => $userId,
+      ]
+    );
+    
+    if (!is_array($membership)) {
+      DatabaseModule::commitTransaction();
+      return Utilities::generateErrorMessage(NotFound::CODE);
+    }
+    
+    // ==== Save picture into the fs =====================================================
+    if ($picture !== null) {
+      $filepath = $_SERVER['DOCUMENT_ROOT'] . "filesystem/images/group/" . $group['chat'];
+      $filepath = MIMEService::updateMedia($filepath, $picture);
+      
+      if (!is_string($filepath)) {
+        DatabaseModule::commitTransaction();
+        return Utilities::generateErrorMessage($filepath);
+      }
+      
+      $variableUpdateQuery .= 'picture = :picture, ';
+      $variableAttributes[':picture'] = $filepath;
+    }
+    
+    if (count($variableAttributes) == 0) {
+      DatabaseModule::commitTransaction();
+      return Utilities::generateErrorMessage(NullAttributes::CODE);
+    }
+    
+    // ==== Origin permission check ======================================================
+    
+    if ($this->authorizeChatMember($group['chat'], $userId)) {
+      DatabaseModule::commitTransaction();
+      return Utilities::generateErrorMessage(Forbidden::CODE);
+    }
+    
+    // ==== Safe zone ====================================================================
+    
+    // cut last ", " and append WHERE clause
+    $variableUpdateQuery = substr(
+        $variableUpdateQuery,
+        0,
+        strlen($variableUpdateQuery) - 2
+      ) . ' WHERE chat = :chat';
+    $variableAttributes[':chat'] = $group['chat'];
+    
+    DatabaseModule::execute(
+      $variableUpdateQuery,
+      $variableAttributes
+    );
+    
+    $group = DatabaseModule::fetchOne(
+      'SELECT group_id, name, info, picture, chat
+             FROM `groups`
+             WHERE active = TRUE
+               AND chat = :chat',
+      [
+        ':chat' => $group['chat'],
+      ]
+    );
+    
+    // ==== Retrieve group members for channel ===========================================
+    $origin = DatabaseModule::fetchOne(
+      "SELECT username
+             FROM users
+             WHERE user_id = :user_id",
+      [
+        ":user_id" => $userId,
+      ]
+    )['username'];
+    
+    $members = DatabaseModule::fetchAll(
+      "SELECT username
+             FROM users
+               INNER JOIN groups_members on users.user_id = groups_members.user
+             WHERE groups_members.`group` = :group",
+      [
+        ":group" => $group['group_id'],
+      ]
+    );
+    
+    DatabaseModule::commitTransaction();
+    
+    $members = array_map(fn($member): string => $member['username'], $members);
+    
+    // ==== Image retrieve ===============================================================
+    $groupFilepath = $group['picture'];
+    $picture ??= !is_null($groupFilepath) ? MIMEService::researchMedia($groupFilepath) : null;
+    
+    // ==== Send channel packet to all members ===========================================
+    WebSocketService::sendToWebSocket(
+               "UPDATE",
+               "group/information",
+               $origin,
+      targets: $members,
+      body   : [
+                 "uuid"    => $group['chat'],
+                 "name"    => $group['name'],
+                 "info"    => $group['info'],
+                 "picture" => $picture,
+               ]
+    );
+    
+    // ==== Return new data to origin ====================================================
+    return [
+      'uuid'    => $group['chat'],
+      'name'    => $group['name'],
+      'info'    => $group['info'],
+      'picture' => $picture,
+      'state'   => $membership['state'],
+      'muted'   => !!$membership['muted'],
+    ];
   }
   
   /**
@@ -2434,13 +2661,8 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
       $contacts[$secondUser][] = $firstUser;
     }
     
-    // ==== Retrieve groups ==============================================================
-    // TODO Retrieve groups
-    $groups = [];
-    
     return [
       'contacts' => $contacts,
-      'groups'   => $groups,
     ];
   }
   

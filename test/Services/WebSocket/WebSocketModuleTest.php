@@ -13,7 +13,7 @@ use Wave\Services\Database\Module\DatabaseModule;
 use Wave\Specifications\ErrorCases\Success\Success;
 use Wave\Utilities\Utilities;
 
-class WebSocketServiceTest extends TestCase {
+class WebSocketModuleTest extends TestCase {
   protected static DatabaseService $service;
   
   private static array $mockUser = [

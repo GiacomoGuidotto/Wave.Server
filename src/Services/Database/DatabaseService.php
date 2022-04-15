@@ -5,14 +5,13 @@
 namespace Wave\Services\Database;
 
 use DateInterval;
-use JetBrains\PhpStorm\ArrayShape;
 use Wave\Model\Group\Group;
 use Wave\Model\Session\Session;
 use Wave\Model\Singleton\Singleton;
 use Wave\Model\User\User;
 use Wave\Services\Database\Module\DatabaseModule;
 use Wave\Services\MIME\MIMEService;
-use Wave\Services\WebSocket\WebSocketService;
+use Wave\Services\WebSocket\WebSocketModule;
 use Wave\Specifications\ErrorCases\Elaboration\BlockedByUser;
 use Wave\Specifications\ErrorCases\Elaboration\DirectiveNotAllowed;
 use Wave\Specifications\ErrorCases\Elaboration\SelfRequest;
@@ -768,25 +767,53 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
       ]
     );
     
-    DatabaseModule::commitTransaction();
-    
     // ==== Send channel packet to all contacts if some shared attribute has been changed
     if ($username !== null || $name !== null || $surname !== null || $picture !== null) {
-      WebSocketService::sendToWebSocket(
-                 'UPDATE',
-                 'contact/information',
-                 $user['username'],
-        headers: [
-                   'old_username' => $storedUsername,
-                 ],
-        body   : [
-                   'username' => $user['username'],
-                   'name'     => $user['name'],
-                   'surname'  => $user['surname'],
-                   'picture'  => $picture,
-                 ],
+      
+      $contacts = DatabaseModule::fetchAll(
+        'SELECT first_user, second_user
+               FROM contacts
+               WHERE active = TRUE
+               AND (first_user = :first_user
+                OR second_user = :first_user)',
+        [
+          ':first_user' => $userId,
+        ]
       );
+      
+      if (count($contacts)) {
+        $contacts = array_map(
+          function ($contact) use ($userId): string {
+            return DatabaseModule::fetchOne(
+              "SELECT username
+                     FROM users
+                     WHERE user_id = :user_id",
+              [
+                ":user_id" => $contact['first_user'] === $userId ?
+                  $contact['second_user'] :
+                  $contact['first_user'],
+              ]
+            )['username'];
+          },
+          $contacts
+        );
+        
+        WebSocketModule::sendChannelPacket(
+                    'UPDATE',
+                    'contact/information',
+                    $user['username'],
+          target_s: $contacts,
+          body    : [
+                      'username' => $user['username'],
+                      'name'     => $user['name'],
+                      'surname'  => $user['surname'],
+                      'picture'  => $picture,
+                    ],
+        );
+      }
     }
+    
+    DatabaseModule::commitTransaction();
     
     // ==== Retrieve picture and return ==================================================
     $filepath = $user['picture'];
@@ -1019,17 +1046,17 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
       MIMEService::researchMedia($originUserFilepath) :
       null;
     
-    WebSocketService::sendToWebSocket(
-               'CREATE',
-               'contact',
-               $originUser['username'],
-      targets: $targetedUser['username'],
-      body   : [
-                 'username' => $originUser['username'],
-                 'name'     => $originUser['name'],
-                 'surname'  => $originUser['surname'],
-                 'picture'  => $originUserPicture,
-               ]
+    WebSocketModule::sendChannelPacket(
+                'CREATE',
+                'contact',
+                $originUser['username'],
+      target_s: $targetedUser['username'],
+      body    : [
+                  'username' => $originUser['username'],
+                  'name'     => $originUser['name'],
+                  'surname'  => $originUser['surname'],
+                  'picture'  => $originUserPicture,
+                ]
     );
     
     // ==== Return targeted user's data to origin user ===================================
@@ -1163,11 +1190,14 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     
     // ==== Send Channel packet with deletion directive to targeted user =================
     
-    WebSocketService::sendToWebSocket(
-               "DELETE",
-               "contact/status",
-               $originUser['username'],
-      targets: $targetedUser['username'],
+    WebSocketModule::sendChannelPacket(
+                "DELETE",
+                "contact/status",
+                $originUser['username'],
+      target_s: $targetedUser['username'],
+      headers : [
+                  'username' => $originUser['username'],
+                ]
     );
     
     return null;
@@ -1432,14 +1462,14 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     DatabaseModule::commitTransaction();
     // ==== Send Channel packet with deletion directive to targeted user =================
     
-    WebSocketService::sendToWebSocket(
-               "UPDATE",
-               "contact/status",
-               $originUser['username'],
-      targets: $targetedUser['username'],
-      headers: [
-                 "directive" => $directive,
-               ]
+    WebSocketModule::sendChannelPacket(
+                "UPDATE",
+                "contact/status",
+                $originUser['username'],
+      target_s: $targetedUser['username'],
+      headers : [
+                  "directive" => $directive,
+                ]
     );
     
     // ==== Return targeted user's data to origin user ===================================
@@ -1812,18 +1842,18 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     
     // ==== Send channel packet to all targeted members ==================================
     if (!is_null($users)) {
-      WebSocketService::sendToWebSocket(
-                 "CREATE",
-                 "group",
-                 $creator['username'],
-        targets: $users,
-        body   : [
-                   "uuid"    => $groupUUID,
-                   "name"    => $name,
-                   "info"    => $info,
-                   "picture" => $picture,
-                   "members" => $members,
-                 ]
+      WebSocketModule::sendChannelPacket(
+                  "CREATE",
+                  "group",
+                  $creator['username'],
+        target_s: $users,
+        body    : [
+                    "uuid"    => $groupUUID,
+                    "name"    => $name,
+                    "info"    => $info,
+                    "picture" => $picture,
+                    "members" => $members,
+                  ]
       );
     }
     
@@ -2375,17 +2405,17 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     $picture ??= !is_null($groupFilepath) ? MIMEService::researchMedia($groupFilepath) : null;
     
     // ==== Send channel packet to all members ===========================================
-    WebSocketService::sendToWebSocket(
-               "UPDATE",
-               "group/information",
-               $origin,
-      targets: $members,
-      body   : [
-                 "uuid"    => $group['chat'],
-                 "name"    => $group['name'],
-                 "info"    => $group['info'],
-                 "picture" => $picture,
-               ]
+    WebSocketModule::sendChannelPacket(
+                "UPDATE",
+                "group/information",
+                $origin,
+      target_s: $members,
+      body    : [
+                  "uuid"    => $group['chat'],
+                  "name"    => $group['name'],
+                  "info"    => $group['info'],
+                  "picture" => $picture,
+                ]
     );
     
     // ==== Return new data to origin ====================================================
@@ -2519,15 +2549,15 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
       $members = array_map(fn($member): string => $member['username'], $members);
       $members = array_filter($members, fn($member): bool => $member !== $origin);
       
-      WebSocketService::sendToWebSocket(
-                 "DELETE",
-                 "group/member",
-                 $origin,
-        targets: $members,
-        body   : [
-                   "uuid"     => $group['chat'],
-                   "username" => $origin,
-                 ]
+      WebSocketModule::sendChannelPacket(
+                  "DELETE",
+                  "group/member",
+                  $origin,
+        target_s: $members,
+        body    : [
+                    "uuid"     => $group['chat'],
+                    "username" => $origin,
+                  ]
       );
     }
     
@@ -2774,63 +2804,5 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
   ): string|int {
     $service = DatabaseService::getInstance();
     return $service->instanceValidateUser($token);
-  }
-  
-  
-  /**
-   * Retrieve the relations references from the database
-   *
-   * @return array[] The two series of references
-   */
-  #[ArrayShape(['contacts' => "array", 'groups' => "array"])]
-  private function instanceRetrieveReference(): array {
-    // ==== Retrieve contacts ============================================================
-    $databaseContacts = DatabaseModule::fetchAll(
-      'SELECT first_user, second_user
-             FROM contacts
-             WHERE active = TRUE'
-    );
-    
-    $contacts = [];
-    foreach ($databaseContacts as $databaseContact) {
-      $firstUser = DatabaseModule::fetchOne(
-        'SELECT username
-               FROM users
-               WHERE user_id = :user_id
-                 AND active = TRUE',
-        [
-          ':user_id' => $databaseContact['first_user'],
-        ]
-      )['username'];
-      
-      
-      $secondUser = DatabaseModule::fetchOne(
-        'SELECT username
-               FROM users
-               WHERE user_id = :user_id
-                 AND active = TRUE',
-        [
-          ':user_id' => $databaseContact['second_user'],
-        ]
-      )['username'];
-      
-      $contacts[$firstUser][] = $secondUser;
-      $contacts[$secondUser][] = $firstUser;
-    }
-    
-    return [
-      'contacts' => $contacts,
-    ];
-  }
-  
-  /**
-   * Retrieve the relations references from the database
-   *
-   * @return array[] The two series of references
-   */
-  #[ArrayShape(['contacts' => "array", 'groups' => "array"])]
-  public static function retrieveReferences(): array {
-    $service = DatabaseService::getInstance();
-    return $service->instanceRetrieveReference();
   }
 }

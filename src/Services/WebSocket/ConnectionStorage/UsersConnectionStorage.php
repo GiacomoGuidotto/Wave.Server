@@ -1,6 +1,6 @@
 <?php
 
-namespace Wave\Services\WebSocket\Connection;
+namespace Wave\Services\WebSocket\ConnectionStorage;
 
 use SplObjectStorage;
 

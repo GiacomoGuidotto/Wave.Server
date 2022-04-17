@@ -249,6 +249,12 @@ class MemberTest extends TestCase {
       self::$secondUser['username'],
     );
     
+    self::$service->addMember(
+      self::$firstUser['token'],
+      self::$group['uuid'],
+      "insomnia_agent",
+    );
+    
     $result = self::$service->changeMemberPermission(
       self::$firstUser['token'],
       self::$group['uuid'],
@@ -284,7 +290,7 @@ class MemberTest extends TestCase {
    * @group changeMemberPermission
    */
   public function testChangeMemberPermissionWithUnauthorizedUser(): array {
-    echo PHP_EOL . 'Testing member retrieve with unknown user...' . PHP_EOL;
+    echo PHP_EOL . 'Testing change member permission with unauthorized user...' . PHP_EOL;
     
     self::$service->addMember(
       self::$firstUser['token'],
@@ -297,6 +303,64 @@ class MemberTest extends TestCase {
       self::$group['uuid'],
       self::$firstUser['username'],
       201
+    );
+    
+    echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    self::assertEquals(
+      Forbidden::CODE,
+      $result['error'],
+    );
+    
+    return $result;
+  }
+  
+  // ==== removeMember =============================================================================
+  // ===============================================================================================
+  
+  /**
+   * @group removeMember
+   */
+  public function testCorrectRemoveMemberProcedure(): array {
+    echo PHP_EOL . '==== removeMember ============================================' . PHP_EOL;
+    
+    echo PHP_EOL . 'Testing correct remove member procedure...' . PHP_EOL;
+    
+    self::$service->addMember(
+      self::$firstUser['token'],
+      self::$group['uuid'],
+      self::$secondUser['username'],
+    );
+    
+    $result = self::$service->removeMember(
+      self::$firstUser['token'],
+      self::$group['uuid'],
+      self::$secondUser['username'],
+    );
+    
+    echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    self::assertIsArray($result);
+    
+    return $result;
+  }
+  
+  /**
+   * @group removeMember
+   */
+  public function testRemoveMemberWithUnauthorizedUser(): array {
+    echo PHP_EOL . 'Testing change member permission with unauthorized user...' . PHP_EOL;
+    
+    self::$service->addMember(
+      self::$firstUser['token'],
+      self::$group['uuid'],
+      self::$secondUser['username'],
+    );
+    
+    $result = self::$service->removeMember(
+      self::$secondUser['token'],
+      self::$group['uuid'],
+      self::$firstUser['username'],
     );
     
     echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;

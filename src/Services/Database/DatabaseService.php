@@ -6,6 +6,8 @@ namespace Wave\Services\Database;
 
 use DateInterval;
 use Wave\Model\Group\Group;
+use Wave\Model\Member\Member;
+use Wave\Model\Member\Permission;
 use Wave\Model\Session\Session;
 use Wave\Model\Singleton\Singleton;
 use Wave\Model\User\User;
@@ -114,7 +116,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
       ]
     );
     
-    if ($token_row === false) {
+    if (!is_array($token_row)) {
       DatabaseModule::commitTransaction();
       return Unauthorized::CODE;
     }
@@ -157,11 +159,12 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
   /**
    * Create the two chat tables given the uuid, and fill the member one with the given array
    *
-   * @param string $uuid
-   * @param array  $members
+   * @param string $uuid        The identifier of the chat to generate
+   * @param array  $members     The list of members to insert
+   * @param array  $permissions The permissions of this members
    * @return void
    */
-  private function generateChatTable(string $uuid, array $members) {
+  private function generateChatTable(string $uuid, array $members, array $permissions) {
     $previouslyInTransaction = DatabaseModule::inTransaction();
     if ($previouslyInTransaction) DatabaseModule::commitTransaction();
     
@@ -210,13 +213,13 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     
     if ($previouslyInTransaction) DatabaseModule::beginTransaction();
     
-    foreach ($members as $member) {
+    for ($i = 0; $i < count($members); $i++) {
       $memberId = DatabaseModule::fetchOne(
         'SELECT user_id
                FROM users
                WHERE username = BINARY :username',
         [
-          ':username' => $member,
+          ':username' => $members[$i],
         ]
       )['user_id'];
       
@@ -233,14 +236,18 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
           ':name'              => $membersTableName,
           ':user'              => $memberId,
           ':last_seen_message' => null,
-          ':permission'        => 127,
+          ':permission'        => $permissions[$i],
           ':active'            => true,
         ]
       );
     }
   }
   
-  private function authorizeChatMember(string $uuid, int $userId): bool {
+  private function authorizeChatMember(
+    string           $uuid,
+    int              $userId,
+    array|Permission $permissions,
+  ): bool {
     $permission = DatabaseModule::fetchOne(
       "SELECT permissions
              FROM `:name`
@@ -252,9 +259,17 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
       ]
     )['permissions'];
     
-    // TODO revise permission logic: create enum, add permissions list as parameter, sum parameters
-    //  and check them with $permission
-    return $permission !== 127;
+    // convert single element in array
+    if (!is_array($permissions)) $permissions = [$permissions];
+    
+    // remove null value
+    $permissions = array_filter($permissions);
+    
+    // extract int
+    $permissions = array_map(fn($permission): int => $permission->value, $permissions);
+    
+    $permissions = array_sum($permissions);
+    return ($permission & $permissions) === $permissions;
   }
   
   // ==== Authentication ===========================================================================
@@ -297,7 +312,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     );
     
     // ==== username not found ===============
-    if ($storedPasswordRow === false) {
+    if (!is_array($storedPasswordRow)) {
       DatabaseModule::commitTransaction();
       return Utilities::generateErrorMessage(NotFound::CODE);
     }
@@ -401,7 +416,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
       ]
     );
     
-    if ($tokenRow === false) {
+    if (!is_array($tokenRow)) {
       DatabaseModule::commitTransaction();
       return Utilities::generateErrorMessage(Unauthorized::CODE);
     }
@@ -800,16 +815,16 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
         );
         
         WebSocketModule::sendChannelPacket(
-                    'UPDATE',
-                    'contact/information',
-                    $user['username'],
-          target_s: $contacts,
-          body    : [
-                      'username' => $user['username'],
-                      'name'     => $user['name'],
-                      'surname'  => $user['surname'],
-                      'picture'  => $picture,
-                    ],
+          directive: 'UPDATE',
+          topic    : 'contact/information',
+          origin   : $user['username'],
+          target_s : $contacts,
+          body     : [
+                       'username' => $user['username'],
+                       'name'     => $user['name'],
+                       'surname'  => $user['surname'],
+                       'picture'  => $picture,
+                     ],
         );
       }
     }
@@ -962,7 +977,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
       ]
     );
     
-    if ($targetedUser === false) {
+    if (!is_array($targetedUser)) {
       DatabaseModule::commitTransaction();
       return Utilities::generateErrorMessage(NotFound::CODE);
     }
@@ -1048,16 +1063,16 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
       null;
     
     WebSocketModule::sendChannelPacket(
-                'CREATE',
-                'contact',
-                $originUser['username'],
-      target_s: $targetedUser['username'],
-      body    : [
-                  'username' => $originUser['username'],
-                  'name'     => $originUser['name'],
-                  'surname'  => $originUser['surname'],
-                  'picture'  => $originUserPicture,
-                ]
+      directive: 'CREATE',
+      topic    : 'contact',
+      origin   : $originUser['username'],
+      target_s : $targetedUser['username'],
+      body     : [
+                   'username' => $originUser['username'],
+                   'name'     => $originUser['name'],
+                   'surname'  => $originUser['surname'],
+                   'picture'  => $originUserPicture,
+                 ]
     );
     
     // ==== Return targeted user's data to origin user ===================================
@@ -1137,7 +1152,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
       ]
     );
     
-    if ($targetedUser === false) {
+    if (!is_array($targetedUser)) {
       DatabaseModule::commitTransaction();
       return Utilities::generateErrorMessage(NotFound::CODE);
     }
@@ -1192,13 +1207,13 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     // ==== Send Channel packet with deletion directive to targeted user =================
     
     WebSocketModule::sendChannelPacket(
-                "DELETE",
-                "contact/status",
-                $originUser['username'],
-      target_s: $targetedUser['username'],
-      headers : [
-                  'username' => $originUser['username'],
-                ]
+      directive: "DELETE",
+      topic    : "contact/status",
+      origin   : $originUser['username'],
+      target_s : $targetedUser['username'],
+      headers  : [
+                   'username' => $originUser['username'],
+                 ]
     );
     
     return null;
@@ -1266,7 +1281,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
       ]
     );
     
-    if ($targetedUser === false) {
+    if (!is_array($targetedUser)) {
       DatabaseModule::commitTransaction();
       return Utilities::generateErrorMessage(NotFound::CODE);
     }
@@ -1319,6 +1334,10 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
           [
             $originUser['username'],
             $targetedUser['username'],
+          ],
+          [
+            Wave::MAX_GROUP_PERMISSION,
+            Wave::MAX_GROUP_PERMISSION,
           ]
         );
         
@@ -1464,13 +1483,13 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     // ==== Send Channel packet with deletion directive to targeted user =================
     
     WebSocketModule::sendChannelPacket(
-                "UPDATE",
-                "contact/status",
-                $originUser['username'],
-      target_s: $targetedUser['username'],
-      headers : [
-                  "directive" => $directive,
-                ]
+      directive: "UPDATE",
+      topic    : "contact/status",
+      origin   : $originUser['username'],
+      target_s : $targetedUser['username'],
+      headers  : [
+                   "directive" => $directive,
+                 ]
     );
     
     // ==== Return targeted user's data to origin user ===================================
@@ -1782,7 +1801,11 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     
     $this->generateChatTable(
       $groupUUID,
-      array_map(fn($member) => $member['username'], $members)
+      array_map(fn($member) => $member['username'], $members),
+      [
+        Wave::MAX_GROUP_PERMISSION,
+        ...array_fill(0, count($members) - 1, Wave::NEW_MEMBER_PERMISSION),
+      ]
     );
     
     // ==== Create a new group entity ====================================================
@@ -1846,17 +1869,17 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     // ==== Send channel packet to all targeted members ==================================
     if (!is_null($users)) {
       WebSocketModule::sendChannelPacket(
-                  "CREATE",
-                  "group",
-                  $creator['username'],
-        target_s: $users,
-        body    : [
-                    "uuid"    => $groupUUID,
-                    "name"    => $name,
-                    "info"    => $info,
-                    "picture" => $picture,
-                    "members" => $members,
-                  ]
+        directive: "CREATE",
+        topic    : "group",
+        origin   : $creator['username'],
+        target_s : $users,
+        body     : [
+                     "uuid"    => $groupUUID,
+                     "name"    => $name,
+                     "info"    => $info,
+                     "picture" => $picture,
+                     "members" => $members,
+                   ]
       );
     }
     
@@ -2349,7 +2372,15 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     
     // ==== Origin permission check ======================================================
     
-    if ($this->authorizeChatMember($group['chat'], $userId)) {
+    if (!$this->authorizeChatMember(
+      $group['chat'],
+      $userId,
+      [
+        is_null($name) ? null : Permission::ChangeName,
+        is_null($info) ? null : Permission::ChangeInfo,
+        is_null($picture) ? null : Permission::ChangePicture,
+      ]
+    )) {
       DatabaseModule::commitTransaction();
       return Utilities::generateErrorMessage(Forbidden::CODE);
     }
@@ -2409,16 +2440,16 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     
     // ==== Send channel packet to all members ===========================================
     WebSocketModule::sendChannelPacket(
-                "UPDATE",
-                "group/information",
-                $origin,
-      target_s: $members,
-      body    : [
-                  "uuid"    => $group['chat'],
-                  "name"    => $group['name'],
-                  "info"    => $group['info'],
-                  "picture" => $picture,
-                ]
+      directive: "UPDATE",
+      topic    : "group/information",
+      origin   : $origin,
+      target_s : $members,
+      body     : [
+                   "uuid"    => $group['chat'],
+                   "name"    => $group['name'],
+                   "info"    => $group['info'],
+                   "picture" => $picture,
+                 ]
     );
     
     // ==== Return new data to origin ====================================================
@@ -2553,14 +2584,14 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
       $members = array_filter($members, fn($member): bool => $member !== $origin);
       
       WebSocketModule::sendChannelPacket(
-                  "DELETE",
-                  "group/member",
-                  $origin,
-        target_s: $members,
-        body    : [
-                    "uuid"     => $group['chat'],
-                    "username" => $origin,
-                  ]
+        directive: "DELETE",
+        topic    : "group/member",
+        origin   : $origin,
+        target_s : $members,
+        body     : [
+                     "uuid"     => $group['chat'],
+                     "username" => $origin,
+                   ]
       );
     }
     
@@ -2660,7 +2691,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     
     // ==== Origin permission check ======================================================
     
-    if ($this->authorizeChatMember($group['chat'], $userId)) {
+    if (!$this->authorizeChatMember($group['chat'], $userId, Permission::AddPeople)) {
       DatabaseModule::commitTransaction();
       return Utilities::generateErrorMessage(Forbidden::CODE);
     }
@@ -2675,9 +2706,27 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
       ]
     );
     
-    if ($targetedUser === false) {
+    if (!is_array($targetedUser)) {
       DatabaseModule::commitTransaction();
       return Utilities::generateErrorMessage(NotFound::CODE);
+    }
+    
+    // ==== Target relation existence check ==============================================
+    $targetMembership = DatabaseModule::fetchOne(
+      'SELECT state, muted
+             FROM groups_members
+             WHERE active = TRUE
+               AND `group` = :group
+               AND user = :user',
+      [
+        ':group' => $group['group_id'],
+        ':user'  => $targetedUser['user_id'],
+      ]
+    );
+    
+    if (is_array($targetMembership)) {
+      DatabaseModule::commitTransaction();
+      return Utilities::generateErrorMessage(AlreadyExist::CODE);
     }
     
     // ==== Safe zone ====================================================================
@@ -2696,7 +2745,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
         ':name'              => $membersChatName,
         ':user'              => $targetedUser['user_id'],
         ':last_seen_message' => null,
-        ':permission'        => 127,
+        ':permission'        => Wave::NEW_MEMBER_PERMISSION,
         ':active'            => true,
       ]
     );
@@ -2778,16 +2827,16 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     $picture = !is_null($filepath) ? MIMEService::researchMedia($filepath) : null;
     
     WebSocketModule::sendChannelPacket(
-                "CREATE",
-                "group/member",
-                $origin,
-      target_s: $oldMembers,
-      body    : [
-                  "username" => $targetedUser['username'],
-                  "name"     => $targetedUser['name'],
-                  "surname"  => $targetedUser['surname'],
-                  "picture"  => $picture,
-                ]
+      directive: "CREATE",
+      topic    : "group/member",
+      origin   : $origin,
+      target_s : $oldMembers,
+      body     : [
+                   "username" => $targetedUser['username'],
+                   "name"     => $targetedUser['name'],
+                   "surname"  => $targetedUser['surname'],
+                   "picture"  => $picture,
+                 ]
     );
     
     // ==== Send channel packet to targeted user =========================================
@@ -2796,17 +2845,17 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     $groupPicture = !is_null($groupFilepath) ? MIMEService::researchMedia($groupFilepath) : null;
     
     WebSocketModule::sendChannelPacket(
-                "CREATE",
-                "group",
-                $origin,
-      target_s: $user,
-      body    : [
-                  "uuid"    => $group['chat'],
-                  "name"    => $group['name'],
-                  "info"    => $group['info'],
-                  "picture" => $groupPicture,
-                  "members" => $members,
-                ]
+      directive: "CREATE",
+      topic    : "group",
+      origin   : $origin,
+      target_s : $user,
+      body     : [
+                   "uuid"    => $group['chat'],
+                   "name"    => $group['name'],
+                   "info"    => $group['info'],
+                   "picture" => $groupPicture,
+                   "members" => $members,
+                 ]
     );
     
     return $members;
@@ -2933,7 +2982,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
         ]
       );
       
-      if ($targetedUser === false) {
+      if (!is_array($targetedUser)) {
         DatabaseModule::commitTransaction();
         return Utilities::generateErrorMessage(NotFound::CODE);
       }
@@ -2974,8 +3023,188 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     string $user,
     string $permission,
   ): array {
-    // TODO: Implement changeMemberPermission() method.
-    return [];
+    // ==== Parameters validation ========================================================
+    $tokenValidation = Session::validateToken($token);
+    if ($tokenValidation != Success::CODE) {
+      return Utilities::generateErrorMessage($tokenValidation);
+    }
+    
+    $groupValidation = Group::validateGroup($group);
+    if ($groupValidation != Success::CODE) {
+      return Utilities::generateErrorMessage($groupValidation);
+    }
+    
+    $userValidation = User::validateUsername($user);
+    if ($userValidation != Success::CODE) {
+      return Utilities::generateErrorMessage($userValidation);
+    }
+    
+    $permissionValidation = Member::validatePermission($permission);
+    if ($permissionValidation != Success::CODE) {
+      return Utilities::generateErrorMessage($permissionValidation);
+    }
+    
+    // ==== Token authorization ==========================================================
+    $tokenAuthorization = $this->authorizeToken($token);
+    
+    if ($tokenAuthorization != Success::CODE) {
+      return Utilities::generateErrorMessage($tokenAuthorization);
+    }
+    
+    // ===================================================================================
+    DatabaseModule::beginTransaction();
+    
+    // ==== Groups existence check ======================================================
+    $group = DatabaseModule::fetchOne(
+      'SELECT group_id, name, info, picture, chat
+             FROM `groups`
+             WHERE active = TRUE
+               AND chat = :chat',
+      [
+        ':chat' => $group,
+      ]
+    );
+    
+    if (!is_array($group)) {
+      DatabaseModule::commitTransaction();
+      return Utilities::generateErrorMessage(NotFound::CODE);
+    }
+    
+    // ==== Relation existence check ===================================================
+    $userId = DatabaseModule::fetchOne(
+      'SELECT user
+             FROM sessions
+             WHERE session_token = :session_token',
+      [
+        ':session_token' => $token,
+      ]
+    )['user'];
+    
+    $membership = DatabaseModule::fetchOne(
+      'SELECT state, muted
+             FROM groups_members
+             WHERE active = TRUE
+               AND `group` = :group
+               AND user = :user',
+      [
+        ':group' => $group['group_id'],
+        ':user'  => $userId,
+      ]
+    );
+    
+    if (!is_array($membership)) {
+      DatabaseModule::commitTransaction();
+      return Utilities::generateErrorMessage(NotFound::CODE);
+    }
+    
+    // ==== Target existence check =======================================================
+    $targetedUser = DatabaseModule::fetchOne(
+      'SELECT user_id, username, name, surname, picture
+             FROM users
+             WHERE username = BINARY :username',
+      [
+        ':username' => $user,
+      ]
+    );
+    
+    if (!is_array($targetedUser)) {
+      DatabaseModule::commitTransaction();
+      return Utilities::generateErrorMessage(NotFound::CODE);
+    }
+    
+    // ==== Target relation existence check ==============================================
+    $targetMembership = DatabaseModule::fetchOne(
+      'SELECT state, muted
+             FROM groups_members
+             WHERE active = TRUE
+               AND `group` = :group
+               AND user = :user',
+      [
+        ':group' => $group['group_id'],
+        ':user'  => $targetedUser['user_id'],
+      ]
+    );
+    
+    if (!is_array($targetMembership)) {
+      DatabaseModule::commitTransaction();
+      return Utilities::generateErrorMessage(NotFound::CODE);
+    }
+    
+    // ==== Origin permission check ======================================================
+    
+    if (!$this->authorizeChatMember(
+      $group['chat'],
+      $userId,
+      Permission::ChangeOthersPermission
+    )) {
+      DatabaseModule::commitTransaction();
+      return Utilities::generateErrorMessage(Forbidden::CODE);
+    }
+    
+    // ==== Safe zone ====================================================================
+    $membersChatName = "chat_" . $group['chat'] . "_members";
+    
+    DatabaseModule::execute(
+      "UPDATE `:name`
+             SET permissions = :permissions
+             WHERE active = TRUE
+               AND user = :user",
+      [
+        ":name"        => $membersChatName,
+        ":permissions" => $permission,
+        ":user"        => $targetedUser['user_id'],
+      ]
+    );
+    
+    // ==== Retrieve target data =========================================================
+    $member = DatabaseModule::fetchOne(
+      "SELECT permissions, last_seen_message
+             FROM `:name`
+             WHERE active = TRUE
+               AND user = :user",
+      [
+        ":name" => $membersChatName,
+        ":user" => $targetedUser['user_id'],
+      ]
+    );
+    
+    $filepath = $targetedUser['picture'];
+    $picture = !is_null($filepath) ? MIMEService::researchMedia($filepath) : null;
+    
+    // ==== Send channel packet to all group members =====================================
+    $origin = DatabaseModule::fetchOne(
+      "SELECT username
+             FROM users
+             WHERE user_id = :user_id",
+      [
+        ":user_id" => $userId,
+      ]
+    )['username'];
+    
+    DatabaseModule::commitTransaction();
+    
+    $members = $this->getMemberList($token, $group['chat']);
+    
+    WebSocketModule::sendChannelPacket(
+      directive: "UPDATE",
+      topic    : "group/member",
+      origin   : $origin,
+      target_s : $members,
+      headers  : [
+                   "group"      => $group,
+                   "username"   => $user,
+                   "permission" => $permission,
+                 ]
+    );
+    
+    return [
+      "username"          => $targetedUser['username'],
+      "name"              => $targetedUser['name'],
+      "surname"           => $targetedUser['surname'],
+      "picture"           => $picture,
+      "permissions"       => $member["permissions"],
+      "last_seen_message" => $member["last_seen_message"],
+    ];
   }
   
   /**

@@ -7,8 +7,10 @@ use Wave\Model\Member\Member;
 use Wave\Model\User\User;
 use Wave\Services\Database\DatabaseService;
 use Wave\Services\Database\Module\DatabaseModule;
+use Wave\Specifications\ErrorCases\State\Forbidden;
 use Wave\Specifications\ErrorCases\State\NotFound;
 use Wave\Specifications\ErrorCases\Success\Success;
+use Wave\Specifications\Wave\Wave;
 use Wave\Tests\Utilities\TestUtilities;
 use Wave\Utilities\Utilities;
 
@@ -224,6 +226,83 @@ class MemberTest extends TestCase {
     
     self::assertEquals(
       NotFound::CODE,
+      $result['error'],
+    );
+    
+    return $result;
+  }
+  
+  // ==== changeMemberPermission ===================================================================
+  // ===============================================================================================
+  
+  /**
+   * @group changeMemberPermission
+   */
+  public function testCorrectChangeMemberPermissionProcedure(): array {
+    echo PHP_EOL . '==== addMember ===============================================' . PHP_EOL;
+    
+    echo PHP_EOL . 'Testing correct change member permission procedure...' . PHP_EOL;
+    
+    self::$service->addMember(
+      self::$firstUser['token'],
+      self::$group['uuid'],
+      self::$secondUser['username'],
+    );
+    
+    $result = self::$service->changeMemberPermission(
+      self::$firstUser['token'],
+      self::$group['uuid'],
+      self::$secondUser['username'],
+      Wave::MAX_GROUP_PERMISSION
+    );
+    
+    echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    self::assertEquals(
+      Success::CODE,
+      User::validateUsername($result['username']),
+    );
+    self::assertEquals(
+      Success::CODE,
+      User::validateName($result['name']),
+    );
+    self::assertEquals(
+      Success::CODE,
+      User::validateSurname($result['surname']),
+    );
+    self::assertNull($result['picture']);
+    self::assertEquals(
+      Success::CODE,
+      Member::validatePermission($result['permissions']),
+    );
+    self::assertNull($result['last_seen_message']);
+    
+    return $result;
+  }
+  
+  /**
+   * @group changeMemberPermission
+   */
+  public function testChangeMemberPermissionWithUnauthorizedUser(): array {
+    echo PHP_EOL . 'Testing member retrieve with unknown user...' . PHP_EOL;
+    
+    self::$service->addMember(
+      self::$firstUser['token'],
+      self::$group['uuid'],
+      self::$secondUser['username'],
+    );
+    
+    $result = self::$service->changeMemberPermission(
+      self::$secondUser['token'],
+      self::$group['uuid'],
+      self::$firstUser['username'],
+      201
+    );
+    
+    echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    self::assertEquals(
+      Forbidden::CODE,
       $result['error'],
     );
     

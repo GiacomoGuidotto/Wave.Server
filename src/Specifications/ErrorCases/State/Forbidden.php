@@ -7,6 +7,6 @@ namespace Wave\Specifications\ErrorCases\State;
  */
 interface Forbidden {
   const CODE = 42;
-  const MESSAGE = "The entity doesn't belong to the user";
-  const DETAILS = "The searched entity isn't of this user property";
+  const MESSAGE = "The entity or action is forbidden";
+  const DETAILS = "The searched entity doesn't belong to the user or the specified directive isn't allow to the user";
 }

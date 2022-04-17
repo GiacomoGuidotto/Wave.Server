@@ -5,6 +5,7 @@ namespace Wave\Model\Member;
 use Wave\Specifications\ErrorCases\Success\Success;
 use Wave\Specifications\ErrorCases\Type\ExceedingMaximum;
 use Wave\Specifications\ErrorCases\Type\ExceedingMinimum;
+use Wave\Specifications\Wave\Wave;
 
 /**
  * MemberInterface resource class
@@ -16,7 +17,7 @@ class Member implements MemberInterface {
    * @inheritDoc
    */
   public static function validatePermission(int $permission): int {
-    if ($permission > 127) {
+    if ($permission > Wave::MAX_GROUP_PERMISSION) {
       return ExceedingMaximum::CODE;
     }
     if ($permission < 0) {

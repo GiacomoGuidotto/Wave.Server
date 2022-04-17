@@ -951,7 +951,6 @@ class GroupTest extends TestCase {
       self::$firstUser['token'],
       self::$group['name'],
       self::$group['info'],
-      null,
     )['uuid'];
     
     $result = self::$service->exitGroup(

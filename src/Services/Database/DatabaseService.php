@@ -252,7 +252,8 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
       ]
     )['permissions'];
     
-    // TODO revise permission logic
+    // TODO revise permission logic: create enum, add permissions list as parameter, sum parameters
+    //  and check them with $permission
     return $permission !== 127;
   }
   
@@ -1710,10 +1711,11 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     
     $membersId = [$creatorId];
     $members = [
-      $creator['username'] => [
-        $creator['name'],
-        $creator['surname'],
-        $creatorPicture,
+      [
+        "username" => $creator['username'],
+        "name"     => $creator['name'],
+        "surname"  => $creator['surname'],
+        "picture"  => $creatorPicture,
       ],
     ];
     if (!is_null($users)) {
@@ -1751,10 +1753,11 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
         ) : null;
         
         $membersId[] = $member['user_id'];
-        $members[$member['username']] = [
-          $member['name'],
-          $member['surname'],
-          $memberPicture,
+        $members[] = [
+          "username" => $member['username'],
+          "name"     => $member['name'],
+          "surname"  => $member['surname'],
+          "picture"  => $memberPicture,
         ];
       }
     }
@@ -1779,7 +1782,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     
     $this->generateChatTable(
       $groupUUID,
-      array_keys($members)
+      array_map(fn($member) => $member['username'], $members)
     );
     
     // ==== Create a new group entity ====================================================
@@ -1817,7 +1820,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
       ]
     )['group_id'];
     
-    foreach ($membersId as $member) {
+    foreach ($membersId as $memberId) {
       DatabaseModule::execute(
         "INSERT
                INTO groups_members (user, `group`, state, muted, active)
@@ -1829,10 +1832,10 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
                  :active
                )",
         [
-          ":user"   => $member,
+          ":user"   => $memberId,
           ":group"  => $groupId,
           ":state"  => $defaultState,
-          //          ":muted"  => false,
+          //          ":muted"  => $defaultMuted,
           ":active" => true,
         ]
       );
@@ -2586,8 +2589,229 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     string $group,
     string $user,
   ): array {
-    // TODO: Implement addMember() method.
-    return [];
+    // ==== Parameters validation ========================================================
+    $tokenValidation = Session::validateToken($token);
+    if ($tokenValidation != Success::CODE) {
+      return Utilities::generateErrorMessage($tokenValidation);
+    }
+    
+    $groupValidation = Group::validateGroup($group);
+    if ($groupValidation != Success::CODE) {
+      return Utilities::generateErrorMessage($groupValidation);
+    }
+    
+    $userValidation = User::validateUsername($user);
+    if ($userValidation != Success::CODE) {
+      return Utilities::generateErrorMessage($userValidation);
+    }
+    
+    // ==== Token authorization ==========================================================
+    $tokenAuthorization = $this->authorizeToken($token);
+    
+    if ($tokenAuthorization != Success::CODE) {
+      return Utilities::generateErrorMessage($tokenAuthorization);
+    }
+    
+    // ===================================================================================
+    DatabaseModule::beginTransaction();
+    
+    // ==== Groups existence check ======================================================
+    $group = DatabaseModule::fetchOne(
+      'SELECT group_id, name, info, picture, chat
+             FROM `groups`
+             WHERE active = TRUE
+               AND chat = :chat',
+      [
+        ':chat' => $group,
+      ]
+    );
+    
+    if (!is_array($group)) {
+      DatabaseModule::commitTransaction();
+      return Utilities::generateErrorMessage(NotFound::CODE);
+    }
+    
+    // ==== Relation existence check ===================================================
+    $userId = DatabaseModule::fetchOne(
+      'SELECT user
+             FROM sessions
+             WHERE session_token = :session_token',
+      [
+        ':session_token' => $token,
+      ]
+    )['user'];
+    
+    $membership = DatabaseModule::fetchOne(
+      'SELECT state, muted
+             FROM groups_members
+             WHERE active = TRUE
+               AND `group` = :group
+               AND user = :user',
+      [
+        ':group' => $group['group_id'],
+        ':user'  => $userId,
+      ]
+    );
+    
+    if (!is_array($membership)) {
+      DatabaseModule::commitTransaction();
+      return Utilities::generateErrorMessage(NotFound::CODE);
+    }
+    
+    // ==== Origin permission check ======================================================
+    
+    if ($this->authorizeChatMember($group['chat'], $userId)) {
+      DatabaseModule::commitTransaction();
+      return Utilities::generateErrorMessage(Forbidden::CODE);
+    }
+    
+    // ==== Target existence check =======================================================
+    $targetedUser = DatabaseModule::fetchOne(
+      'SELECT user_id, username, name, surname, picture
+             FROM users
+             WHERE username = BINARY :username',
+      [
+        ':username' => $user,
+      ]
+    );
+    
+    if ($targetedUser === false) {
+      DatabaseModule::commitTransaction();
+      return Utilities::generateErrorMessage(NotFound::CODE);
+    }
+    
+    // ==== Safe zone ====================================================================
+    $membersChatName = "chat_" . $group['chat'] . "_members";
+    
+    DatabaseModule::execute(
+      "INSERT
+               INTO `:name` (`user`, `last_seen_message`, `permissions`, `active`)
+               VALUES (
+                 :user,
+                 :last_seen_message,
+                 :permission,
+                 :active
+               )",
+      [
+        ':name'              => $membersChatName,
+        ':user'              => $targetedUser['user_id'],
+        ':last_seen_message' => null,
+        ':permission'        => 127,
+        ':active'            => true,
+      ]
+    );
+    
+    DatabaseModule::execute(
+      "INSERT
+               INTO groups_members (user, `group`, state, muted, active)
+               VALUES (
+                 :user,
+                 :group,
+                 :state,
+                 FALSE,
+                 :active
+               )",
+      [
+        ":user"   => $targetedUser['user_id'],
+        ":group"  => $group['group_id'],
+        ":state"  => 'N',
+        //          ":muted"  => $defaultMuted,
+        ":active" => true,
+      ]
+    );
+    
+    // ==== New group members list retrieve ==============================================
+    
+    $members = DatabaseModule::fetchAll(
+      "SELECT user, permissions, last_seen_message
+             FROM `:name`
+             WHERE active = TRUE",
+      [
+        ":name" => $membersChatName,
+      ]
+    );
+    
+    // could break if count(members) == 1 but at this point is impossible since at least there
+    // is origin and $user
+    $members = array_map(function ($member) {
+      $user = DatabaseModule::fetchOne(
+        "SELECT username, name, surname, picture
+               FROM users
+               WHERE user_id = :user_id",
+        [
+          ":user_id" => $member['user'],
+        ]
+      );
+      
+      $filepath = $user['picture'];
+      $picture = !is_null($filepath) ? MIMEService::researchMedia($filepath) : null;
+      
+      return [
+        "username"          => $user['username'],
+        "name"              => $user['username'],
+        "surname"           => $user['username'],
+        "picture"           => $picture,
+        "permissions"       => $member["permissions"],
+        "last_seen_message" => $member["last_seen_message"],
+      ];
+    }, $members);
+    
+    DatabaseModule::commitTransaction();
+    
+    // ==== Send channel packet to the old group members =================================
+    $oldMembers = array_map(
+      fn($member): string => $member['username'],
+      array_filter(
+        $members,
+        fn($member) => $member['username'] != $user
+      )
+    );
+    
+    $origin = DatabaseModule::fetchOne(
+      "SELECT username
+             FROM users
+             WHERE user_id = :user_id",
+      [
+        ":user_id" => $userId,
+      ]
+    )['username'];
+    
+    $filepath = $targetedUser['picture'];
+    $picture = !is_null($filepath) ? MIMEService::researchMedia($filepath) : null;
+    
+    WebSocketModule::sendChannelPacket(
+                "CREATE",
+                "group/member",
+                $origin,
+      target_s: $oldMembers,
+      body    : [
+                  "username" => $targetedUser['username'],
+                  "name"     => $targetedUser['name'],
+                  "surname"  => $targetedUser['surname'],
+                  "picture"  => $picture,
+                ]
+    );
+    
+    // ==== Send channel packet to targeted user =========================================
+    
+    $groupFilepath = $group['picture'];
+    $groupPicture = !is_null($groupFilepath) ? MIMEService::researchMedia($groupFilepath) : null;
+    
+    WebSocketModule::sendChannelPacket(
+                "CREATE",
+                "group",
+                $origin,
+      target_s: $user,
+      body    : [
+                  "uuid"    => $group['chat'],
+                  "name"    => $group['name'],
+                  "info"    => $group['info'],
+                  "picture" => $groupPicture,
+                  "members" => $members,
+                ]
+    );
+    
+    return $members;
   }
   
   /**

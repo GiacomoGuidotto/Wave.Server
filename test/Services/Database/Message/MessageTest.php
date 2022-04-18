@@ -6,12 +6,10 @@ use PHPUnit\Framework\TestCase;
 use Wave\Model\Message\Message;
 use Wave\Model\User\User;
 use Wave\Services\Database\DatabaseService;
-use Wave\Services\Database\Module\DatabaseModule;
 use Wave\Specifications\ErrorCases\Generic\NullAttributes;
 use Wave\Specifications\ErrorCases\Mime\IncorrectFileType;
 use Wave\Specifications\ErrorCases\State\Forbidden;
 use Wave\Specifications\ErrorCases\Success\Success;
-use Wave\Tests\Utilities\TestUtilities;
 use Wave\Utilities\Utilities;
 
 class MessageTest extends TestCase {
@@ -463,26 +461,90 @@ class MessageTest extends TestCase {
     return $result;
   }
   
+  // ==== deleteMessage ============================================================================
+  // ===============================================================================================
+  
+  /**
+   * @group deleteMessage
+   */
+  public function testDeleteMessageCorrectProcedure(): ?array {
+    echo PHP_EOL . 'Testing delete message correct procedure...' . PHP_EOL;
+    
+    $randomMessage = 'Random message';
+    
+    $message = self::$service->writeMessage(
+      self::$firstUser['token'],
+      self::$group['uuid'],
+      null,
+      null,
+      $randomMessage
+    )['key'];
+    
+    $result = self::$service->deleteMessage(
+      self::$firstUser['token'],
+      $message,
+      self::$group['uuid'],
+    );
+    
+    echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    self::assertNull($result);
+    
+    return $result;
+  }
+  
+  /**
+   * @group deleteMessage
+   */
+  public function testDeleteMessageWithUnauthorizedUser(): array {
+    echo PHP_EOL . 'Testing delete message with unauthorized user...' . PHP_EOL;
+    
+    $randomMessage = 'Random message';
+    
+    $message = self::$service->writeMessage(
+      self::$firstUser['token'],
+      self::$group['uuid'],
+      null,
+      null,
+      $randomMessage
+    )['key'];
+    
+    $result = self::$service->deleteMessage(
+      self::$secondUser['token'],
+      $message,
+      self::$group['uuid'],
+    );
+    
+    echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    self::assertEquals(
+      Forbidden::CODE,
+      $result['error'],
+    );
+    
+    return $result;
+  }
+  
   protected function tearDown(): void {
-    TestUtilities::deleteGeneratedTables(self::$firstUser['username'], true);
-    TestUtilities::deleteGeneratedTables(self::$firstUser['username']);
-    
-    DatabaseModule::execute(
-      'DELETE FROM `groups`
-             WHERE name = :group_name',
-      [
-        ':group_name' => self::$group['name'],
-      ]
-    );
-    
-    DatabaseModule::execute(
-      'DELETE FROM users
-             WHERE username = :first_username
-                OR username = :second_username',
-      [
-        ':first_username' => self::$firstUser['username'],
-        ':second_username' => self::$secondUser['username'],
-      ]
-    );
+//    TestUtilities::deleteGeneratedTables(self::$firstUser['username'], true);
+//    TestUtilities::deleteGeneratedTables(self::$firstUser['username']);
+//
+//    DatabaseModule::execute(
+//      'DELETE FROM `groups`
+//             WHERE name = :group_name',
+//      [
+//        ':group_name' => self::$group['name'],
+//      ]
+//    );
+//
+//    DatabaseModule::execute(
+//      'DELETE FROM users
+//             WHERE username = :first_username
+//                OR username = :second_username',
+//      [
+//        ':first_username' => self::$firstUser['username'],
+//        ':second_username' => self::$secondUser['username'],
+//      ]
+//    );
   }
 }

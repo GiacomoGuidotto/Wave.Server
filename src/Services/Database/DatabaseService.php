@@ -4092,8 +4092,204 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     ?string $group = null,
     ?string $contact = null,
   ): ?array {
-    // TODO: Implement deleteMessage() method.
-    return [];
+    if (!(is_null($group) xor is_null($contact))) {
+      return Utilities::generateErrorMessage(NullAttributes::CODE);
+    }
+    
+    // ==== Parameters validation ========================================================
+    $tokenValidation = Session::validateToken($token);
+    if ($tokenValidation != Success::CODE) {
+      return Utilities::generateErrorMessage($tokenValidation);
+    }
+    
+    // ==== Token authorization ==========================================================
+    $tokenAuthorization = $this->authorizeToken($token);
+    
+    if ($tokenAuthorization != Success::CODE) {
+      return Utilities::generateErrorMessage($tokenAuthorization);
+    }
+    
+    // ===================================================================================
+    DatabaseModule::beginTransaction();
+    
+    $originUser = DatabaseModule::fetchOne(
+      'SELECT user_id, username, name, surname, picture
+             FROM users
+               INNER JOIN sessions on users.user_id = sessions.user
+             WHERE sessions.session_token = :session_token',
+      [
+        ':session_token' => $token,
+      ]
+    );
+    
+    // ==== Chat identification ==========================================================
+    if (is_null($contact)) { // Groups realm
+      
+      // ==== Parameter validation =======================================================
+      $groupValidation = Group::validateGroup($group);
+      if ($groupValidation != Success::CODE) {
+        return Utilities::generateErrorMessage($groupValidation);
+      }
+      
+      // ==== Groups existence check =====================================================
+      $group = DatabaseModule::fetchOne(
+        'SELECT group_id, name, info, picture, chat
+             FROM `groups`
+             WHERE active = TRUE
+               AND chat = :chat',
+        [
+          ':chat' => $group,
+        ]
+      );
+      
+      if (!is_array($group)) {
+        DatabaseModule::commitTransaction();
+        return Utilities::generateErrorMessage(NotFound::CODE);
+      }
+      
+      // ==== Relation existence check ===================================================
+      $membership = DatabaseModule::fetchOne(
+        'SELECT state, muted
+             FROM groups_members
+             WHERE active = TRUE
+               AND `group` = :group
+               AND user = :user',
+        [
+          ':group' => $group['group_id'],
+          ':user'  => $originUser['user_id'],
+        ]
+      );
+      
+      if (!is_array($membership)) {
+        DatabaseModule::commitTransaction();
+        return Utilities::generateErrorMessage(NotFound::CODE);
+      }
+      
+      $chat = $group['chat'];
+      $chatType = "group";
+    } else { // Contacts realm
+      
+      // ==== Parameter validation =======================================================
+      $usernameValidation = User::validateUsername($contact);
+      if ($usernameValidation != Success::CODE) {
+        return Utilities::generateErrorMessage($usernameValidation);
+      }
+      
+      // ==== Target existence check =======================================================
+      $targetedUser = DatabaseModule::fetchOne(
+        'SELECT user_id, username, name, surname, picture
+             FROM users
+             WHERE username = BINARY :username',
+        [
+          ':username' => $contact,
+        ]
+      );
+      
+      if (!is_array($targetedUser)) {
+        DatabaseModule::commitTransaction();
+        return Utilities::generateErrorMessage(NotFound::CODE);
+      }
+      
+      // ==== Contact existence check ======================================================
+      $contact = DatabaseModule::fetchOne(
+        'SELECT second_user, status, chat, blocked_by
+             FROM contacts
+             WHERE active = TRUE
+               AND ((first_user = :first_user
+               AND second_user = :second_user)
+                OR (first_user = :second_user
+               AND second_user = :first_user))',
+        [
+          ':first_user'  => $originUser['user_id'],
+          ':second_user' => $targetedUser['user_id'],
+        ]
+      );
+      
+      if (!is_array($contact)) {
+        DatabaseModule::commitTransaction();
+        return Utilities::generateErrorMessage(NotFound::CODE);
+      }
+      
+      $chat = $contact['chat'];
+      $chatType = "contact";
+    }
+    
+    // ==== Message existence check ===================================================
+    $messagesChatName = "chat_" . $chat . "_messages";
+    
+    $message = DatabaseModule::fetchOne(
+      "SELECT message_key, author
+             FROM `:name`
+             WHERE active = TRUE
+               AND message_key = :message_key",
+      [
+        ":name"        => $messagesChatName,
+        ":message_key" => $message,
+      ]
+    );
+    
+    if (!is_array($message)) {
+      DatabaseModule::commitTransaction();
+      return Utilities::generateErrorMessage(NotFound::CODE);
+    }
+    
+    // ==== Change permission check ======================================================
+    
+    if ($message['author'] !== $originUser['user_id'] && !$this->authorizeChatMember(
+        $chat,
+        $originUser['user_id'],
+        Permission::DeleteMessages
+      )) {
+      DatabaseModule::commitTransaction();
+      return Utilities::generateErrorMessage(Forbidden::CODE);
+    }
+    
+    // ==== Safe zone ====================================================================
+    $messagesChatName = "chat_" . $chat . "_messages";
+    
+    DatabaseModule::execute(
+      "UPDATE `:name` 
+             SET active = FALSE 
+             WHERE message_key = :message_key",
+      [
+        ":name"        => $messagesChatName,
+        ":message_key" => $message['message_key'],
+      ]
+    );
+    
+    // ==== Prepare return ===============================================================
+    // retrieve members for channel packet
+    $membersChatName = "chat_" . $chat . "_members";
+    
+    $members = DatabaseModule::fetchAll(
+      "SELECT username
+             FROM users
+               INNER JOIN `:name` members on users.user_id = members.user
+             WHERE members.active = TRUE",
+      [
+        ":name" => $membersChatName,
+      ]
+    );
+    
+    DatabaseModule::commitTransaction();
+    
+    $members = array_map(fn($member): string => $member['username'], $members);
+    $members = array_filter($members, fn($member): bool => $member !== $originUser['username']);
+    
+    // ==== Send channel packet to chat packet and return ================================
+    WebSocketModule::sendChannelPacket(
+      directive: "DELETE",
+      topic    : "message",
+      origin   : $originUser['username'],
+      target_s : $members,
+      body     : [
+                   "chat" => $chat,
+                   "type" => $chatType,
+                   "key"  => $message['message_key'],
+                 ]
+    );
+    
+    return null;
   }
   
   // ==== Administration ===========================================================================
@@ -4114,6 +4310,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     $contactChats = DatabaseModule::fetchAll('SELECT chat FROM contacts WHERE active = FALSE');
     
     foreach ($contactChats as $contactChat) {
+      // TODO delete inside chat tables
       DatabaseModule::execute(
         'DROP TABLE `:name`',
         [

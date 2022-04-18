@@ -18,7 +18,7 @@ CorsService::handle('auth');
 if ($method == 'OPTIONS') return;
 
 // ==== Invalid methods checks ===========================================================
-$validMethods = ['POST', 'GET', 'PATCH', 'PUT', 'DELETE'];
+$validMethods = ['POST', 'GET', 'PUT', 'DELETE'];
 
 if (!in_array($method, $validMethods)) {
   http_response_code(405);
@@ -33,13 +33,11 @@ $body = json_decode(file_get_contents('php://input'), JSON_OBJECT_AS_ARRAY);
 if ($method == 'POST') {
   // ==== Get parameters =======================================================
   $token = $headers['token'] ?? null;
-  $name = $headers['name'] ?? null;
-  $info = $body['info'] ?? null;
-  $picture = $body['picture'] ?? null;
-  $users = $headers['users'] ?? null;
+  $group = $headers['group'] ?? null;
+  $user = $headers['user'] ?? null;
   
   // ==== Null check ===========================================================
-  if (is_null($token) || is_null($name)) {
+  if (is_null($token) || is_null($group) || is_null($user)) {
     http_response_code(ErrorCases::CODES_ASSOCIATIONS[NullAttributes::CODE]);
     echo json_encode(
       Utilities::generateErrorMessage(NullAttributes::CODE)
@@ -48,17 +46,10 @@ if ($method == 'POST') {
   }
   
   // ==== Elaboration ==========================================================
-  $users = !is_null($users) ? array_map(
-    fn($user): string => trim($user, "[] \n\r\t\v\x00"),
-    explode(",", $users)
-  ) : null;
-  
-  $result = $service->createGroup(
+  $result = $service->addMember(
     $token,
-    $name,
-    $info,
-    $picture,
-    $users,
+    $group,
+    $user,
   );
   
   // ==== Error case ===========================================================
@@ -79,9 +70,10 @@ if ($method == 'GET') {
   // ==== Get parameters =======================================================
   $token = $headers['token'] ?? null;
   $group = $headers['group'] ?? null;
+  $user = $headers['user'] ?? null;
   
   // ==== Null check ===========================================================
-  if (is_null($token)) {
+  if (is_null($token) || is_null($group)) {
     http_response_code(ErrorCases::CODES_ASSOCIATIONS[NullAttributes::CODE]);
     echo json_encode(
       Utilities::generateErrorMessage(NullAttributes::CODE)
@@ -90,45 +82,10 @@ if ($method == 'GET') {
   }
   
   // ==== Elaboration ==========================================================
-  $result = $service->getGroupInformation(
+  $result = $service->getMemberList(
     $token,
     $group,
-  );
-  
-  // ==== Error case ===========================================================
-  if (isset($result['error'])) {
-    http_response_code(ErrorCases::CODES_ASSOCIATIONS[$result['error']]);
-    echo json_encode($result);
-    return;
-  }
-  
-  // ==== Success case =========================================================
-  echo json_encode($result);
-  return;
-}
-
-// ==== PATCH case =======================================================================
-// =======================================================================================
-if ($method == 'PATCH') {
-  // ==== Get parameters =======================================================
-  $token = $headers['token'] ?? null;
-  $group = $headers['group'] ?? null;
-  $directive = $headers['directive'] ?? null;
-  
-  // ==== Null check ===========================================================
-  if (is_null($token) || is_null($group) || is_null($directive)) {
-    http_response_code(ErrorCases::CODES_ASSOCIATIONS[NullAttributes::CODE]);
-    echo json_encode(
-      Utilities::generateErrorMessage(NullAttributes::CODE)
-    );
-    return;
-  }
-  
-  // ==== Elaboration ==========================================================
-  $result = $service->changeGroupStatus(
-    $token,
-    $group,
-    $directive
+    $user,
   );
   
   // ==== Error case ===========================================================
@@ -149,12 +106,11 @@ if ($method == 'PUT') {
   // ==== Get parameters =======================================================
   $token = $headers['token'] ?? null;
   $group = $headers['group'] ?? null;
-  $name = $headers['name'] ?? null;
-  $info = $headers['info'] ?? null;
-  $picture = $body['picture'] ?? null;
+  $user = $headers['user'] ?? null;
+  $permission = $headers['permission'] ?? null;
   
   // ==== Null check ===========================================================
-  if (is_null($token) || is_null($group)) {
+  if (is_null($token) || is_null($group) || is_null($user) || is_null($permission)) {
     http_response_code(ErrorCases::CODES_ASSOCIATIONS[NullAttributes::CODE]);
     echo json_encode(
       Utilities::generateErrorMessage(NullAttributes::CODE)
@@ -163,12 +119,11 @@ if ($method == 'PUT') {
   }
   
   // ==== Elaboration ==========================================================
-  $result = $service->changeGroupInformation(
+  $result = $service->changeMemberPermission(
     $token,
     $group,
-    $name,
-    $info,
-    $picture
+    $user,
+    $permission
   );
   
   // ==== Error case ===========================================================
@@ -181,6 +136,7 @@ if ($method == 'PUT') {
   // ==== Success case =========================================================
   echo json_encode($result);
   return;
+  
 }
 
 // ==== DELETE case ======================================================================
@@ -189,9 +145,10 @@ if ($method == 'DELETE') {
   // ==== Get parameters =======================================================
   $token = $headers['token'] ?? null;
   $group = $headers['group'] ?? null;
+  $user = $headers['user'] ?? null;
   
   // ==== Null check ===========================================================
-  if (is_null($token) || is_null($group)) {
+  if (is_null($token) || is_null($group) || is_null($user)) {
     http_response_code(ErrorCases::CODES_ASSOCIATIONS[NullAttributes::CODE]);
     echo json_encode(
       Utilities::generateErrorMessage(NullAttributes::CODE)
@@ -200,9 +157,10 @@ if ($method == 'DELETE') {
   }
   
   // ==== Elaboration ==========================================================
-  $result = $service->exitGroup(
+  $result = $service->removeMember(
     $token,
     $group,
+    $user,
   );
   
   // ==== Error case ===========================================================

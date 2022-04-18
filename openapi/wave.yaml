@@ -1002,6 +1002,12 @@ paths:
           description: The eventual text of the message.
           schema:
             $ref: "#/components/schemas/messageText"
+        - name: media
+          in: header
+          required: false
+          description: The eventual media of the message.
+          schema:
+            $ref: "#/components/schemas/messageMedia"
       requestBody:
         required: false
         description: The eventual media of the message.
@@ -1635,5 +1641,7 @@ components:
           $ref: "#/components/schemas/userName"
         authorSurname:
           $ref: "#/components/schemas/userSurname"
+        authorPicture:
+          $ref: "#/components/schemas/userPicture"
         pinned:
           $ref: "#/components/schemas/messagePinned"

@@ -3503,6 +3503,13 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
       return Utilities::generateErrorMessage($tokenValidation);
     }
     
+    if (!is_null($text)) {
+      $textValidation = Message::validateText($text);
+      if ($textValidation != Success::CODE) {
+        return Utilities::generateErrorMessage($textValidation);
+      }
+    }
+    
     // if content is not given than the message doesn't have media, only text.
     // but, if it is given and is different than "M" than the media mustn't by null
     if (!is_null($content)) {
@@ -3582,6 +3589,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
       }
       
       $chat = $group['chat'];
+      $chatType = "group";
     } else { // Contacts realm
       
       // ==== Parameter validation =======================================================
@@ -3626,6 +3634,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
       }
       
       $chat = $contact['chat'];
+      $chatType = "contact";
     }
     
     // ==== Unique identifier creation ===================================================
@@ -3727,7 +3736,11 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
       topic    : "message",
       origin   : $originUser['username'],
       target_s : $members,
-      body     : $body
+      body     : [
+                   "chat" => $chat,
+                   "type" => $chatType,
+                   ...$body,
+                 ]
     );
     
     return $body;
@@ -3746,8 +3759,328 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     ?string $media = null,
     ?bool   $pinned = null,
   ): array {
-    // TODO: Implement changeMessage() method.
-    return [];
+    if (!(is_null($group) xor is_null($contact))) {
+      return Utilities::generateErrorMessage(NullAttributes::CODE);
+    }
+    
+    if (is_null($text) and is_null($media)) {
+      return Utilities::generateErrorMessage(NullAttributes::CODE);
+    }
+    
+    $tokenValidation = Session::validateToken($token);
+    if ($tokenValidation != Success::CODE) {
+      return Utilities::generateErrorMessage($tokenValidation);
+    }
+    
+    // ==== Modular validation and query preparation =====================================
+    $variableUpdateQuery =
+      '# noinspection
+      UPDATE `:name` SET ';
+    $variableAttributes = [
+      ":name" => null,
+    ];
+    
+    if (!is_null($text)) {
+      $textValidation = Message::validateText($text);
+      if ($textValidation != Success::CODE) {
+        return Utilities::generateErrorMessage($textValidation);
+      }
+      
+      $variableUpdateQuery .= "text = :text, ";
+      $variableAttributes[':text'] = $text;
+    }
+    
+    // if content is not given than the media isn't updated.
+    // but, if it is given and is different than "M" than the media mustn't by null
+    if (!is_null($content)) {
+      if ($content !== "M" && is_null($media)) {
+        return Utilities::generateErrorMessage(NullAttributes::CODE);
+      }
+      
+      $contentValidation = Message::validateContent($content);
+      if ($contentValidation != Success::CODE) {
+        return Utilities::generateErrorMessage($contentValidation);
+      }
+    }
+    
+    // ==== Token authorization ==========================================================
+    $tokenAuthorization = $this->authorizeToken($token);
+    
+    if ($tokenAuthorization != Success::CODE) {
+      return Utilities::generateErrorMessage($tokenAuthorization);
+    }
+    
+    // ===================================================================================
+    DatabaseModule::beginTransaction();
+    
+    $originUser = DatabaseModule::fetchOne(
+      'SELECT user_id, username, name, surname, picture
+             FROM users
+               INNER JOIN sessions on users.user_id = sessions.user
+             WHERE sessions.session_token = :session_token',
+      [
+        ':session_token' => $token,
+      ]
+    );
+    
+    // ==== Chat identification ==========================================================
+    if (is_null($contact)) { // Groups realm
+      
+      // ==== Parameter validation =======================================================
+      $groupValidation = Group::validateGroup($group);
+      if ($groupValidation != Success::CODE) {
+        return Utilities::generateErrorMessage($groupValidation);
+      }
+      
+      // ==== Groups existence check =====================================================
+      $group = DatabaseModule::fetchOne(
+        'SELECT group_id, name, info, picture, chat
+             FROM `groups`
+             WHERE active = TRUE
+               AND chat = :chat',
+        [
+          ':chat' => $group,
+        ]
+      );
+      
+      if (!is_array($group)) {
+        DatabaseModule::commitTransaction();
+        return Utilities::generateErrorMessage(NotFound::CODE);
+      }
+      
+      // ==== Relation existence check ===================================================
+      $membership = DatabaseModule::fetchOne(
+        'SELECT state, muted
+             FROM groups_members
+             WHERE active = TRUE
+               AND `group` = :group
+               AND user = :user',
+        [
+          ':group' => $group['group_id'],
+          ':user'  => $originUser['user_id'],
+        ]
+      );
+      
+      if (!is_array($membership)) {
+        DatabaseModule::commitTransaction();
+        return Utilities::generateErrorMessage(NotFound::CODE);
+      }
+      
+      $chat = $group['chat'];
+      $chatType = "group";
+    } else { // Contacts realm
+      
+      // ==== Parameter validation =======================================================
+      $usernameValidation = User::validateUsername($contact);
+      if ($usernameValidation != Success::CODE) {
+        return Utilities::generateErrorMessage($usernameValidation);
+      }
+      
+      // ==== Target existence check =======================================================
+      $targetedUser = DatabaseModule::fetchOne(
+        'SELECT user_id, username, name, surname, picture
+             FROM users
+             WHERE username = BINARY :username',
+        [
+          ':username' => $contact,
+        ]
+      );
+      
+      if (!is_array($targetedUser)) {
+        DatabaseModule::commitTransaction();
+        return Utilities::generateErrorMessage(NotFound::CODE);
+      }
+      
+      // ==== Contact existence check ======================================================
+      $contact = DatabaseModule::fetchOne(
+        'SELECT second_user, status, chat, blocked_by
+             FROM contacts
+             WHERE active = TRUE
+               AND ((first_user = :first_user
+               AND second_user = :second_user)
+                OR (first_user = :second_user
+               AND second_user = :first_user))',
+        [
+          ':first_user'  => $originUser['user_id'],
+          ':second_user' => $targetedUser['user_id'],
+        ]
+      );
+      
+      if (!is_array($contact)) {
+        DatabaseModule::commitTransaction();
+        return Utilities::generateErrorMessage(NotFound::CODE);
+      }
+      
+      $chat = $contact['chat'];
+      $chatType = "contact";
+    }
+    
+    // ==== Message existence check ===================================================
+    $messagesChatName = "chat_" . $chat . "_messages";
+    
+    $message = DatabaseModule::fetchOne(
+      "SELECT message_key, content, text, media, author, pinned
+             FROM `:name`
+             WHERE active = TRUE
+               AND message_key = :message_key",
+      [
+        ":name"        => $messagesChatName,
+        ":message_key" => $message,
+      ]
+    );
+    
+    if (!is_array($message)) {
+      DatabaseModule::commitTransaction();
+      return Utilities::generateErrorMessage(NotFound::CODE);
+    }
+    
+    // ==== Change permission check ======================================================
+    
+    if ($message['author'] !== $originUser['user_id'] && !$this->authorizeChatMember(
+        $chat,
+        $originUser['user_id'],
+        Permission::ChangeMessages
+      )) {
+      DatabaseModule::commitTransaction();
+      return Utilities::generateErrorMessage(Forbidden::CODE);
+    }
+    
+    // ==== Pinned validation and preparation ============================================
+    if (!is_null($pinned)) {
+      if (!$this->authorizeChatMember(
+        $chat,
+        $originUser['user_id'],
+        Permission::PinMessages
+      )) {
+        DatabaseModule::commitTransaction();
+        return Utilities::generateErrorMessage(Forbidden::CODE);
+      }
+      
+      if ($pinned === !!$message['pinned']) {
+        DatabaseModule::commitTransaction();
+        return Utilities::generateErrorMessage(WrongStatus::CODE);
+      }
+      
+      $variableUpdateQuery .= "pinned = :pinned, ";
+      $variableAttributes[':pinned'] = $pinned;
+    }
+    
+    // ==== Content validation, fs modulation and query preparation ======================
+    if ($content === 'I') {
+      $filepath = $_SERVER['DOCUMENT_ROOT'] . "filesystem/images/message/" . $message['message_key'];
+      $filepath = MIMEService::updateMedia($filepath, $media);
+      if (!is_string($filepath)) {
+        DatabaseModule::commitTransaction();
+        return Utilities::generateErrorMessage($filepath);
+      }
+      
+      $variableUpdateQuery .= "content = :content, ";
+      $variableAttributes[':content'] = "I";
+      
+      $variableUpdateQuery .= "media = :media, ";
+      $variableAttributes[':media'] = $filepath;
+    }
+    
+    // delete media, since it was explicit
+    if ($content === 'M' && !is_null($message['media'])) {
+      $result = MIMEService::deleteMedia($message['media']);
+      if (!is_null($result)) {
+        DatabaseModule::commitTransaction();
+        return Utilities::generateErrorMessage($result);
+      }
+      
+      $variableUpdateQuery .= "content = :content, ";
+      $variableAttributes[':content'] = "M";
+      
+      $variableUpdateQuery .= "media = :media, ";
+      $variableAttributes[':media'] = null;
+    }
+    
+    if (count($variableAttributes) === 1) {
+      DatabaseModule::commitTransaction();
+      return Utilities::generateErrorMessage(NullAttributes::CODE);
+    }
+    
+    // ==== Safe zone ====================================================================
+    $variableAttributes[':name'] = $messagesChatName;
+    
+    // cut last ", " and append WHERE clause
+    $variableUpdateQuery = substr(
+        $variableUpdateQuery,
+        0,
+        strlen($variableUpdateQuery) - 2
+      ) . ' WHERE message_key = :message_key';
+    $variableAttributes[':message_key'] = $message['message_key'];
+    
+    DatabaseModule::execute(
+      $variableUpdateQuery,
+      $variableAttributes
+    );
+    
+    // ==== Prepare return ===============================================================
+    // retrieve members for channel packet
+    $membersChatName = "chat_" . $chat . "_members";
+    
+    $members = DatabaseModule::fetchAll(
+      "SELECT username
+             FROM users
+               INNER JOIN `:name` members on users.user_id = members.user
+             WHERE members.active = TRUE",
+      [
+        ":name" => $membersChatName,
+      ]
+    );
+    
+    $members = array_map(fn($member): string => $member['username'], $members);
+    $members = array_filter($members, fn($member): bool => $member !== $originUser['username']);
+    
+    // retrieve created message data
+    $message = DatabaseModule::fetchOne(
+      "SELECT message_key, timestamp, content, text, media, author, pinned
+             FROM `:name`
+             WHERE message_key = :message_key",
+      [
+        ":name"        => $messagesChatName,
+        ":message_key" => $message['message_key'],
+      ]
+    );
+    
+    DatabaseModule::commitTransaction();
+    
+    // retrieve message media and author picture
+    $filepath = $message['media'];
+    $messageMedia = !is_null($filepath) ? MIMEService::researchMedia($filepath) : null;
+    
+    $filepath = $originUser['picture'];
+    $originUserPicture = !is_null($filepath) ? MIMEService::researchMedia($filepath) : null;
+    
+    // ==== Send channel packet to chat packet and return ================================
+    $body = [
+      "key"            => $message['message_key'],
+      "timestamp"      => $message['timestamp'],
+      "content"        => $message['content'],
+      "text"           => $message['text'],
+      "media"          => $messageMedia,
+      "authorUsername" => $originUser['username'],
+      "authorName"     => $originUser['name'],
+      "authorSurname"  => $originUser['surname'],
+      "authorPicture"  => $originUserPicture,
+      "pinned"         => !!$message['pinned'],
+    ];
+    
+    WebSocketModule::sendChannelPacket(
+      directive: "UPDATE",
+      topic    : "message",
+      origin   : $originUser['username'],
+      target_s : $members,
+      body     : [
+                   "chat" => $chat,
+                   "type" => $chatType,
+                   ...$body,
+                 ]
+    );
+    
+    return $body;
   }
   
   /**

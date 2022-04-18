@@ -1071,6 +1071,12 @@ paths:
           description: The eventual new message's text.
           schema:
             $ref: "#/components/schemas/messageText"
+        - name: media
+          in: header
+          required: false
+          description: The eventual media of the message.
+          schema:
+            $ref: "#/components/schemas/messageMedia"
         - name: pinned
           in: header
           required: false

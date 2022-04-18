@@ -10,5 +10,6 @@ enum Permission: int {
   case ChangeInfo = 16;
   case ChangePicture = 32;
   case PinMessages = 64;
-  case DeleteMessages = 128;
+  case ChangeMessages = 128;
+  case DeleteMessages = 256;
 }

@@ -9,6 +9,7 @@ use Wave\Services\Database\DatabaseService;
 use Wave\Services\Database\Module\DatabaseModule;
 use Wave\Specifications\ErrorCases\Generic\NullAttributes;
 use Wave\Specifications\ErrorCases\Mime\IncorrectFileType;
+use Wave\Specifications\ErrorCases\State\Forbidden;
 use Wave\Specifications\ErrorCases\Success\Success;
 use Wave\Tests\Utilities\TestUtilities;
 use Wave\Utilities\Utilities;
@@ -320,6 +321,142 @@ class MessageTest extends TestCase {
     
     self::assertEquals(
       IncorrectFileType::CODE,
+      $result['error'],
+    );
+    
+    return $result;
+  }
+  
+  // ==== changeMessage ============================================================================
+  // ===============================================================================================
+  
+  /**
+   * @group changeMessage
+   */
+  public function testChangeMessageCorrectProcedure(): array {
+    echo PHP_EOL . 'Testing change message correct procedure...' . PHP_EOL;
+    
+    $randomMessage = 'Random message';
+    
+    $message = self::$service->writeMessage(
+      self::$firstUser['token'],
+      self::$group['uuid'],
+      null,
+      null,
+      $randomMessage
+    )['key'];
+    
+    $result = self::$service->changeMessage(
+      self::$firstUser['token'],
+      $message,
+      self::$group['uuid'],
+      null,
+      null,
+      "New random message"
+    );
+    
+    echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    self::assertEquals(
+      Success::CODE,
+      Message::validateKey($result['key']),
+    );
+    self::assertEquals(
+      Success::CODE,
+      Message::validateTimestamp($result['timestamp']),
+    );
+    self::assertEquals(
+      Success::CODE,
+      Message::validateContent($result['content']),
+    );
+    self::assertEquals(
+      Success::CODE,
+      Message::validateText($result['text']),
+    );
+    self::assertNull($result['media']);
+    self::assertEquals(
+      Success::CODE,
+      User::validateUsername($result['authorUsername']),
+    );
+    self::assertEquals(
+      Success::CODE,
+      User::validateName($result['authorName']),
+    );
+    self::assertEquals(
+      Success::CODE,
+      User::validateSurname($result['authorSurname']),
+    );
+    self::assertNull($result['authorPicture']);
+    self::assertIsBool($result['pinned']);
+    
+    return $result;
+  }
+  
+  /**
+   * @group changeMessage
+   */
+  public function testChangeMessageWithImageContent(): array {
+    echo PHP_EOL . 'Testing write message in group correct procedure...' . PHP_EOL;
+    
+    $randomMessage = 'Random message';
+    
+    $message = self::$service->writeMessage(
+      self::$firstUser['token'],
+      null,
+      self::$secondUser['username'],
+      null,
+      $randomMessage
+    )['key'];
+    
+    $result = self::$service->changeMessage(
+      self::$firstUser['token'],
+      $message,
+      null,
+      self::$secondUser['username'],
+      "I",
+      null,
+      Utilities::generateString()
+    );
+    
+    echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    self::assertEquals(
+      IncorrectFileType::CODE,
+      $result['error'],
+    );
+    
+    return $result;
+  }
+  
+  /**
+   * @group changeMessage
+   */
+  public function testChangeMessageWithUnauthorizedUser(): array {
+    echo PHP_EOL . 'Testing change message with unauthorized user...' . PHP_EOL;
+    
+    $randomMessage = 'Random message';
+    
+    $message = self::$service->writeMessage(
+      self::$firstUser['token'],
+      self::$group['uuid'],
+      null,
+      null,
+      $randomMessage
+    )['key'];
+    
+    $result = self::$service->changeMessage(
+      self::$secondUser['token'],
+      $message,
+      self::$group['uuid'],
+      null,
+      "M",
+      "New random message",
+    );
+    
+    echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    self::assertEquals(
+      Forbidden::CODE,
       $result['error'],
     );
     

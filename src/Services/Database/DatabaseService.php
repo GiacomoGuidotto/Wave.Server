@@ -896,8 +896,59 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
       }
     }
     
-    // ==== Delete user ==========================
-    // TODO recursive deletion of contact relation and group participation, not the messages
+    // ==== Delete user property =========================================================
+    
+    $contacts = DatabaseModule::fetchAll(
+      "SELECT first_user, second_user, status
+               FROM contacts
+              WHERE active = TRUE
+                AND (first_user = :first_user
+                 OR second_user = :first_user)",
+      [
+        ':first_user' => $userId,
+      ]
+    );
+    
+    $groups = DatabaseModule::fetchAll(
+      "SELECT chat
+             FROM `groups`
+                    INNER JOIN groups_members on `groups`.group_id = groups_members.`group`
+             WHERE groups_members.active = TRUE
+               AND groups_members.user = :user",
+      [
+        ":user" => $userId,
+      ]
+    );
+    
+    DatabaseModule::commitTransaction();
+    
+    // Delete contacts
+    foreach ($contacts as $contact) {
+      $contactUser = DatabaseModule::fetchOne(
+        "SELECT username
+               FROM users
+               WHERE user_id = :user_id",
+        [
+          ":user_id" => $contact['first_user'] === $userId ?
+            $contact['second_user'] :
+            $contact['first_user'],
+        ]
+      )['username'];
+      
+      if ($contact['status'] === "P") {
+        $this->deleteContactRequest($token, $contactUser);
+      } else {
+        $this->changeContactStatus($token, $contactUser, "R");
+      }
+    }
+    
+    // Delete groups
+    foreach ($groups as $group) {
+      $this->exitGroup($token, $group['chat']);
+    }
+    
+    // Delete user
+    DatabaseModule::beginTransaction();
     
     DatabaseModule::execute(
       'UPDATE users
@@ -909,6 +960,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     );
     
     DatabaseModule::commitTransaction();
+    
     return null;
   }
   
@@ -1017,6 +1069,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
       DatabaseModule::execute(
         'UPDATE contacts
                SET status = :status,
+                   blocked_by = null,
                    chat = :chat,
                    active = TRUE
                WHERE (first_user = :first_user
@@ -1418,7 +1471,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
       
       // Remove
       case 'R':
-        if ($oldStatus !== 'A') {
+        if (is_null($contact['chat'])) {
           DatabaseModule::commitTransaction();
           return Utilities::generateErrorMessage(WrongStatus::CODE);
         }
@@ -2549,6 +2602,17 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     
     // If origin is the last one
     if (count($members) === 1) {
+      // ==== Delete group picture =============================================
+      $filepath = $group['picture'];
+      
+      if (!is_null($filepath)) {
+        $result = MIMEService::deleteMedia($filepath);
+        if (!is_null($result)) {
+          DatabaseModule::commitTransaction();
+          return Utilities::generateErrorMessage($result);
+        }
+      }
+      
       // ==== Delete group =====================================================
       DatabaseModule::execute(
         "UPDATE `groups`

@@ -33,6 +33,8 @@ class TestUtilities {
           ':user_id' => $userId,
         ]
       );
+      
+      $chats = array_filter($chats, fn($chat) => !is_null($chat['chat']));
     } else {
       $chats = DatabaseModule::fetchAll(
         'SELECT chat

@@ -362,6 +362,28 @@ interface DatabaseServiceInterface {
   // ==== Use cases related to the messages management =============================================
   
   /**
+   * Write a message
+   *
+   * Write a message with the given data.
+   *
+   * @param string      $token   The token used to authenticate the user, extracted from the request
+   * @param string|null $group   The identifier to the specific group, extracted from the request
+   * @param string|null $contact The targeted contact's username, extracted from the request
+   * @param string|null $content The eventual content of the message, extracted from the request
+   * @param string|null $text    The eventual text of the message, extracted from the request
+   * @param string|null $media   The eventual media of the message, extracted from the request
+   * @return array               The public attributes of the message, saved in an array as object
+   */
+  public function writeMessage(
+    string  $token,
+    ?string $group = null,
+    ?string $contact = null,
+    ?string $content = null,
+    ?string $text = null,
+    ?string $media = null,
+  ): array;
+  
+  /**
    * Get the chat's messages in various ways
    *
    * Retrieve the messages of either a specified group or a specified contact.
@@ -390,28 +412,6 @@ interface DatabaseServiceInterface {
     ?string $to = null,
     ?bool   $pinned = null,
     ?string $message = null,
-  ): array;
-  
-  /**
-   * Write a message
-   *
-   * Write a message with the given data.
-   *
-   * @param string      $token   The token used to authenticate the user, extracted from the request
-   * @param string|null $group   The identifier to the specific group, extracted from the request
-   * @param string|null $contact The targeted contact's username, extracted from the request
-   * @param string|null $content The eventual content of the message, extracted from the request
-   * @param string|null $text    The eventual text of the message, extracted from the request
-   * @param string|null $media   The eventual media of the message, extracted from the request
-   * @return array               The public attributes of the message, saved in an array as object
-   */
-  public function writeMessage(
-    string  $token,
-    ?string $group = null,
-    ?string $contact = null,
-    ?string $content = null,
-    ?string $text = null,
-    ?string $media = null,
   ): array;
   
   /**

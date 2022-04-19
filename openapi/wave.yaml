@@ -901,6 +901,68 @@ paths:
     summary: Messages-related request
     description: The set of all the use cases related to the messages management.
 
+    post:
+      operationId: writeMessage
+      tags:
+        - Message
+      summary: Write a message
+      description: |
+        Write a message with the given data.  
+        This will trigger a ws packet to be sent to all the chat's members.
+      parameters:
+        - $ref: "#/components/parameters/sessionToken"
+        - name: group
+          in: header
+          required: false
+          description: The identifier to the specific group.
+          schema:
+            $ref: "#/components/schemas/groupUUID"
+        - name: contact
+          in: header
+          required: false
+          description: The targeted contact's username.
+          schema:
+            $ref: "#/components/schemas/userUsername"
+        - name: content
+          in: header
+          required: false
+          description: The eventual content of the message.
+          schema:
+            $ref: "#/components/schemas/messageContent"
+        - name: text
+          in: header
+          required: false
+          description: The eventual text of the message.
+          schema:
+            $ref: "#/components/schemas/messageText"
+      requestBody:
+        required: false
+        description: The eventual media of the message.
+        content:
+          image/png:
+            schema:
+              $ref: "#/components/schemas/messageMedia"
+          image/jpeg:
+            schema:
+              $ref: "#/components/schemas/messageMedia"
+      responses:
+        200:
+          description: |
+            The message is successfully wrote.  
+            Its information are retrieved.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/messageObject"
+        400:
+          $ref: "#/components/responses/400"
+        401:
+          $ref: "#/components/responses/401"
+        404:
+          $ref: "#/components/responses/404"
+        405:
+          $ref: "#/components/responses/405"
+
     get:
       operationId: getMessages
       tags:
@@ -970,74 +1032,6 @@ paths:
         406:
           $ref: "#/components/responses/406"
 
-    post:
-      operationId: writeMessage
-      tags:
-        - Message
-      summary: Write a message
-      description: |
-        Write a message with the given data.  
-        This will trigger a ws packet to be sent to all the chat's members.
-      parameters:
-        - $ref: "#/components/parameters/sessionToken"
-        - name: group
-          in: header
-          required: false
-          description: The identifier to the specific group.
-          schema:
-            $ref: "#/components/schemas/groupUUID"
-        - name: contact
-          in: header
-          required: false
-          description: The targeted contact's username.
-          schema:
-            $ref: "#/components/schemas/userUsername"
-        - name: content
-          in: header
-          required: false
-          description: The eventual content of the message.
-          schema:
-            $ref: "#/components/schemas/messageContent"
-        - name: text
-          in: header
-          required: false
-          description: The eventual text of the message.
-          schema:
-            $ref: "#/components/schemas/messageText"
-        - name: media
-          in: header
-          required: false
-          description: The eventual media of the message.
-          schema:
-            $ref: "#/components/schemas/messageMedia"
-      requestBody:
-        required: false
-        description: The eventual media of the message.
-        content:
-          image/png:
-            schema:
-              $ref: "#/components/schemas/messageMedia"
-          image/jpeg:
-            schema:
-              $ref: "#/components/schemas/messageMedia"
-      responses:
-        200:
-          description: |
-            The message is successfully wrote.  
-            Its information are retrieved.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/messageObject"
-        400:
-          $ref: "#/components/responses/400"
-        401:
-          $ref: "#/components/responses/401"
-        404:
-          $ref: "#/components/responses/404"
-        405:
-          $ref: "#/components/responses/405"
-
     put:
       operationId: changeMessage
       tags:
@@ -1073,12 +1067,6 @@ paths:
           description: The eventual new message's text.
           schema:
             $ref: "#/components/schemas/messageText"
-        - name: media
-          in: header
-          required: false
-          description: The eventual media of the message.
-          schema:
-            $ref: "#/components/schemas/messageMedia"
         - name: pinned
           in: header
           required: false

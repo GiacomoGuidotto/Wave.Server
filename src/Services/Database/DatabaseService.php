@@ -38,8 +38,6 @@ use Wave\Utilities\Utilities;
  */
 class DatabaseService extends Singleton implements DatabaseServiceInterface {
   
-  // TODO refactor to static methods and made them return the error code or null
-  
   // ==== Utility methods ==========================================================================
   // ==== Set of private methods ===================================================================
   
@@ -3474,8 +3472,283 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     ?bool   $pinned = null,
     ?string $message = null,
   ): array {
-    // TODO: Implement getMessages() method.
-    return [];
+    // if there isn't either a group or a contact specified, return
+    if (!(is_null($group) xor is_null($contact))) {
+      return Utilities::generateErrorMessage(NullAttributes::CODE);
+    }
+    
+    // if from and to aren't either both specified or both null, return
+    if (is_null($from) xor is_null($to)) {
+      return Utilities::generateErrorMessage(NullAttributes::CODE);
+    }
+    
+    if (is_null($from) && is_null($to) && is_null($pinned) && is_null($message)) {
+      return Utilities::generateErrorMessage(NullAttributes::CODE);
+    }
+    
+    // ==== Parameters validation ========================================================
+    $tokenValidation = Session::validateToken($token);
+    if ($tokenValidation != Success::CODE) {
+      return Utilities::generateErrorMessage($tokenValidation);
+    }
+    
+    // ==== Token authorization ==========================================================
+    $tokenAuthorization = $this->authorizeToken($token);
+    
+    if ($tokenAuthorization != Success::CODE) {
+      return Utilities::generateErrorMessage($tokenAuthorization);
+    }
+    
+    // ===================================================================================
+    DatabaseModule::beginTransaction();
+    
+    $originUser = DatabaseModule::fetchOne(
+      'SELECT user_id, username, name, surname, picture
+             FROM users
+               INNER JOIN sessions on users.user_id = sessions.user
+             WHERE sessions.session_token = :session_token',
+      [
+        ':session_token' => $token,
+      ]
+    );
+    
+    // ==== Chat identification ==========================================================
+    if (is_null($contact)) { // Groups realm
+      
+      // ==== Parameter validation =======================================================
+      $groupValidation = Group::validateGroup($group);
+      if ($groupValidation != Success::CODE) {
+        return Utilities::generateErrorMessage($groupValidation);
+      }
+      
+      // ==== Groups existence check =====================================================
+      $group = DatabaseModule::fetchOne(
+        'SELECT group_id, name, info, picture, chat
+             FROM `groups`
+             WHERE active = TRUE
+               AND chat = :chat',
+        [
+          ':chat' => $group,
+        ]
+      );
+      
+      if (!is_array($group)) {
+        DatabaseModule::commitTransaction();
+        return Utilities::generateErrorMessage(NotFound::CODE);
+      }
+      
+      // ==== Relation existence check ===================================================
+      $membership = DatabaseModule::fetchOne(
+        'SELECT state, muted
+             FROM groups_members
+             WHERE active = TRUE
+               AND `group` = :group
+               AND user = :user',
+        [
+          ':group' => $group['group_id'],
+          ':user'  => $originUser['user_id'],
+        ]
+      );
+      
+      if (!is_array($membership)) {
+        DatabaseModule::commitTransaction();
+        return Utilities::generateErrorMessage(NotFound::CODE);
+      }
+      
+      $chat = $group['chat'];
+    } else { // Contacts realm
+      
+      // ==== Parameter validation =======================================================
+      $usernameValidation = User::validateUsername($contact);
+      if ($usernameValidation != Success::CODE) {
+        return Utilities::generateErrorMessage($usernameValidation);
+      }
+      
+      // ==== Target existence check =======================================================
+      $targetedUser = DatabaseModule::fetchOne(
+        'SELECT user_id, username, name, surname, picture
+             FROM users
+             WHERE username = BINARY :username',
+        [
+          ':username' => $contact,
+        ]
+      );
+      
+      if (!is_array($targetedUser)) {
+        DatabaseModule::commitTransaction();
+        return Utilities::generateErrorMessage(NotFound::CODE);
+      }
+      
+      // ==== Contact existence check ======================================================
+      $contact = DatabaseModule::fetchOne(
+        'SELECT second_user, status, chat, blocked_by
+             FROM contacts
+             WHERE active = TRUE
+               AND ((first_user = :first_user
+               AND second_user = :second_user)
+                OR (first_user = :second_user
+               AND second_user = :first_user))',
+        [
+          ':first_user'  => $originUser['user_id'],
+          ':second_user' => $targetedUser['user_id'],
+        ]
+      );
+      
+      if (!is_array($contact)) {
+        DatabaseModule::commitTransaction();
+        return Utilities::generateErrorMessage(NotFound::CODE);
+      }
+      
+      $chat = $contact['chat'];
+    }
+    
+    // ==== Safe zone ====================================================================
+    $messagesChatName = "chat_" . $chat . "_messages";
+    
+    if (!is_null($message)) { // specific message domain
+      
+      // ==== Identifier validation ======================================================
+      $fromValidation = Message::validateKey($message);
+      if ($fromValidation != Success::CODE) {
+        return Utilities::generateErrorMessage($fromValidation);
+      }
+      
+      // ==== Message existence check ====================================================
+      
+      $message = DatabaseModule::fetchOne(
+        "SELECT message_key, timestamp, content, text, media, author, pinned
+             FROM `:name`
+             WHERE active = TRUE
+               AND message_key = :message_key",
+        [
+          ":name"        => $messagesChatName,
+          ":message_key" => $message,
+        ]
+      );
+      
+      DatabaseModule::commitTransaction();
+      
+      if (!is_array($message)) {
+        return Utilities::generateErrorMessage(NotFound::CODE);
+      }
+      
+      // retrieve message media and author picture
+      $filepath = $message['media'];
+      $messageMedia = !is_null($filepath) ? MIMEService::researchMedia($filepath) : null;
+      
+      $filepath = $originUser['picture'];
+      $originUserPicture = !is_null($filepath) ? MIMEService::researchMedia($filepath) : null;
+      
+      return [
+        "key"            => $message['message_key'],
+        "timestamp"      => $message['timestamp'],
+        "content"        => $message['content'],
+        "text"           => $message['text'],
+        "media"          => $messageMedia,
+        "authorUsername" => $originUser['username'],
+        "authorName"     => $originUser['name'],
+        "authorSurname"  => $originUser['surname'],
+        "authorPicture"  => $originUserPicture,
+        "pinned"         => !!$message['pinned'],
+      ];
+      
+    } else { // message list domain
+      if (!is_null($from) && !is_null($to)) { // range domain
+        
+        // ==== Range validation =========================================================
+        $fromValidation = Message::validateTimestamp($from);
+        if ($fromValidation != Success::CODE) {
+          return Utilities::generateErrorMessage($fromValidation);
+        }
+        
+        $toValidation = Message::validateTimestamp($to);
+        if ($toValidation != Success::CODE) {
+          return Utilities::generateErrorMessage($toValidation);
+        }
+        
+        // ==== Range retrieve ===========================================================
+        $messages = DatabaseModule::fetchAll(
+          "SELECT message_key, timestamp, content, text, media, author, pinned
+                 FROM `:name`
+                 WHERE active = TRUE
+                   AND timestamp > :from
+                   AND timestamp < :to",
+          [
+            ":name" => $messagesChatName,
+            ":from" => $from,
+            ":to"   => $to,
+          ]
+        );
+        
+        if (!is_null($pinned)) { // pin filter of range
+          
+          // ==== Pinned validation ======================================================
+          if ($pinned !== true) {
+            return Utilities::generateErrorMessage(WrongStatus::CODE);
+          }
+          
+          // ==== Range filter ===========================================================
+          $messages = array_filter($messages, fn($message): bool => !!$message['pinned']);
+        }
+      } else { // only pinned domain
+        
+        // ==== Pinned validation ========================================================
+        if ($pinned !== true) {
+          return Utilities::generateErrorMessage(WrongStatus::CODE);
+        }
+        
+        // ==== Messages filter ==========================================================
+        $messages = DatabaseModule::fetchAll(
+          "SELECT message_key, timestamp, content, text, media, author, pinned
+                 FROM `:name`
+                 WHERE active = TRUE
+                   AND pinned = TRUE",
+          [
+            ":name" => $messagesChatName,
+          ]
+        );
+      }
+      
+      // ==== Prepare return =============================================================
+      
+      $refactoredMessages = [];
+      
+      foreach ($messages as $message) {
+        $author = DatabaseModule::fetchOne(
+          "SELECT username, name, surname, picture
+             FROM users
+             WHERE user_id = :user_id",
+          [
+            ":user_id" => $message['author'],
+          ]
+        );
+        
+        // retrieve message media and author picture
+        $filepath = $message['media'];
+        $messageMedia = !is_null($filepath) ? MIMEService::researchMedia($filepath) : null;
+        
+        $filepath = $author['picture'];
+        $authorPicture = !is_null($filepath) ? MIMEService::researchMedia($filepath) : null;
+        
+        // ==== Send channel packet to chat packet and return ================================
+        $refactoredMessages[] = [
+          "key"            => $message['message_key'],
+          "timestamp"      => $message['timestamp'],
+          "content"        => $message['content'],
+          "text"           => $message['text'],
+          "media"          => $messageMedia,
+          "authorUsername" => $author['username'],
+          "authorName"     => $author['name'],
+          "authorSurname"  => $author['surname'],
+          "authorPicture"  => $authorPicture,
+          "pinned"         => !!$message['pinned'],
+        ];
+        
+      }
+      
+      DatabaseModule::commitTransaction();
+      return $refactoredMessages;
+    }
   }
   
   /**
@@ -3763,7 +4036,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
       return Utilities::generateErrorMessage(NullAttributes::CODE);
     }
     
-    if (is_null($text) and is_null($media)) {
+    if (is_null($text) and is_null($media) and is_null($pinned)) {
       return Utilities::generateErrorMessage(NullAttributes::CODE);
     }
     
@@ -4045,14 +4318,23 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
       ]
     );
     
+    $author = DatabaseModule::fetchOne(
+      "SELECT username, name, surname, picture
+             FROM users
+             WHERE user_id = :user_id",
+      [
+        ":user_id" => $message['author'],
+      ]
+    );
+    
     DatabaseModule::commitTransaction();
     
     // retrieve message media and author picture
     $filepath = $message['media'];
     $messageMedia = !is_null($filepath) ? MIMEService::researchMedia($filepath) : null;
     
-    $filepath = $originUser['picture'];
-    $originUserPicture = !is_null($filepath) ? MIMEService::researchMedia($filepath) : null;
+    $filepath = $author['picture'];
+    $authorPicture = !is_null($filepath) ? MIMEService::researchMedia($filepath) : null;
     
     // ==== Send channel packet to chat packet and return ================================
     $body = [
@@ -4061,10 +4343,10 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
       "content"        => $message['content'],
       "text"           => $message['text'],
       "media"          => $messageMedia,
-      "authorUsername" => $originUser['username'],
-      "authorName"     => $originUser['name'],
-      "authorSurname"  => $originUser['surname'],
-      "authorPicture"  => $originUserPicture,
+      "authorUsername" => $author['username'],
+      "authorName"     => $author['name'],
+      "authorSurname"  => $author['surname'],
+      "authorPicture"  => $authorPicture,
       "pinned"         => !!$message['pinned'],
     ];
     
@@ -4307,20 +4589,48 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     DatabaseModule::execute('DELETE FROM sessions WHERE active = FALSE');
     
     // ==== purge contact chat tables ====================================================
-    $contactChats = DatabaseModule::fetchAll('SELECT chat FROM contacts WHERE active = FALSE');
+    $contactChats = DatabaseModule::fetchAll('SELECT chat, active FROM contacts');
     
     foreach ($contactChats as $contactChat) {
-      // TODO delete inside chat tables
+      $chatMessages = 'chat_' . $contactChat['chat'] . '_messages';
+      $chatMembers = 'chat_' . $contactChat['chat'] . '_members';
+      
+      DatabaseModule::execute(
+        "DELETE FROM `:name` WHERE active = FALSE",
+        [
+          ":name" => $chatMembers,
+        ]
+      );
+      
+      DatabaseModule::execute(
+        "DELETE FROM `:name` WHERE active = FALSE",
+        [
+          ":name" => $chatMessages,
+        ]
+      );
+    }
+    
+    // ==== purge of contact chat tables =================================================
+    
+    $deletableChats = array_filter(
+      $contactChats,
+      fn($contactChat): bool => !$contactChat['active']
+    );
+    
+    foreach ($deletableChats as $deletableChat) {
+      $chatMessages = 'chat_' . $deletableChat['chat'] . '_messages';
+      $chatMembers = 'chat_' . $deletableChat['chat'] . '_members';
+      
       DatabaseModule::execute(
         'DROP TABLE `:name`',
         [
-          ':name' => 'chat_' . $contactChat['chat'] . '_messages',
+          ':name' => $chatMessages,
         ]
       );
       DatabaseModule::execute(
         'DROP TABLE `:name`',
         [
-          ':name' => 'chat_' . $contactChat['chat'] . '_members',
+          ':name' => $chatMembers,
         ]
       );
     }
@@ -4328,20 +4638,49 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     // ==== purge contacts ===============================================================
     DatabaseModule::execute('DELETE FROM contacts WHERE active = FALSE');
     
-    // ==== purge contact chat tables ====================================================
-    $groupChats = DatabaseModule::fetchAll('SELECT chat FROM `groups` WHERE active = FALSE');
+    // ==== purge group chat tables ======================================================
+    $groupChats = DatabaseModule::fetchAll('SELECT chat, active FROM `groups`');
     
     foreach ($groupChats as $groupChat) {
+      $chatMessages = 'chat_' . $groupChat['chat'] . '_messages';
+      $chatMembers = 'chat_' . $groupChat['chat'] . '_members';
+      
+      DatabaseModule::execute(
+        "DELETE FROM `:name` WHERE active = FALSE",
+        [
+          ":name" => $chatMembers,
+        ]
+      );
+      
+      DatabaseModule::execute(
+        "DELETE FROM `:name` WHERE active = FALSE",
+        [
+          ":name" => $chatMessages,
+        ]
+      );
+    }
+    
+    // ==== purge of group chat tables ===================================================
+    
+    $deletableChats = array_filter(
+      $groupChats,
+      fn($groupChat): bool => !$groupChat['active']
+    );
+    
+    foreach ($deletableChats as $deletableChat) {
+      $chatMessages = 'chat_' . $deletableChat['chat'] . '_messages';
+      $chatMembers = 'chat_' . $deletableChat['chat'] . '_members';
+      
       DatabaseModule::execute(
         'DROP TABLE `:name`',
         [
-          ':name' => 'chat_' . $groupChat['chat'] . '_messages',
+          ':name' => $chatMessages,
         ]
       );
       DatabaseModule::execute(
         'DROP TABLE `:name`',
         [
-          ':name' => 'chat_' . $groupChat['chat'] . '_members',
+          ':name' => $chatMembers,
         ]
       );
     }

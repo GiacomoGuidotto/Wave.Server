@@ -6,10 +6,12 @@ use PHPUnit\Framework\TestCase;
 use Wave\Model\Message\Message;
 use Wave\Model\User\User;
 use Wave\Services\Database\DatabaseService;
+use Wave\Services\Database\Module\DatabaseModule;
 use Wave\Specifications\ErrorCases\Generic\NullAttributes;
 use Wave\Specifications\ErrorCases\Mime\IncorrectFileType;
 use Wave\Specifications\ErrorCases\State\Forbidden;
 use Wave\Specifications\ErrorCases\Success\Success;
+use Wave\Tests\Utilities\TestUtilities;
 use Wave\Utilities\Utilities;
 
 class MessageTest extends TestCase {
@@ -325,6 +327,230 @@ class MessageTest extends TestCase {
     return $result;
   }
   
+  // ==== getMessages ==============================================================================
+  // ===============================================================================================
+  
+  /**
+   * @group getMessages
+   */
+  public function testGetMessageCorrectProcedure(): ?array {
+    echo PHP_EOL . 'Testing get message correct procedure...' . PHP_EOL;
+    
+    $randomMessage = 'Random message';
+    
+    $message = self::$service->writeMessage(
+      self::$firstUser['token'],
+      self::$group['uuid'],
+      null,
+      null,
+      $randomMessage
+    )['key'];
+    
+    $result = self::$service->getMessages(
+      self::$firstUser['token'],
+      self::$group['uuid'],
+      null,
+      null,
+      null,
+      null,
+      $message
+    );
+    
+    echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    self::assertEquals(
+      Success::CODE,
+      Message::validateKey($result['key']),
+    );
+    self::assertEquals(
+      Success::CODE,
+      Message::validateTimestamp($result['timestamp']),
+    );
+    self::assertEquals(
+      Success::CODE,
+      Message::validateContent($result['content']),
+    );
+    self::assertEquals(
+      Success::CODE,
+      Message::validateText($result['text']),
+    );
+    self::assertNull($result['media']);
+    self::assertEquals(
+      Success::CODE,
+      User::validateUsername($result['authorUsername']),
+    );
+    self::assertEquals(
+      Success::CODE,
+      User::validateName($result['authorName']),
+    );
+    self::assertEquals(
+      Success::CODE,
+      User::validateSurname($result['authorSurname']),
+    );
+    self::assertNull($result['authorPicture']);
+    self::assertIsBool($result['pinned']);
+    
+    return $result;
+  }
+  
+  /**
+   * @group getMessages
+   */
+  public function testGetMessagesCorrectProcedure(): ?array {
+    echo PHP_EOL . 'Testing get message list correct procedure...' . PHP_EOL;
+    
+    $randomMessage = 'Random message';
+    $secondRandomMessage = 'Second random message';
+    
+    $now = DatabaseModule::fetchOne("SELECT CURRENT_TIMESTAMP()")['CURRENT_TIMESTAMP()'];
+    // isolate DD from "YYYY-MM-DD HH-MM-SS"
+    $day = intval(explode("-", explode(" ", $now)[0])[2]);
+    
+    $from = str_replace("$day ", $day - 1 . " ", $now);
+    $to = str_replace("$day ", $day + 1 . " ", $now);
+    
+    self::$service->writeMessage(
+      self::$firstUser['token'],
+      self::$group['uuid'],
+      null,
+      null,
+      $randomMessage
+    );
+    
+    self::$service->writeMessage(
+      self::$firstUser['token'],
+      self::$group['uuid'],
+      null,
+      null,
+      $secondRandomMessage
+    );
+    
+    $result = self::$service->getMessages(
+      self::$firstUser['token'],
+      self::$group['uuid'],
+      null,
+      $from,
+      $to,
+    );
+    
+    echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    self::assertIsArray($result);
+    
+    return $result;
+  }
+  
+  /**
+   * @group getMessages
+   */
+  public function testGetPinnedMessagesCorrectProcedure(): ?array {
+    echo PHP_EOL . 'Testing get pinned messages correct procedure...' . PHP_EOL;
+    
+    $randomMessage = 'Random message';
+    $secondRandomMessage = 'Second random message';
+    
+    self::$service->writeMessage(
+      self::$firstUser['token'],
+      self::$group['uuid'],
+      null,
+      null,
+      $randomMessage
+    );
+    
+    $message = self::$service->writeMessage(
+      self::$firstUser['token'],
+      self::$group['uuid'],
+      null,
+      null,
+      $secondRandomMessage
+    )['key'];
+    
+    self::$service->changeMessage(
+      self::$firstUser['token'],
+      $message,
+      self::$group['uuid'],
+      null,
+      null,
+      null,
+      null,
+      true,
+    );
+    
+    $result = self::$service->getMessages(
+      self::$firstUser['token'],
+      self::$group['uuid'],
+      null,
+      null,
+      null,
+      true
+    );
+    
+    echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    self::assertIsArray($result);
+    
+    return $result;
+  }
+  
+  /**
+   * @group getMessages
+   */
+  public function testGetPinnedRangeMessagesCorrectProcedure(): ?array {
+    echo PHP_EOL . 'Testing get message list correct procedure...' . PHP_EOL;
+    
+    $randomMessage = 'Random message';
+    $secondRandomMessage = 'Second random message';
+    
+    $now = DatabaseModule::fetchOne("SELECT CURRENT_TIMESTAMP()")['CURRENT_TIMESTAMP()'];
+    // isolate DD from "YYYY-MM-DD HH-MM-SS"
+    $day = intval(explode("-", explode(" ", $now)[0])[2]);
+    
+    $from = str_replace("$day ", $day - 1 . " ", $now);
+    $to = str_replace("$day ", $day + 1 . " ", $now);
+    
+    self::$service->writeMessage(
+      self::$firstUser['token'],
+      self::$group['uuid'],
+      null,
+      null,
+      $randomMessage
+    );
+    
+    $message = self::$service->writeMessage(
+      self::$firstUser['token'],
+      self::$group['uuid'],
+      null,
+      null,
+      $secondRandomMessage
+    )['key'];
+    
+    self::$service->changeMessage(
+      self::$firstUser['token'],
+      $message,
+      self::$group['uuid'],
+      null,
+      null,
+      null,
+      null,
+      true,
+    );
+    
+    $result = self::$service->getMessages(
+      self::$firstUser['token'],
+      self::$group['uuid'],
+      null,
+      $from,
+      $to,
+      true
+    );
+    
+    echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    self::assertIsArray($result);
+    
+    return $result;
+  }
+  
   // ==== changeMessage ============================================================================
   // ===============================================================================================
   
@@ -461,6 +687,70 @@ class MessageTest extends TestCase {
     return $result;
   }
   
+  /**
+   * @group changeMessage
+   */
+  public function testPinMessageCorrectProcedure(): array {
+    echo PHP_EOL . 'Testing change message correct procedure...' . PHP_EOL;
+    
+    $randomMessage = 'Random message';
+    
+    $message = self::$service->writeMessage(
+      self::$firstUser['token'],
+      self::$group['uuid'],
+      null,
+      null,
+      $randomMessage
+    )['key'];
+    
+    $result = self::$service->changeMessage(
+      self::$firstUser['token'],
+      $message,
+      self::$group['uuid'],
+      null,
+      null,
+      null,
+      null,
+      true
+    );
+    
+    echo 'Result: ' . json_encode($result, JSON_PRETTY_PRINT) . PHP_EOL;
+    
+    self::assertEquals(
+      Success::CODE,
+      Message::validateKey($result['key']),
+    );
+    self::assertEquals(
+      Success::CODE,
+      Message::validateTimestamp($result['timestamp']),
+    );
+    self::assertEquals(
+      Success::CODE,
+      Message::validateContent($result['content']),
+    );
+    self::assertEquals(
+      Success::CODE,
+      Message::validateText($result['text']),
+    );
+    self::assertNull($result['media']);
+    self::assertEquals(
+      Success::CODE,
+      User::validateUsername($result['authorUsername']),
+    );
+    self::assertEquals(
+      Success::CODE,
+      User::validateName($result['authorName']),
+    );
+    self::assertEquals(
+      Success::CODE,
+      User::validateSurname($result['authorSurname']),
+    );
+    self::assertNull($result['authorPicture']);
+    self::assertIsBool($result['pinned']);
+    
+    return $result;
+  }
+  
   // ==== deleteMessage ============================================================================
   // ===============================================================================================
   
@@ -526,25 +816,25 @@ class MessageTest extends TestCase {
   }
   
   protected function tearDown(): void {
-//    TestUtilities::deleteGeneratedTables(self::$firstUser['username'], true);
-//    TestUtilities::deleteGeneratedTables(self::$firstUser['username']);
-//
-//    DatabaseModule::execute(
-//      'DELETE FROM `groups`
-//             WHERE name = :group_name',
-//      [
-//        ':group_name' => self::$group['name'],
-//      ]
-//    );
-//
-//    DatabaseModule::execute(
-//      'DELETE FROM users
-//             WHERE username = :first_username
-//                OR username = :second_username',
-//      [
-//        ':first_username' => self::$firstUser['username'],
-//        ':second_username' => self::$secondUser['username'],
-//      ]
-//    );
+    TestUtilities::deleteGeneratedTables(self::$firstUser['username'], true);
+    TestUtilities::deleteGeneratedTables(self::$firstUser['username']);
+    
+    DatabaseModule::execute(
+      'DELETE FROM `groups`
+             WHERE name = :group_name',
+      [
+        ':group_name' => self::$group['name'],
+      ]
+    );
+    
+    DatabaseModule::execute(
+      'DELETE FROM users
+             WHERE username = :first_username
+                OR username = :second_username',
+      [
+        ':first_username' => self::$firstUser['username'],
+        ':second_username' => self::$secondUser['username'],
+      ]
+    );
   }
 }

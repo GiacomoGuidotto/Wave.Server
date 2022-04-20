@@ -1,4 +1,8 @@
 <?php
+/**
+ * @author Giacomo Guidotto
+ */
+
 require '../../vendor/autoload.php';
 
 use Wave\Services\Database\DatabaseService;

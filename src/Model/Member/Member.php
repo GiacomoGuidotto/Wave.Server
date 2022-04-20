@@ -8,8 +8,10 @@ use Wave\Specifications\ErrorCases\Type\ExceedingMinimum;
 use Wave\Specifications\Wave\Wave;
 
 /**
- * MemberInterface resource class
- * The implementation of the MemberInterface interface
+ * Member resource class
+ * The implementation of the Member interface
+ *
+ * @author Giacomo Guidotto
  */
 class Member implements MemberInterface {
   

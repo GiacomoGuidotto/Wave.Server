@@ -1,4 +1,4 @@
-<?php /** @noinspection PhpArrayIndexImmediatelyRewrittenInspection */
+<?php
 
 namespace Wave\Tests\Services\Database\User;
 
@@ -17,6 +17,9 @@ use Wave\Specifications\ErrorCases\Type\IncorrectPattern;
 use Wave\Tests\Utilities\TestUtilities;
 use Wave\Utilities\Utilities;
 
+/**
+ * @author Giacomo Guidotto
+ */
 class UserTest extends TestCase {
   protected static DatabaseService $service;
   

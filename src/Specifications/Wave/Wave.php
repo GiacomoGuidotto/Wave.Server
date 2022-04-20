@@ -6,6 +6,8 @@ namespace Wave\Specifications\Wave;
  * Wave specifications.
  *
  * Set of global constant defining general details.
+ *
+ * @author Giacomo Guidotto
  */
 class Wave {
   const SESSION_DURATION = '15 minutes';

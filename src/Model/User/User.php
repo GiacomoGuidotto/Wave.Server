@@ -11,8 +11,10 @@ use Wave\Specifications\ErrorCases\Type\IncorrectPattern;
 use Wave\Specifications\Wave\Wave;
 
 /**
- * UserInterface resource class
- * The implementation of the UserInterface interface
+ * User resource class
+ * The implementation of the User interface
+ *
+ * @author Giacomo Guidotto
  */
 class User implements UserInterface {
   

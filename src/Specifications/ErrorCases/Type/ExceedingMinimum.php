@@ -3,7 +3,9 @@
 namespace Wave\Specifications\ErrorCases\Type;
 
 /**
- * @see ErrorCases
+ * @see    ErrorCases
+ *
+ * @author Giacomo Guidotto
  */
 interface ExceedingMinimum {
   const CODE = 25;

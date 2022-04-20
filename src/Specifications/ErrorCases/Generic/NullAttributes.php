@@ -3,7 +3,9 @@
 namespace Wave\Specifications\ErrorCases\Generic;
 
 /**
- * @see ErrorCases
+ * @see    ErrorCases
+ *
+ * @author Giacomo Guidotto
  */
 interface NullAttributes {
   const CODE = 10;

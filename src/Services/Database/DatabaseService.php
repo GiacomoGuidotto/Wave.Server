@@ -1,6 +1,4 @@
-<?php /** @noinspection PhpConditionAlreadyCheckedInspection */
-
-/** @noinspection SqlResolve */
+<?php
 
 namespace Wave\Services\Database;
 
@@ -34,7 +32,9 @@ use Wave\Utilities\Utilities;
 /**
  * Database service class
  *
- * The implementation of the DatabaseServiceInterface interface made for the MySQL database
+ * The implementation of the DatabaseService interface made for the MySQL database
+ *
+ * @author Giacomo Guidotto
  */
 class DatabaseService extends Singleton implements DatabaseServiceInterface {
   
@@ -4578,7 +4578,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     $messagesChatName = "chat_" . $chat . "_messages";
     
     $message = DatabaseModule::fetchOne(
-      "SELECT message_key, author
+      "SELECT message_key, author, media
              FROM `:name`
              WHERE active = TRUE
                AND message_key = :message_key",
@@ -4616,6 +4616,15 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
         ":message_key" => $message['message_key'],
       ]
     );
+    
+    
+    if (!is_null($message['media'])) {
+      $result = MIMEService::deleteMedia($message['media']);
+      if (!is_null($result)) {
+        DatabaseModule::commitTransaction();
+        return Utilities::generateErrorMessage($result);
+      }
+    }
     
     // ==== Prepare return ===============================================================
     // retrieve members for channel packet

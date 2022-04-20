@@ -13,6 +13,9 @@ use Wave\Services\Database\Module\DatabaseModule;
 use Wave\Specifications\ErrorCases\Success\Success;
 use Wave\Utilities\Utilities;
 
+/**
+ * @author Giacomo Guidotto
+ */
 class WebSocketModuleTest extends TestCase {
   protected static DatabaseService $service;
   

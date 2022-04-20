@@ -1,4 +1,4 @@
-<?php /** @noinspection PhpMissingParentConstructorInspection */
+<?php
 
 namespace Wave\Services\Log;
 
@@ -12,6 +12,8 @@ use Wave\Specifications\Logging\Logging;
  * Logging module
  *
  * Module for the management of the .log files
+ *
+ * @author Giacomo Guidotto
  */
 class LogModule extends Singleton {
   private static StreamHandler $defaultStream;
@@ -37,36 +39,36 @@ class LogModule extends Singleton {
     self::$errorStream->setFormatter($formatter);
   }
   
-  // TODO add context
   private static function writeLog(
     Logger    $logger,
     Intensity $intensity,
-    string    $message
+    string    $message,
+    array     $context = []
   ): void {
     switch ($intensity) {
       case Intensity::debug:
-        $logger->debug($message);
+        $logger->debug($message, $context);
         break;
       case Intensity::info:
-        $logger->info($message);
+        $logger->info($message, $context);
         break;
       case Intensity::notice:
-        $logger->notice($message);
+        $logger->notice($message, $context);
         break;
       case Intensity::warning:
-        $logger->warning($message);
+        $logger->warning($message, $context);
         break;
       case Intensity::error:
-        $logger->error($message);
+        $logger->error($message, $context);
         break;
       case Intensity::critical:
-        $logger->critical($message);
+        $logger->critical($message, $context);
         break;
       case Intensity::alert:
-        $logger->alert($message);
+        $logger->alert($message, $context);
         break;
       case Intensity::emergency:
-        $logger->emergency($message);
+        $logger->emergency($message, $context);
         break;
     }
   }
@@ -78,6 +80,7 @@ class LogModule extends Singleton {
    * @param string    $method    The definer of the use case
    * @param string    $message   The log message
    * @param bool      $error     The flag for write in the error.log file
+   * @param array     $context   The context of the log message
    * @param Intensity $intensity The optional intensity of the message
    * @return void
    */
@@ -86,6 +89,7 @@ class LogModule extends Singleton {
     string    $method,
     string    $message,
     bool      $error = false,
+    array     $context = [],
     Intensity $intensity = Intensity::info
   ): void {
     LogModule::getInstance();
@@ -111,7 +115,8 @@ class LogModule extends Singleton {
     self::writeLog(
       $logger,
       $intensity,
-      "[$method] | $message"
+      "[$method] | $message",
+      $context
     );
   }
 }

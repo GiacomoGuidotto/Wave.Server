@@ -2,6 +2,11 @@
 
 namespace Wave\Specifications\ErrorCases\WebSocket;
 
+/**
+ * @see    ErrorCases
+ *
+ * @author Giacomo Guidotto
+ */
 interface IncorrectPacketSchema {
   const CODE = 60;
   const MESSAGE = "Incorrect packet schema";

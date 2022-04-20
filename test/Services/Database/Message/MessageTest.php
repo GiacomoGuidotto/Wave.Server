@@ -14,6 +14,9 @@ use Wave\Specifications\ErrorCases\Success\Success;
 use Wave\Tests\Utilities\TestUtilities;
 use Wave\Utilities\Utilities;
 
+/**
+ * @author Giacomo Guidotto
+ */
 class MessageTest extends TestCase {
   protected static DatabaseService $service;
   

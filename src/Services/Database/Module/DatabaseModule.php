@@ -1,4 +1,4 @@
-<?php /** @noinspection PhpMissingParentConstructorInspection */
+<?php
 
 namespace Wave\Services\Database\Module;
 
@@ -11,6 +11,8 @@ use Wave\Specifications\Database\Database;
  * Database module
  *
  * Access point to the MySQL database
+ *
+ * @author Giacomo Guidotto
  */
 class DatabaseModule extends Singleton {
   private PDO $database;

@@ -14,6 +14,9 @@ use Wave\Specifications\Wave\Wave;
 use Wave\Tests\Utilities\TestUtilities;
 use Wave\Utilities\Utilities;
 
+/**
+ * @author Giacomo Guidotto
+ */
 class MemberTest extends TestCase {
   protected static DatabaseService $service;
   

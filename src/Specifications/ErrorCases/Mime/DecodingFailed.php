@@ -3,7 +3,9 @@
 namespace Wave\Specifications\ErrorCases\Mime;
 
 /**
- * @see ErrorCases
+ * @see    ErrorCases
+ *
+ * @author Giacomo Guidotto
  */
 interface DecodingFailed {
   const CODE = 32;

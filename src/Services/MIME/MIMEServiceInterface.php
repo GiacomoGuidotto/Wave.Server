@@ -6,6 +6,8 @@ namespace Wave\Services\MIME;
  * MIME service
  *
  * CRUD-based service for MultipurposeInternetMailExtension (MIME) management
+ *
+ * @author Giacomo Guidotto
  */
 interface MIMEServiceInterface {
   /**

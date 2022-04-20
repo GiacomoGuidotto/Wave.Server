@@ -1,4 +1,4 @@
-<?php /** @noinspection PhpMissingParentConstructorInspection */
+<?php
 
 namespace Wave\Services\WebSocket;
 
@@ -18,6 +18,8 @@ use Wave\Utilities\Utilities;
  * WebSocket service
  *
  * WAMP-based service for the "Channel" management
+ *
+ * @author Giacomo Guidotto
  */
 class WebSocketModule extends Singleton implements MessageComponentInterface {
   
@@ -75,10 +77,12 @@ class WebSocketModule extends Singleton implements MessageComponentInterface {
       LogModule::log(
         'WebSocket',
         'sending message to server',
-        "failed to send, connection isn't initialized: " . $e->getMessage(),
-        true
+        "failed to send, connection isn't initialized",
+        true,
+        [
+          "message" => $e->getMessage(),
+        ]
       );
-      // TODO replace with context
       return;
     }
     
@@ -256,9 +260,12 @@ class WebSocketModule extends Singleton implements MessageComponentInterface {
     LogModule::log(
       'WebSocket',
       'Connection interface',
-      'General error caught by the interface: ' . $e->getMessage(),
+      'General error caught by the interface',
       true,
-    ); // TODO replace with context
+      [
+        "message" => $e->getMessage(),
+      ]
+    );
     if ($this->users->contains($conn)) {
       $this->users->detach($conn);
     }

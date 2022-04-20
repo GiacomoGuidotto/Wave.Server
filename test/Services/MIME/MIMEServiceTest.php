@@ -7,6 +7,9 @@ use Wave\Model\User\User;
 use Wave\Services\MIME\MIMEService;
 use Wave\Specifications\ErrorCases\Success\Success;
 
+/**
+ * @author Giacomo Guidotto
+ */
 class MIMEServiceTest extends TestCase {
   private static string $documentRoot;
   

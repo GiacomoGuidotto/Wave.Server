@@ -72,6 +72,8 @@ use Wave\Specifications\ErrorCases\WebSocket\IncorrectPacketSchema;
  *
  * ==== websocket-related ====
  * 60 Incorrect packet schema
+ *
+ * @author Giacomo Guidotto
  */
 interface ErrorCases {
   const CODES_ASSOCIATIONS = [

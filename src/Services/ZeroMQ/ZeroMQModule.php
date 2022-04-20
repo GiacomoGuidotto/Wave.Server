@@ -1,4 +1,4 @@
-<?php /** @noinspection PhpMissingParentConstructorInspection */
+<?php
 
 namespace Wave\Services\ZeroMQ;
 
@@ -17,6 +17,8 @@ use ZMQSocket;
  * ZeroMQ module
  *
  * Module for the management of the MessageQueue sockets
+ *
+ * @author Giacomo Guidotto
  */
 class ZeroMQModule extends Singleton {
   private ZMQSocket $pushSocket;
@@ -67,8 +69,11 @@ class ZeroMQModule extends Singleton {
       LogModule::log(
         'ZeroMQ',
         'data sending',
-        "failed to send: " . $e->getMessage(), // TODO change with context
+        "failed to send",
         true,
+        [
+          "message" => $e->getMessage(),
+        ]
       );
     }
   }

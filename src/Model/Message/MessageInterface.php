@@ -3,8 +3,10 @@
 namespace Wave\Model\Message;
 
 /**
- * MessageInterface resource
+ * Message resource
  * Set of static methods for the user's attributes validations
+ *
+ * @author Giacomo Guidotto
  */
 interface MessageInterface {
   /**

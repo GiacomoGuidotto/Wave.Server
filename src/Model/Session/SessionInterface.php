@@ -3,8 +3,10 @@
 namespace Wave\Model\Session;
 
 /**
- * SessionInterface resource
+ * Session resource
  * Set of static methods for the session's attributes validations
+ *
+ * @author Giacomo Guidotto
  */
 interface SessionInterface {
   /**

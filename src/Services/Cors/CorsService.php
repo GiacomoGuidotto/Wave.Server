@@ -6,6 +6,8 @@ namespace Wave\Services\Cors;
  * CORS handler:
  * if request is made by a web browser the cors headers must be return
  * in response of a "preflight" of the origin (an OPTIONS request)
+ *
+ * @author Giacomo Guidotto
  */
 class CorsService {
   public static function handle(string $endpoint) {

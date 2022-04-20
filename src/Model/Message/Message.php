@@ -10,8 +10,10 @@ use Wave\Specifications\ErrorCases\Type\IncorrectParsing;
 use Wave\Specifications\ErrorCases\Type\IncorrectPattern;
 
 /**
- * MessageInterface resource class
- * The implementation of the MessageInterface interface
+ * Message resource class
+ * The implementation of the Message interface
+ *
+ * @author Giacomo Guidotto
  */
 class Message implements MessageInterface {
   

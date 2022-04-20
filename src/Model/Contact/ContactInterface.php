@@ -3,8 +3,10 @@
 namespace Wave\Model\Contact;
 
 /**
- * ContactInterface resource
+ * Contact resource
  * Set of static methods for the contact's attributes validations
+ *
+ * @author Giacomo Guidotto
  */
 interface ContactInterface {
   /**

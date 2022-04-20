@@ -2,6 +2,11 @@
 
 namespace Wave\Specifications\ErrorCases\Elaboration;
 
+/**
+ * @see    ErrorCases
+ *
+ * @author Giacomo Guidotto
+ */
 interface SelfRequest {
   const CODE = 50;
   const MESSAGE = "Self request";

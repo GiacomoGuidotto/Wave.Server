@@ -2,6 +2,11 @@
 
 namespace Wave\Specifications\ErrorCases\Elaboration;
 
+/**
+ * @see    ErrorCases
+ *
+ * @author Giacomo Guidotto
+ */
 interface DirectiveNotAllowed {
   const CODE = 54;
   const MESSAGE = "Directive not allowed";

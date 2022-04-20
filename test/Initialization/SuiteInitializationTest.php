@@ -7,6 +7,9 @@ use React\EventLoop\Loop;
 use React\EventLoop\LoopInterface;
 use Wave\Services\ZeroMQ\ZeroMQModule;
 
+/**
+ * @author Giacomo Guidotto
+ */
 class SuiteInitializationTest extends TestCase {
   private static LoopInterface $loop;
   

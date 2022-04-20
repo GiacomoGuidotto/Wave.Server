@@ -12,6 +12,9 @@ use Wave\Specifications\ErrorCases\Success\Success;
 use Wave\Specifications\ErrorCases\Type\IncorrectPattern;
 use Wave\Utilities\Utilities;
 
+/**
+ * @author Giacomo Guidotto
+ */
 class AuthenticationTest extends TestCase {
   private static DatabaseService $service;
   

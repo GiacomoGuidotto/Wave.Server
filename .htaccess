@@ -1,3 +1,5 @@
+# Author: Giacomo Guidotto
+
 # I: redirect to /public subfolder
 
 # IF the request (root + /public + path) is a file

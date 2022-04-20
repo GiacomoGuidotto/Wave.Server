@@ -9,8 +9,10 @@ use Wave\Specifications\ErrorCases\Type\ExceedingMinLength;
 use Wave\Specifications\ErrorCases\Type\IncorrectPattern;
 
 /**
- * SessionInterface resource class
- * The implementation of the SessionInterface interface
+ * Session resource class
+ * The implementation of the Session interface
+ *
+ * @author Giacomo Guidotto
  */
 class Session implements SessionInterface {
   

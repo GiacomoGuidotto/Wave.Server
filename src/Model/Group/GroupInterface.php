@@ -3,8 +3,10 @@
 namespace Wave\Model\Group;
 
 /**
- * GroupInterface resource
+ * Group resource
  * Set of static methods for the group's attributes validations
+ *
+ * @author Giacomo Guidotto
  */
 interface GroupInterface {
   /**

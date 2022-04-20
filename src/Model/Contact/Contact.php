@@ -8,8 +8,10 @@ use Wave\Specifications\ErrorCases\Type\ExceedingMinLength;
 use Wave\Specifications\ErrorCases\Type\IncorrectParsing;
 
 /**
- * ContactInterface resource class
- * The implementation of the UserInterface interface
+ * Contact resource class
+ * The implementation of the User interface
+ *
+ * @author Giacomo Guidotto
  */
 class Contact implements ContactInterface {
   

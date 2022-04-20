@@ -12,7 +12,9 @@ use Wave\Specifications\MIME\MIME;
 /**
  * MIME service class
  *
- * The implementation of the MIMEServiceInterface interface
+ * The implementation of the MIMEService interface
+ *
+ * @author Giacomo Guidotto
  */
 class MIMEService extends Singleton implements MIMEServiceInterface {
   

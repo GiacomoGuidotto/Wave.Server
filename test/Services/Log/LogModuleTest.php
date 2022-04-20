@@ -6,6 +6,9 @@ use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use Wave\Services\Log\LogModule;
 
+/**
+ * @author Giacomo Guidotto
+ */
 class LogModuleTest extends TestCase {
   private static ReflectionClass $reflection;
   

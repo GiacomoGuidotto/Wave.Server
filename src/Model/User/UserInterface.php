@@ -3,8 +3,10 @@
 namespace Wave\Model\User;
 
 /**
- * UserInterface resource
+ * User resource
  * Set of static methods for the user's attributes validations
+ *
+ * @author Giacomo Guidotto
  */
 interface UserInterface {
   /**

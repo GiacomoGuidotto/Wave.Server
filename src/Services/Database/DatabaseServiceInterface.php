@@ -6,6 +6,8 @@ namespace Wave\Services\Database;
  * Database service
  *
  * Query the MySQL database following the use cases
+ *
+ * @author Giacomo Guidotto
  */
 interface DatabaseServiceInterface {
   

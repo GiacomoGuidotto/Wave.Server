@@ -3,8 +3,10 @@
 namespace Wave\Model\Member;
 
 /**
- * MemberInterface resource
+ * Member resource
  * Set of static methods for the member's attributes validations
+ *
+ * @author Giacomo Guidotto
  */
 interface MemberInterface {
   /**

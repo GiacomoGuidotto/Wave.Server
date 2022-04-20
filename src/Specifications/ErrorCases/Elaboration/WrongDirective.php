@@ -2,6 +2,11 @@
 
 namespace Wave\Specifications\ErrorCases\Elaboration;
 
+/**
+ * @see    ErrorCases
+ *
+ * @author Giacomo Guidotto
+ */
 interface WrongDirective {
   const CODE = 53;
   const MESSAGE = "Wrong directive";

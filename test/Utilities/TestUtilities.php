@@ -1,9 +1,16 @@
-<?php /** @noinspection SqlResolve */
+<?php
 
 namespace Wave\Tests\Utilities;
 
 use Wave\Services\Database\Module\DatabaseModule;
 
+/**
+ * Test-related utilities methods
+ *
+ * Set of general purpose methods used throughout the testing phase of the application
+ *
+ * @author Giacomo Guidotto
+ */
 class TestUtilities {
   
   /**

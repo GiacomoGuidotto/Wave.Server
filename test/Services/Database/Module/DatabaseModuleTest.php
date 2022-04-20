@@ -1,4 +1,4 @@
-<?php /** @noinspection SqlResolve */
+<?php
 
 namespace Wave\Tests\Services\Database\Module;
 
@@ -6,6 +6,9 @@ use PHPUnit\Framework\TestCase;
 use Wave\Services\Database\Module\DatabaseModule;
 use Wave\Utilities\Utilities;
 
+/**
+ * @author Giacomo Guidotto
+ */
 class DatabaseModuleTest extends TestCase {
   public static function setUpBeforeClass(): void {
     echo PHP_EOL . '==== Database module =========================================' . PHP_EOL

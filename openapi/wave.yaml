@@ -2,6 +2,9 @@ openapi: 3.0.3
 info:
   title: Wave
   version: 1.0.0
+  contact:
+    name: Giacomo Guidotto
+    email: giacomo.guidotto@gmail.com
   description: |
     The Wave REST API support the Wave application environment.  
     All the features are designed through a variety of endpoints methods-based

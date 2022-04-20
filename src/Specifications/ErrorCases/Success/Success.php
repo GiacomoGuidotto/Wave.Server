@@ -3,7 +3,9 @@
 namespace Wave\Specifications\ErrorCases\Success;
 
 /**
- * @see ErrorCases
+ * @see    ErrorCases
+ *
+ * @author Giacomo Guidotto
  */
 interface Success {
   const CODE = 00;

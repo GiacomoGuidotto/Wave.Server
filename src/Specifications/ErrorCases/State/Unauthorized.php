@@ -3,7 +3,9 @@
 namespace Wave\Specifications\ErrorCases\State;
 
 /**
- * @see ErrorCases
+ * @see    ErrorCases
+ *
+ * @author Giacomo Guidotto
  */
 interface Unauthorized {
   const CODE = 40;

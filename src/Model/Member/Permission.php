@@ -2,6 +2,12 @@
 
 namespace Wave\Model\Member;
 
+/**
+ * Chat's permission
+ * The set of a group member's permission
+ *
+ * @author Giacomo Guidotto
+ */
 enum Permission: int {
   case ChangeOthersPermission = 1;
   case AddPeople = 2;

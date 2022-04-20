@@ -8,6 +8,13 @@ use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use Wave\Specifications\ErrorCases\ErrorCases;
 
+/**
+ * Utilities methods
+ *
+ * Set of general purpose methods used throughout the application
+ *
+ * @author Giacomo Guidotto
+ */
 class Utilities {
   
   /**

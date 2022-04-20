@@ -10,8 +10,10 @@ use Wave\Specifications\ErrorCases\Type\IncorrectParsing;
 use Wave\Specifications\ErrorCases\Type\IncorrectPattern;
 
 /**
- * GroupInterface resource class
- * The implementation of the GroupInterface interface
+ * Group resource class
+ * The implementation of the Group interface
+ *
+ * @author Giacomo Guidotto
  */
 class Group implements GroupInterface {
   

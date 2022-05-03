@@ -6,138 +6,132 @@ info:
     name: Giacomo Guidotto
     email: giacomo.guidotto@gmail.com
   description: |
-    The Wave REST API support the Wave application environment.  
-    All the features are designed through a variety of endpoints methods-based
+    The Wave REST API supports the Wave application environment.  
+    All the features are designed through a variety of endpoints methods-based.
 
     ### Functionalities:
-
-    **Authentication**
-    It is provided a safe authentication process based on access tokens linked with each user's session.
-    It has a 10 minutes operational time, but it's constantly updated with each MZ-related request.  
+    
+    **Authentication**  
+    It's provided a safe authentication process based on access tokens linked with each user session.  
+    It has a 15-minute operational time, but it's constantly updated with each MZ-related request.  
     Using the `/auth` endpoint it is possible to:
-
+    
     - POST method:  
-      login into the MZ by creating a session token that need to be used everytime a user's related action is
+      login into the MZ by creating a session token that needs to be used every time a user's related action is
       to be made
-
+    
     - PUT method:  
-      update the session token timeout, without need to interact with the app
-
+      update the session token timeout, without the need to interact with the app
+    
     - DELETE method:  
-      logout from the MZ and deleting the related session token
-
-    **User**
-    The application can only be explored with a user, the identity to which all the data processed belong.  
+      logout from the MZ and delete the related session token
+    
+    **User**  
+    The application can only be explored with a user, the identity to which all the data processed belongs.  
     Using the `/user` endpoint it is possible to:
-
+    
     - POST method:  
-      create a new user, with a mandatory username that is its prime identification inside the entire
-      application environment, and other possible information
-
+      create a new user, with a mandatory username that is its prime identification inside the entire application 
+      environment and other possible information
+    
     - GET method:  
-      retrieve a user information like its name, surname, phone number, profile picture (encoded in base64),
-      favourite theme and favourite language
-
+      retrieve user information like its name, surname, phone number, profile picture (encoded in base64),
+      favorite theme and favorite language
+    
     - PUT method:  
       change that information
-
+    
     - DELETE method:  
-      recursively delete all the user's property, association and the user it self
-
-    **Contact**
-    Inside Wave the only way to directly talk with someone is to make contact with it. But the contact can
-    also be blocked or remove.  
+      recursively delete all the user property, association and the user itself
+    
+    **Contact**  
+    Inside Wave, the only way to directly talk with someone is to make contact with it. But the contact can also, 
+    be blocked or removed.    
     Using the `/contact` endpoint it is possible to:
-
+    
     - POST method:  
-      request a new "contact", marking then this new relation as pending
-
+      request a new "contact" marking then this new relation as pending
+    
     - DELETE method:  
       delete a "contact" request that was pending
-
+    
     - PUT method:  
-      either respond to that "contact" request, by accepting it, declining it or blocking it, or update an
-      already existing "contact", by removing it, blocking it or unblocking it
-
+      either respond to that "contact" request, by accepting it, declining it or blocking it, or updating an already 
+      existing "contact" by removing it, blocking it, or unblocking it
+    
     - GET method:  
-      retrieve all the contact in "contact" with the user but, if a specific contact's username is given,
-      only the information from the said one are retrieved. Information like username, name, surname, picture
-      and status
-
-    **Group**
-    In this environment it is also possible to chat in groups, not necessarily in contact with each other.  
+      retrieve all the contact in "contact" with the user but if a specific contact username is given, only the 
+      information from the said one is retrieved. Information like username, name, surname, picture and status
+    
+    **Group**  
+    In this environment, it is also possible to chat in groups, not necessarily in contact with each other.  
     Using the `/group` endpoint it is possible to:
-
+    
     - POST method:  
-      create a new group, with a mandatory name, even though the identifier is a UUID that is retrieved from
-      this method, so that names can repeat themself
-
+      create a new group, with a mandatory name, even though the identifier is a UUID that is retrieved from this 
+      method, so that names can repeat themself
+    
     - GET method:  
-      retrieve all the group in which the user is member but, again, if a specific group's identifier (UUID)
-      is given, only the information from the said one are retrieved. Information like
-
+      retrieve all the groups in which the user is a member but, again, if a specific group's identifier (UUID) is 
+      given, only the information from the said one is retrieved. Information like
+    
     - PATCH method:  
-      change how the user see the group, by either archiving it, pinning it, mute it or unmute it
-
+      change how the user sees the group, by either archiving it, pinning it, muting it or unmuting it
+    
     - PUT method:  
-      change the group's information, if the user is authorized
-
+      change the group information, if the user is authorized
+    
     - DELETE method:  
-      delete the user's association to the group
-
+      delete the user associated with the group
+    
     In addition, there is the group's members management.  
     Using the `/member` endpoint it is possible to:
-
+    
     - POST method:  
-      add a group's member, if the user is authorized
-
+      add a group member, if the user is authorized
+    
     - PUT method:  
       change the member, particularly its permissions
-
+    
     - GET method:  
-      retrieve the list of a group's members
-
+      retrieve the list of a group members
+    
     - DELETE method:  
-      remove a group's member, if the user is authorized
-
-    **Messages**
+      remove a group member, if the user is authorized
+    
+    **Messages**  
     Finally, either inside a contact chat or a group chat, there is the messages flow.  
     Using the `/message` endpoint it is possible to:
-
+    
     - GET method:  
-      retrieve the group messages but only in a specific timestamp range, for payload optimisation
-
+      retrieve the group messages but only in a specific timestamp range for payload optimization
+    
     - POST method:  
-      write the message with a text, or an image, or both
-
+      write the message with a text, an image, or both
+    
     - PUT method:  
       change the message
-
+    
     - DELETE method:  
       delete the message
 
 
 servers:
   - description: HTTP server
-    url: http://localhost
-  #    url: http://server.wave.com
+    url: http://wave.com/api/
   - description: HTTP secured server
-    url: https://localhost
-  #    url: https://server.wave.com
-  #  - description: WS server
-  #    url: ws:localhost:8000
-  #    url: ws://server.wave.com
+    url: https://wave.com/api/
 tags:
   - name: Authentication
     description: Use cases related to the authentication process
   - name: User
     description: Use cases related to the user management
   - name: Contact
-    description: Use cases related to the contacts management
+    description: Use cases related to the contact management
   - name: Group
-    description: Use cases related to the groups management
+    description: Use cases related to the group management
   - name: Message
-    description: Use cases related to the messages management
+    description: Use cases related to the message management
 paths:
   /auth:
     summary: Authentication-related request
@@ -152,19 +146,19 @@ paths:
       parameters:
         - name: username
           in: header
-          description: The user's username to authenticate.
+          description: The username of the user to authenticate.
           required: true
           schema:
             $ref: "#/components/schemas/userUsername"
         - name: password
           in: header
-          description: The user's password to authenticate.
+          description: The password of the user to authenticate.
           required: true
           schema:
             $ref: "#/components/schemas/userPassword"
         - name: device
           in: header
-          description: The user's device identifier.
+          description: The device of the user to authenticate.
           required: true
           schema:
             $ref: "#/components/schemas/deviceIdentifier"
@@ -314,7 +308,7 @@ paths:
         - User
       summary: Change the user's information
       description: |
-        Change the specific user's information with the specific new value.  
+        Change the specific user's information with the specified new value.  
         This will trigger a ws packet to be sent to every contact of the user.
       parameters:
         - $ref: "#/components/parameters/sessionToken"
@@ -1112,7 +1106,7 @@ paths:
         - Message
       summary: Delete a chat's message
       description: |
-        Delete a specific message from a specific chat.  
+        Delete a specific message from a specified chat.  
         This will trigger a ws packet to be sent to all the chat's members.
       parameters:
         - $ref: "#/components/parameters/sessionToken"

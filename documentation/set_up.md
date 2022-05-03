@@ -49,8 +49,13 @@ In the file /etc/apache2/apache2.conf add:
 # [...]
 ```
 
-The path mustn't contain trailing /  
-The directory should be under the current user ownership:
+The path mustn't contain a trailing slash, like this:
+
+```apacheconf
+<Directory /absolute/path/to/your/project/directory/>
+```
+
+Also, the directory should be under the current user ownership:
 
 ![Project_directory_signature](assets/project_directory_signature.png)
 
@@ -101,7 +106,7 @@ Use the bash to enable the domain:
 
 `sudo a2ensite wave.com.conf`
 
-And finally make it visible in your machine by adding the domain inside the file `/etc/hosts`:
+And finally, make it visible on your machine by adding the domain inside the file `/etc/hosts`:
 
 ```
 # Wave server address
@@ -111,11 +116,11 @@ And finally make it visible in your machine by adding the domain inside the file
 
 #### Test correct configuration
 
-To check if it all went well type:
+To check if it all went fine, type:
 
 `sudo apache2ctl configtest`
 
-You should expect `Syntax OK`
+You should expect `Syntax OK`.
 
 ### MySQL database
 
@@ -125,7 +130,7 @@ Install the service with:
 
 #### Database user
 
-enter the CLI with:
+Enter the CLI with:
 
 `sudo mysql`
 
@@ -141,12 +146,12 @@ and
 GRANT ALL PRIVILEGES ON *.* TO 'user'@'localhost';
 ```
 
-In this project the database user is called "giacomo" with password "".  
-It is written in `/src/Specification/Database/Database.php`
+In this project, the database user is called "giacomo" with the password "".  
+It's written in `/src/Specification/Database/Database.php`.
 
 #### Database schema
 
-First create the database using the mysql CLI:
+First, create the database using the mysql CLI:
 
 ```mysql
 CREATE DATABASE wave
@@ -241,11 +246,10 @@ The schema diagram should correspond to this:
 
 #### phpMyAdmin
 
-If you prefer having a visual assistance tool, you can install phpMyAdmin
-following [this tutorial](https://www.digitalocean.com/community/tutorials/how-to-install-linux-apache-mysql-php-lamp-stack-on-ubuntu-20-04)
+If you prefer having a visual assistance tool, you can install phpMyAdmin following [this tutorial][admin-tutorial].
 
-Because the database user have no password you to allow phpMyAdmin to have this kind of user by go to the
-file `/etc/phpMyAdmin/config.inc.php` and change line 98, as the comment suggest:
+Because the database user has no password, to allow phpMyAdmin to have this kind of user by going to the
+file `/etc/phpMyAdmin/config.inc.php` and change line 98, as the comment suggests:
 
 ```injectablephp
 $cfg['Servers'][$i]['AllowNoPassword'] = TRUE;
@@ -260,22 +264,25 @@ Install the dependency with:
 `sudo apt update`  
 `sudo apt install php8.1`
 
-Since by default Apache use php 7.4, you need to change it, by typing:
+Since by default Apache uses PHP 7.4, you need to change it, by typing:
 
 `sudo a2dismod php7.4`  
 `sudo a2enmod php8.1`
 
 #### Composer
 
-Finally, you need to add composer to the machine, by
-following [this tutorial](https://www.digitalocean.com/community/tutorials/how-to-install-and-use-composer-on-ubuntu-20-04)
+Finally, you need to add composer to the machine, by following [this tutorial][composer-tutorial].
 
 Type `composer install` in your project directory and the `vendor` directory, containing the project dependencies, will
-appear
+appear.
 
 ### Test
 
 To test either the application run with PHPUnit the scripts under the `test` directory or use
-the [insomnia tool](https://insomnia.rest/) and add the collection by clicking the "create" button and "import from
-file".  
-Choose either the yaml file or the json included in the project under `test/Insomnia/`
+the [Insomnia tool](https://insomnia.rest/) and add the collection by clicking the "_create_" button and "_import from
+file_".  
+Choose either the YAML file or the JSON included in the project under `test/Insomnia/`.
+
+[admin-tutorial]: https://www.digitalocean.com/community/tutorials/how-to-install-and-use-composer-on-ubuntu-20-04
+
+[composer-tutorial]: https://www.digitalocean.com/community/tutorials/how-to-install-and-use-composer-on-ubuntu-20-04

@@ -38,7 +38,7 @@ if ($method == 'POST') {
   // ==== Get parameters =========================================================
   $username = $headers['username'] ?? null;
   $password = $headers['password'] ?? null;
-  $source = $headers['source'] ?? null;
+  $source = $headers['device'] ?? null;
   
   // ==== Null check =============================================================
   if (is_null($username) || is_null($password) || is_null($source)) {

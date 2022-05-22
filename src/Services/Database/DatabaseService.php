@@ -1,4 +1,4 @@
-<?php
+<?php /** @noinspection SqlResolve */
 
 namespace Wave\Services\Database;
 
@@ -163,7 +163,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
    * @param array  $permissions The permissions of this members
    * @return void
    */
-  private function generateChatTable(string $uuid, array $members, array $permissions) {
+  private function generateChatTable(string $uuid, array $members, array $permissions): void {
     $previouslyInTransaction = DatabaseModule::inTransaction();
     if ($previouslyInTransaction) DatabaseModule::commitTransaction();
     
@@ -549,7 +549,8 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
    * @inheritDoc
    */
   public function getUserInformation(
-    string $token,
+    string  $token,
+    ?string $user = null,
   ): array {
     $tokenValidation = Session::validateToken($token);
     
@@ -567,7 +568,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     // =======================================
     DatabaseModule::beginTransaction();
     
-    $userId = DatabaseModule::fetchOne(
+    $originUserId = DatabaseModule::fetchOne(
       'SELECT user
              FROM sessions
              WHERE session_token = :session_token',
@@ -576,30 +577,100 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
       ]
     )['user'];
     
-    $user = DatabaseModule::fetchOne(
-      'SELECT username, name, surname, picture, phone, theme, language
+    $originUser = DatabaseModule::fetchOne(
+      'SELECT user_id, username, name, surname, picture, phone, theme, language
              FROM users
-             WHERE user_id = :user_id',
+             WHERE user_id = BINARY :user_id',
       [
-        ':user_id' => $userId,
+        ':user_id' => $originUserId,
       ]
     );
     
-    DatabaseModule::commitTransaction();
-    
-    // ==== Retrieve picture =====================
-    $filepath = $user['picture'];
-    $picture = !is_null($filepath) ? MIMEService::researchMedia($filepath) : null;
-    
-    return [
-      'username' => $user['username'],
-      'name'     => $user['name'],
-      'surname'  => $user['surname'],
-      'picture'  => $picture,
-      'phone'    => $user['phone'],
-      'theme'    => $user['theme'],
-      'language' => $user['language'],
-    ];
+    if (!is_null($user)) {
+      
+      // ==== Contact existence check ======================================================
+      
+      $users = DatabaseModule::fetchAll(
+        "SELECT user_id, username, name, surname, picture
+             FROM users
+             WHERE active = TRUE
+               AND username <> :username
+               AND (
+                     username LIKE :user
+                  OR name LIKE :user
+                  OR surname LIKE :user
+                  OR CONCAT(name, ' ', surname) LIKE :user
+               )",
+        [
+          ':username' => $originUser['username'],
+          ':user'     => "%$user%",
+        ]
+      );
+      
+      if (!is_array($users)) {
+        DatabaseModule::commitTransaction();
+        return Utilities::generateErrorMessage(NotFound::CODE);
+      }
+      
+      $refactoredUsers = [];
+      
+      foreach ($users as $user) {
+        $userFilepath = $user['picture'];
+        $userPicture = !is_null($userFilepath) ?
+          MIMEService::researchMedia($userFilepath) :
+          null;
+        
+        // ==== contact existence check ====================================================
+        $contact = DatabaseModule::fetchOne(
+          'SELECT status, first_user
+             FROM contacts
+             WHERE active = TRUE
+               AND ((first_user = :first_user
+               AND second_user = :second_user)
+                OR (first_user = :second_user
+               AND second_user = :first_user))',
+          [
+            ':first_user'  => $originUser['user_id'],
+            ':second_user' => $user['user_id'],
+          ]
+        );
+        
+        $eventualStatus = "U";
+        
+        if (is_array($contact)) {
+          $sent = $contact['first_user'] === $originUser['user_id'];
+          $pendingStatus = $contact['status'] === "P" ? ($sent ? "s" : "r") : "";
+          $eventualStatus = $contact['status'] . $pendingStatus;
+        }
+        
+        $refactoredUsers[] = [
+          'username' => $user['username'],
+          'name'     => $user['name'],
+          'surname'  => $user['surname'],
+          'picture'  => $userPicture,
+          'status'   => $eventualStatus,
+        ];
+      }
+      
+      DatabaseModule::commitTransaction();
+      return $refactoredUsers;
+    } else {
+      DatabaseModule::commitTransaction();
+      
+      // ==== Retrieve picture =====================
+      $filepath = $originUser['picture'];
+      $picture = !is_null($filepath) ? MIMEService::researchMedia($filepath) : null;
+      
+      return [
+        'username' => $originUser['username'],
+        'name'     => $originUser['name'],
+        'surname'  => $originUser['surname'],
+        'picture'  => $picture,
+        'phone'    => $originUser['phone'],
+        'theme'    => $originUser['theme'],
+        'language' => $originUser['language'],
+      ];
+    }
   }
   
   /**
@@ -1035,13 +1106,28 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     
     // ==== Already exist check ==========================================================
     
+    $reversedContact = DatabaseModule::fetchOne(
+      'SELECT status, active
+             FROM contacts
+             WHERE first_user = :second_user
+               AND second_user = :first_user',
+      [
+        ':first_user'  => $originUser['user_id'],
+        ':second_user' => $targetedUser['user_id'],
+      ]
+    );
+    
+    
+    if (is_array($reversedContact)) {
+      DatabaseModule::commitTransaction();
+      return Utilities::generateErrorMessage(AlreadyExist::CODE);
+    }
+    
     $contact = DatabaseModule::fetchOne(
       'SELECT status, active
              FROM contacts
-             WHERE (first_user = :first_user
-               AND second_user = :second_user)
-                OR (first_user = :second_user
-               AND second_user = :first_user)',
+             WHERE first_user = :first_user
+               AND second_user = :second_user',
       [
         ':first_user'  => $originUser['user_id'],
         ':second_user' => $targetedUser['user_id'],
@@ -1124,6 +1210,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
                    'name'     => $originUser['name'],
                    'surname'  => $originUser['surname'],
                    'picture'  => $originUserPicture,
+                   'status'   => $contactStatus . "r",
                  ]
     );
     
@@ -1139,7 +1226,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
       'name'     => $targetedUser['name'],
       'surname'  => $targetedUser['surname'],
       'picture'  => $targetedUserPicture,
-      'status'   => $contactStatus,
+      'status'   => $contactStatus . "s",
     ];
   }
   
@@ -1342,12 +1429,12 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     
     $contact = DatabaseModule::fetchOne(
       'SELECT second_user, status, chat, blocked_by
-             FROM contacts
-             WHERE active = TRUE
-               AND ((first_user = :first_user
-               AND second_user = :second_user)
-                OR (first_user = :second_user
-               AND second_user = :first_user))',
+               FROM contacts
+               WHERE active = TRUE
+                 AND ((first_user = :first_user
+                 AND second_user = :second_user)
+                  OR (first_user = :second_user
+                 AND second_user = :first_user))',
       [
         ':first_user'  => $originUser['user_id'],
         ':second_user' => $targetedUser['user_id'],
@@ -1540,6 +1627,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
       origin   : $originUser['username'],
       target_s : $targetedUser['username'],
       headers  : [
+                   "username"  => $originUser['username'],
                    "directive" => $directive,
                  ]
     );
@@ -1621,7 +1709,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
         ]
       );
       
-      if (!is_array($contacts) || count($contacts) === 0) {
+      if (!is_array($contacts)) {
         DatabaseModule::commitTransaction();
         return Utilities::generateErrorMessage(NotFound::CODE);
       }
@@ -1629,29 +1717,33 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
       $refactoredContacts = [];
       
       foreach ($contacts as $contact) {
-        if ($contact['first_user'] === $originUser['user_id']) {
-          $databaseContact = DatabaseModule::fetchOne(
-            'SELECT username, name, surname, picture
+        $sent = $contact['first_user'] === $originUser['user_id'];
+        
+        $databaseContact = DatabaseModule::fetchOne(
+          'SELECT username, name, surname, picture
                    FROM users
                    WHERE user_id = :user_id',
-            [
-              ':user_id' => $contact['second_user'],
-            ]
-          );
-          
-          $contactFilepath = $databaseContact['picture'];
-          $contactPicture = !is_null($contactFilepath) ?
-            MIMEService::researchMedia($contactFilepath) :
-            null;
-          
-          $refactoredContacts[] = [
-            'username' => $databaseContact['username'],
-            'name'     => $databaseContact['name'],
-            'surname'  => $databaseContact['surname'],
-            'picture'  => $contactPicture,
-            'status'   => $contact['status'],
-          ];
-        }
+          [
+            ':user_id' => $sent ?
+              $contact['second_user'] :
+              $contact['first_user'],
+          ]
+        );
+        
+        $contactFilepath = $databaseContact['picture'];
+        $contactPicture = !is_null($contactFilepath) ?
+          MIMEService::researchMedia($contactFilepath) :
+          null;
+        
+        $pendingStatus = $contact['status'] === "P" ? ($sent ? "s" : "r") : "";
+        
+        $refactoredContacts[] = [
+          'username' => $databaseContact['username'],
+          'name'     => $databaseContact['name'],
+          'surname'  => $databaseContact['surname'],
+          'picture'  => $contactPicture,
+          'status'   => $contact['status'] . $pendingStatus,
+        ];
       }
       
       DatabaseModule::commitTransaction();
@@ -1800,6 +1892,11 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
         if ($userValidation != Success::CODE) {
           DatabaseModule::commitTransaction();
           return Utilities::generateErrorMessage($userValidation);
+        }
+        
+        if ($user === $creator["username"]) {
+          DatabaseModule::commitTransaction();
+          return Utilities::generateErrorMessage(SelfRequest::CODE);
         }
         
         // ==== Existence check ==========================================================
@@ -2209,14 +2306,13 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
           return Utilities::generateErrorMessage(WrongState::CODE);
         }
         
-        $newMuted = true;
         DatabaseModule::execute(
           'UPDATE groups_members
                  SET muted = :muted
                  WHERE active = TRUE
                    AND `group` = :group',
           [
-            ":muted" => $newMuted,
+            ":muted" => true,
             ':group' => $group['group_id'],
           ]
         );
@@ -3730,7 +3826,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
       origin   : $originUser['username'],
       target_s : $members,
       body     : [
-                   "chat" => $chat,
+                   "chat" => $chatType === "contact" ? $contact["username"] : $group["chat"],
                    "type" => $chatType,
                    ...$body,
                  ]
@@ -3881,6 +3977,11 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
       $chat = $contact['chat'];
     }
     
+    if (is_null($chat) || Group::validateChat($chat) !== Success::CODE) {
+      DatabaseModule::commitTransaction();
+      return Utilities::generateErrorMessage(NotFound::CODE);
+    }
+    
     // ==== Safe zone ====================================================================
     $messagesChatName = "chat_" . $chat . "_messages";
     
@@ -4022,7 +4123,11 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
           "authorPicture"  => $authorPicture,
           "pinned"         => !!$message['pinned'],
         ];
-        
+      }
+      
+      if (count($refactoredMessages) === 0) {
+        DatabaseModule::commitTransaction();
+        return $refactoredMessages;
       }
       
       // ==== Update last seen message ===================================================
@@ -4434,7 +4539,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
       origin   : $originUser['username'],
       target_s : $members,
       body     : [
-                   "chat" => $chat,
+                   "chat" => $chatType === "contact" ? $contact["username"] : $group["chat"],
                    "type" => $chatType,
                    ...$body,
                  ]
@@ -4605,8 +4710,6 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     }
     
     // ==== Safe zone ====================================================================
-    $messagesChatName = "chat_" . $chat . "_messages";
-    
     DatabaseModule::execute(
       "UPDATE `:name` 
              SET active = FALSE 
@@ -4652,7 +4755,7 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
       origin   : $originUser['username'],
       target_s : $members,
       body     : [
-                   "chat" => $chat,
+                   "chat" => $chatType === "contact" ? $contact["username"] : $group["chat"],
                    "type" => $chatType,
                    "key"  => $message['message_key'],
                  ]
@@ -4679,6 +4782,8 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     $contactChats = DatabaseModule::fetchAll('SELECT chat, active FROM contacts');
     
     foreach ($contactChats as $contactChat) {
+      if (is_null($contactChat["chat"])) continue;
+      
       $chatMessages = 'chat_' . $contactChat['chat'] . '_messages';
       $chatMembers = 'chat_' . $contactChat['chat'] . '_members';
       
@@ -4705,6 +4810,8 @@ class DatabaseService extends Singleton implements DatabaseServiceInterface {
     );
     
     foreach ($deletableChats as $deletableChat) {
+      if (is_null($deletableChat["chat"])) continue;
+      
       $chatMessages = 'chat_' . $deletableChat['chat'] . '_messages';
       $chatMembers = 'chat_' . $deletableChat['chat'] . '_members';
       

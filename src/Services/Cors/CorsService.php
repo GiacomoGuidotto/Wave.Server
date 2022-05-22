@@ -73,6 +73,7 @@ class CorsService {
           'theme',
           'language',
           'token',
+          'user',
         ],
         'contact' => [
           'token',

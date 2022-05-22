@@ -11,7 +11,7 @@ function MockClient() {
     const channel = useRef(null);
 
     function connect() {
-        channel.current = new WebSocket('ws://localhost:8000');
+        channel.current = new WebSocket('ws://server.wave.com/channel');
 
         channel.current.onopen = () => {
             setConnectionStatus(true);

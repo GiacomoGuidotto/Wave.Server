@@ -89,7 +89,8 @@ interface DatabaseServiceInterface {
    * @return array        The public attributes of the user, saved in an array as object
    */
   public function getUserInformation(
-    string $token,
+    string  $token,
+    ?string $user = null,
   ): array;
   
   /**

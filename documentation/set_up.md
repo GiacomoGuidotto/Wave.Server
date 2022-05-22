@@ -34,6 +34,14 @@ Enable the RewriteRules from the bash with:
 
 `sudo a2enmod rewrite`
 
+Enable the WebSocket connection with the proxy_wstunnel module:
+
+`sudo a2enmod proxy_wstunnel`
+
+After having enabled the proxy module, if it isn't already active:
+
+`sudo a2enmod proxy`
+
 In the file /etc/apache2/apache2.conf add:
 
 ```apacheconf
@@ -81,7 +89,7 @@ The error log can be found in:
 
 #### Project domain configuration
 
-under `/etc/apache2/sites-available` add `wave.com.conf` (in general `your.domain.conf`)  
+Under `/etc/apache2/sites-available` add `server.wave.com.conf` (in general `your.domain.conf`)  
 and write:
 
 ```apacheconf
@@ -90,28 +98,26 @@ and write:
     CustomLog ${APACHE_LOG_DIR}/access.log combined
     
     # Name
-    ServerName www.wave.com
-    ServerAlias wave.com
+    ServerName server.wave.com
     
     # Home
     DocumentRoot /home/giacomo/Projects/LAMP/Wave/
     
+    # WebSocket proxy
     ProxyPreserveHost On
-    # ProxyPass / http://127.0.0.1:3000/
-    # ProxyPassReverse / http://127.0.0.1:3000/
+    ProxyPass /channel  ws://127.0.0.1:8000
 </VirtualHost>
 ```
 
 Use the bash to enable the domain:
 
-`sudo a2ensite wave.com.conf`
+`sudo a2ensite server.wave.com.conf`
 
 And finally, make it visible on your machine by adding the domain inside the file `/etc/hosts`:
 
 ```
 # Wave server address
-127.0.1.1	wave.com
-127.0.1.1	www.wave.com
+127.0.1.1	server.wave.com
 ```
 
 #### Test correct configuration

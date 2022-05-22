@@ -17,7 +17,7 @@ $service = DatabaseService::getInstance();
 $method = $_SERVER['REQUEST_METHOD'];
 
 // ==== CorsService check ================================================================
-CorsService::handle('auth');
+CorsService::handle('message');
 
 if ($method == 'OPTIONS') return;
 

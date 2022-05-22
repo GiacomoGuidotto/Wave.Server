@@ -466,7 +466,7 @@ class UserTest extends TestCase {
     // contact request
     $result = self::$service->contactRequest(
       $firstUser['token'],
-      "insomnia_agent",
+      $secondUser['username']
     );
     
     $result["picture"] = substr($result['picture'], 0, 50) . "...";

@@ -108,7 +108,6 @@ class MessageTest extends TestCase {
       null,
       [
         self::$secondUser['username'],
-        "insomnia_agent",
       ]
     )['uuid'];
   }

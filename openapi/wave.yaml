@@ -288,13 +288,23 @@ paths:
       description: Retrieve the user's information given the session token.
       parameters:
         - $ref: "#/components/parameters/sessionToken"
+        - name: user
+          in: header
+          required: false
+          description: The eventual user's username.
+          schema:
+            $ref: "#/components/schemas/userUsername"
       responses:
         200:
           description: The information are successfully retrieved.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/userObject"
+                oneOf:
+                  - $ref: "#/components/schemas/userObject"
+                  - type: array
+                    items:
+                      $ref: "#/components/schemas/userObject"
         400:
           $ref: "#/components/responses/400"
         401:
@@ -589,6 +599,8 @@ paths:
           $ref: "#/components/responses/404"
         405:
           $ref: "#/components/responses/405"
+        406:
+          $ref: "#/components/responses/406"
 
     get:
       operationId: getGroupInformation
@@ -1361,15 +1373,17 @@ components:
       minLength: 1
       maxLength: 1
       enum:
-        - P
+        - Ps
+        - Pr
         - A
         - B
+        - U
       description: |
         The contact's relation status.
 
         ---
 
-        P for Pending, A for Active, B for Blocked
+        Ps for Pending sent, Pr for Pending received, A for Active, B for Blocked, U for unrelated
 
     # Group
     groupName:

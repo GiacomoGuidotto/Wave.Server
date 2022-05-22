@@ -11,7 +11,7 @@ namespace Wave\Specifications\Wave;
  */
 class Wave {
   const SESSION_DURATION = '15 minutes';
-  const SUPPORTED_LANGUAGE = ['IT', 'EN'];
+  const SUPPORTED_LANGUAGE = ['IT', 'EN', 'ES', 'DE'];
   
   const MAX_GROUP_PERMISSION = 511;
   const NEW_MEMBER_PERMISSION = 122;

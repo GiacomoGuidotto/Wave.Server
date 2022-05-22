@@ -17,7 +17,7 @@ $service = DatabaseService::getInstance();
 $method = $_SERVER['REQUEST_METHOD'];
 
 // ==== CorsService check =================================================================
-CorsService::handle('auth');
+CorsService::handle('user');
 
 if ($method == 'OPTIONS') return;
 
@@ -81,6 +81,7 @@ if ($method == 'GET') {
   
   // ==== Get parameters =========================================================
   $token = $headers['token'] ?? null;
+  $user = $headers['user'] ?? null;
   
   // ==== Null check =============================================================
   if (is_null($token)) {
@@ -92,7 +93,7 @@ if ($method == 'GET') {
   }
   
   // ==== Elaboration ============================================================
-  $result = $service->getUserInformation($token);
+  $result = $service->getUserInformation($token, $user);
   
   // ==== Error case =============================================================
   if (isset($result['error'])) {

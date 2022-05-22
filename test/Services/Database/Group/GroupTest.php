@@ -838,7 +838,6 @@ class GroupTest extends TestCase {
       null,
       [
         self::$secondUser['username'],
-        "insomnia_agent",
       ]
     )['uuid'];
     
@@ -926,7 +925,6 @@ class GroupTest extends TestCase {
       null,
       [
         self::$secondUser['username'],
-        "insomnia_agent",
       ]
     )['uuid'];
     

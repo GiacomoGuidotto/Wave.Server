@@ -3,6 +3,17 @@
  * @author Giacomo Guidotto
  */
 
+require '../../vendor/autoload.php';
+
+use Wave\Services\Cors\CorsService;
+
+$method = $_SERVER['REQUEST_METHOD'];
+
+// ==== CorsService check =================================================================
+
+CorsService::handle('auth');
+
+if ($method == 'OPTIONS') return;
 
 echo json_encode(
   [
